@@ -214,7 +214,7 @@ export function ArticleCard({
                   {article.insights_authors?.name || 'Tim Valam'}
                 </p>
                 <p className="text-[9px] text-warm-700 mt-1 font-sans leading-none">
-                  {new Date(article.published_at).toLocaleDateString(
+                  {new Date(article.published_at || new Date()).toLocaleDateString(
                     locale === 'id' ? 'id-ID' : 'en-US',
                     { day: 'numeric', month: 'short', year: 'numeric' }
                   )}

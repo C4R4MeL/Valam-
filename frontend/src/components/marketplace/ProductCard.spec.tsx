@@ -10,6 +10,7 @@ describe('ProductCard component', () => {
     status: 'VERIFIED',
     origin_district: 'Aceh Jaya',
     pa_percentage: 32.5,
+    moisture: 1.2,
     available_volume_kg: 500,
     price_per_kg: 850000,
     images: ['/test-image.jpg']

@@ -1,4 +1,4 @@
-export const fadeUp = {
+export const fadeUp: any = {
   hidden: { opacity: 0, y: 30 },
   visible: { 
     opacity: 1, 
@@ -10,7 +10,7 @@ export const fadeUp = {
   }
 };
 
-export const stagger = {
+export const stagger: any = {
   hidden: {},
   visible: { 
     transition: { 
@@ -19,7 +19,7 @@ export const stagger = {
   }
 };
 
-export const gridVariants = {
+export const gridVariants: any = {
   hidden: {},
   visible: { 
     transition: { 
@@ -29,7 +29,7 @@ export const gridVariants = {
   }
 };
 
-export const cardVariants = {
+export const cardVariants: any = {
   hidden: { opacity: 0, y: 40 },
   visible: { 
     opacity: 1, 

@@ -6,7 +6,7 @@ export function TimelineHistory({ batch }: { batch: any }) {
   const traceLogs = batch.trace_logs || []
   
   // Map database logs to timeline events
-  const events = traceLogs.map((log: any, index: number) => {
+  const events: any[] = traceLogs.map((log: any, index: number) => {
     let icon = CheckCircle2
     if (log.event_type === 'HARVESTED' || log.event_type === 'DISTILLED') icon = Factory
     else if (log.event_type === 'SHIPPED' || log.event_type === 'IN_TRANSIT') icon = Truck
@@ -39,7 +39,7 @@ export function TimelineHistory({ batch }: { batch: any }) {
 
   return (
     <div className="relative border-l-2 border-emerald-100 ml-6 space-y-10 py-4">
-      {events.map((event, index) => {
+      {events.map((event: any, index: number) => {
         const isCompleted = event.status === 'completed'
         return (
           <div key={event.id} className="relative pl-8">

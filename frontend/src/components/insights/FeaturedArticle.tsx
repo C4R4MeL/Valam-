@@ -140,7 +140,7 @@ export function FeaturedArticle({ article, locale }: FeaturedArticleProps) {
                 <span>•</span>
                 <span className="flex items-center gap-1">
                   <Calendar className="w-3 h-3" />
-                  {new Date(article.published_at).toLocaleDateString(
+                  {new Date(article.published_at || new Date()).toLocaleDateString(
                     locale === 'id' ? 'id-ID' : 'en-US',
                     { day: 'numeric', month: 'short', year: 'numeric' }
                   )}

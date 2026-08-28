@@ -13,7 +13,7 @@ interface SmartMatchingHeroProps {
   locale: string;
 }
 
-const fadeUp = {
+const fadeUp: any = {
   hidden: { opacity: 0, y: 30 },
   visible: (i: number) => ({
     opacity: 1,
@@ -22,7 +22,7 @@ const fadeUp = {
   }),
 };
 
-const slideRight = {
+const slideRight: any = {
   hidden: { opacity: 0, x: 60 },
   visible: (i: number) => ({
     opacity: 1,
