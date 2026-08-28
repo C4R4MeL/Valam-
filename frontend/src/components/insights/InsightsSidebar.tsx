@@ -96,7 +96,7 @@ export function InsightsSidebar({ locale, popularArticles }: InsightsSidebarProp
               return (
                 <div
                   key={price.id}
-                  className={`flex items-center justify-between py-3 transition-all duration-300 ${config.bg} ${idx < prices.length - 1 ? 'border-b border-surface-700' : ''}`}
+                  className={`flex items-center justify-between py-3 transition-all duration-300 ${config.bg} ${idx < prices.length - 1 ? 'border-b border-zinc-100' : ''}`}
                 >
                   {/* Left: Grade dot & label */}
                   <div className="space-y-1">
@@ -131,7 +131,7 @@ export function InsightsSidebar({ locale, popularArticles }: InsightsSidebarProp
         {/* Footer date */}
         {prices.length > 0 && (
           <div className="px-5 py-2.5 border-t border-zinc-200/60">
-            <p className="text-[10px] font-medium text-warm-400 text-center uppercase tracking-wider">
+            <p className="text-[10px] font-medium text-zinc-400 text-center uppercase tracking-wider">
               {isEn ? 'Last updated' : 'Terakhir diperbarui'}:{' '}
               {new Date(prices[0].updated_at).toLocaleDateString(
                 locale === 'id' ? 'id-ID' : 'en-US',
@@ -176,7 +176,7 @@ export function InsightsSidebar({ locale, popularArticles }: InsightsSidebarProp
                       {/* Underline slide effect */}
                       <span className="absolute bottom-0 left-0 w-full h-[1px] bg-emerald-700 origin-left scale-x-0 group-hover/pop:scale-x-100 transition-transform duration-300" />
                     </h4>
-                    <p className="text-[10px] text-warm-300 font-medium">
+                    <p className="text-[10px] text-zinc-500 font-medium">
                       📖 {art.read_time_minutes} Min {isEn ? 'read' : 'baca'}
                     </p>
                   </div>

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { X, ShoppingCart, Leaf, Plus, Minus, Info, BadgeCheck, Droplets, Check } from 'lucide-react'
 import { useLocale } from 'next-intl'
 import { useCart } from '@/components/providers/CartProvider'
-import { formatRupiah, mockCircularProducts } from '@/lib/mock-data'
+import { formatRupiah } from '@/lib/mock-data'
 import { validateOrderQuantity } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -36,25 +36,41 @@ export function CircularOrderModal() {
 
   useEffect(() => {
     // Expose global trigger
-    ;(window as any).openCircularOrderModal = (p: any, batchId: string | null = null) => {
+    ;(window as any).openCircularOrderModal = async (p: any, batchId: string | null = null) => {
       setSumberBatchId(batchId)
       
       if (batchId) {
-        // Multi-product selection mode
-        // In detail batch, all mockCircularProducts are available as derivatives of the batch
-        const products = mockCircularProducts.map(cp => ({ ...cp, sumber_batch_id: batchId }))
-        setAvailableProducts(products)
-        
-        const initialSelected: Record<string, { checked: boolean, qty: number, error: string }> = {}
-        products.forEach(prod => {
-          initialSelected[prod.id] = {
-            checked: false,
-            qty: prod.min_order || 1,
-            error: ''
-          }
-        })
-        setSelectedItems(initialSelected)
-        setSingleProduct(null)
+        // Multi-product selection mode (Derivative products from database)
+        try {
+          const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api'
+          const res = await fetch(`${API_URL}/circular-products`)
+          const json = await res.json()
+          const products = (Array.isArray(json) ? json : [])
+            .filter((cp: any) => cp.status === 'APPROVED')
+            .map((cp: any) => ({
+              id: cp.id,
+              nama: cp.name,
+              harga_per_unit: cp.price,
+              stok_tersedia: cp.stock,
+              min_order: 1,
+              unit: cp.unit || 'Kg',
+              sumber_batch_id: batchId
+            }))
+
+          setAvailableProducts(products)
+          const initialSelected: Record<string, { checked: boolean, qty: number, error: string }> = {}
+          products.forEach(prod => {
+            initialSelected[prod.id] = {
+              checked: false,
+              qty: prod.min_order || 1,
+              error: ''
+            }
+          })
+          setSelectedItems(initialSelected)
+          setSingleProduct(null)
+        } catch (e) {
+          console.error("Failed to load circular products for derivative modal", e)
+        }
       } else {
         // Single product mode (Catalog)
         setSingleProduct(p)

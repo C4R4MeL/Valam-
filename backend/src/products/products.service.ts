@@ -70,8 +70,18 @@ export class ProductsService {
   }
 
   async findOne(id: string) {
-    const product = await this.prisma.product.findUnique({
-      where: { id },
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    const product = await this.prisma.product.findFirst({
+      where: isUuid
+        ? {
+            OR: [
+              { id },
+              { batch_code: id }
+            ]
+          }
+        : {
+            batch_code: id
+          },
       include: {
         qc_result: true,
         supplier: {
@@ -84,7 +94,7 @@ export class ProductsService {
     });
 
     if (!product) {
-      throw new NotFoundException(`Product with ID ${id} not found`);
+      throw new NotFoundException(`Product with ID or batch code ${id} not found`);
     }
 
     const companyName = product.supplier?.supplier_profile?.nama_koperasi || 

@@ -185,7 +185,7 @@ export function MatchResultCard({
             </button>
           ) : (
             <Link 
-              href={`/dashboard/buyer/rfq/new?supplier=${product.supplier_id}&supplier_name=${encodeURIComponent(product.supplier_name)}&volume=${criteria.volume_kg}&minPa=${criteria.min_pa}&budget=${criteria.max_budget}&moisture=${criteria.max_moisture}&from=public`} 
+              href={`/buyer/rfq?supplier=${product.supplier_id}&supplier_name=${encodeURIComponent(product.supplier_name)}&volume=${criteria.volume_kg}&minPa=${criteria.min_pa}&budget=${criteria.max_budget}&moisture=${criteria.max_moisture}&from=public`} 
               className="flex-1" 
               onClick={onRfqClick}
             >

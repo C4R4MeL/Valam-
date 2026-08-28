@@ -3,46 +3,113 @@
 import { useState, useRef, useEffect } from 'react'
 import { useLocale } from 'next-intl'
 import { useToast } from '@/hooks/use-toast'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import { Navbar } from '@/components/layout/Navbar'
 import { Footer } from '@/components/layout/Footer'
-import { mockProducts } from '@/lib/mock-data'
-
-// New Smart Matching Redesigned Components
-import { SmartMatchingHero } from '@/components/smart-matching/SmartMatchingHero'
-import { HowItWorksSection } from '@/components/smart-matching/HowItWorksSection'
 import { CriteriaPanel } from '@/components/smart-matching/CriteriaPanel'
 import { ResultPanel } from '@/components/smart-matching/ResultPanel'
+import { Sparkles, Check, ChevronRight } from 'lucide-react'
+
+interface Preset {
+  id: string
+  title: string
+  desc: string
+  icon: string
+  criteria: {
+    volume_kg: number
+    max_budget: number
+    min_pa: number
+    max_moisture: number
+  }
+}
+
+const PRESETS: Record<'id' | 'en', Preset[]> = {
+  id: [
+    {
+      id: 'export_std',
+      title: 'Standar Ekspor Global',
+      desc: 'Paling diminati untuk pasar ekspor Eropa, Amerika & Asia.',
+      icon: '🌟',
+      criteria: { volume_kg: 100, max_budget: 900000, min_pa: 30, max_moisture: 3 }
+    },
+    {
+      id: 'super_perfume',
+      title: 'Grade Super / Parfum',
+      desc: 'Aroma pekat & kemurnian tertinggi untuk industri wewangian.',
+      icon: '💎',
+      criteria: { volume_kg: 100, max_budget: 1000000, min_pa: 32, max_moisture: 2 }
+    },
+    {
+      id: 'bulk_industry',
+      title: 'Kebutuhan Pabrik / Skala Besar',
+      desc: 'Volume tinggi & efisiensi biaya untuk manufaktur dan sabun/kosmetik.',
+      icon: '🏭',
+      criteria: { volume_kg: 300, max_budget: 820000, min_pa: 28, max_moisture: 4 }
+    },
+    {
+      id: 'ready_all',
+      title: 'Semua Stok / Siap Kirim',
+      desc: 'Jelajahi seluruh batch aktif dari koperasi nilam terverifikasi.',
+      icon: '⚡',
+      criteria: { volume_kg: 50, max_budget: 950000, min_pa: 28, max_moisture: 5 }
+    }
+  ],
+  en: [
+    {
+      id: 'export_std',
+      title: 'Global Export Standard',
+      desc: 'Most popular for European, American & Asian export markets.',
+      icon: '🌟',
+      criteria: { volume_kg: 100, max_budget: 900000, min_pa: 30, max_moisture: 3 }
+    },
+    {
+      id: 'super_perfume',
+      title: 'Super Grade / Perfume',
+      desc: 'Highest aroma density and maximum purity for fragrance makers.',
+      icon: '💎',
+      criteria: { volume_kg: 100, max_budget: 1000000, min_pa: 32, max_moisture: 2 }
+    },
+    {
+      id: 'bulk_industry',
+      title: 'Bulk Manufacturing Demand',
+      desc: 'High volume & cost efficiency for cosmetics, care products and soap.',
+      icon: '🏭',
+      criteria: { volume_kg: 300, max_budget: 820000, min_pa: 28, max_moisture: 4 }
+    },
+    {
+      id: 'ready_all',
+      title: 'All Available Batches',
+      desc: 'Explore all active batches ready for dispatch from certified cooperatives.',
+      icon: '⚡',
+      criteria: { volume_kg: 50, max_budget: 950000, min_pa: 28, max_moisture: 5 }
+    }
+  ]
+}
 
 const contentMap = {
   id: {
     badge: "AI-POWERED MATCHING ENGINE",
-    title: "Temukan Penawaran Minyak Nilam Terideal",
-    subtitle: "Algoritma MCDM Valam secara cerdas menganalisis ribuan data CoA terverifikasi untuk memfilter PA%, Tingkat Air, Volume, dan Harga secara real-time.",
-    btnStart: "Mulai Pencarian",
-    howItWorks: {
-      badge: "ALUR KERJA",
-      title: "Cara Kerja Smart Matching",
-      subtitle: "Dapatkan supplier terbaik untuk kebutuhan industri Anda dalam 3 langkah mudah.",
-      step1: { title: "Atur Kriteria Kualitas", desc: "Tentukan target volume, batas anggaran maksimum, kadar minimum PA, dan kadar air maksimum yang Anda butuhkan." },
-      step2: { title: "Kalkulasi MCDM Cerdas", desc: "Sistem kami memindai database CoA digital terverifikasi GPS dan menghitung bobot nilai kecocokan kriteria Anda." },
-      step3: { title: "Dapatkan Peringkat Terbaik", desc: "Hasil pencarian menampilkan daftar supplier berdasarkan Skor Kecocokan tertinggi. Anda dapat langsung membandingkan." }
-    },
+    title: "Smart Matching Minyak Nilam",
+    subtitle: "Pilih template kebutuhan atau atur kriteria kualitas untuk menemukan pasokan minyak nilam terverifikasi yang paling sesuai.",
+    presetTitle: "Pilihan Cepat Kebutuhan Industri",
+    presetSubtitle: "Klik salah satu template di bawah untuk melihat rekomendasi supplier dalam 1 klik:",
     form: {
       title: "Kriteria Kebutuhan",
       volume: "Target Volume",
       budget: "Anggaran Maks / Kg",
       minPa: "Minimal Kadar PA%",
       maxMoisture: "Maksimal Kadar Air%",
-      btnSubmit: "Temukan Rekomendasi",
-      btnLoading: "Mengkalkulasi..."
+      btnSubmit: "Perbarui Rekomendasi",
+      btnLoading: "Mengkalkulasi Rekomendasi..."
     },
     results: {
-      title: "Hasil Peringkat Kecocokan",
-      subtitle: "Diurutkan berdasarkan MCDM Match Score",
+      title: "Peringkat Rekomendasi Supplier",
+      subtitle: "Diurutkan berdasarkan skor kecocokan tertinggi",
       readyTitle: "Siap Melakukan Pencocokan",
-      readyDesc: "Masukkan target spesifikasi kargo Anda di sisi kiri dan klik \"Temukan Rekomendasi\" untuk membandingkan kecocokan CoA secara instan.",
+      readyDesc: "Pilih salah satu template di atas atau klik tombol \"Perbarui Rekomendasi\" untuk melihat hasil.",
       emptyTitle: "Spesifikasi Terlalu Ketat",
-      emptyDesc: "Maaf, tidak ada batch terdaftar yang saat ini memenuhi syarat kriteria di atas. Silakan naikkan batas Anggaran atau longgarkan minimal kadar PA%.",
+      emptyDesc: "Maaf, tidak ada batch terdaftar yang saat ini memenuhi seluruh kriteria di atas. Silakan naikkan batas Anggaran atau longgarkan minimal kadar PA%.",
       matchScore: "Match Score",
       stock: "Stok",
       pa: "PA",
@@ -55,33 +122,26 @@ const contentMap = {
   },
   en: {
     badge: "AI-POWERED MATCHING ENGINE",
-    title: "Find the Ideal Patchouli Oil Match",
-    subtitle: "Valam's MCDM algorithm intelligently analyzes thousands of verified CoA data to filter PA%, Moisture, Volume, and Price in real-time.",
-    btnStart: "Start Search",
-    howItWorks: {
-      badge: "WORKFLOW",
-      title: "How Smart Matching Works",
-      subtitle: "Get the best supplier for your industry needs in 3 easy steps.",
-      step1: { title: "Set Quality Criteria", desc: "Determine the target volume, maximum budget, minimum PA levels, and maximum moisture levels you require." },
-      step2: { title: "Intelligent MCDM Calculation", desc: "Our system scans the verified digital CoA database and automatically calculates matching weights." },
-      step3: { title: "Get Best Rankings", desc: "Search results show suppliers ranked by Match Score. You can instantly compare and proceed." }
-    },
+    title: "Patchouli Oil Smart Matching",
+    subtitle: "Select a quick industry template or fine-tune quality criteria to instantly find the best verified patchouli oil batches.",
+    presetTitle: "Quick Industry Presets",
+    presetSubtitle: "Click any preset below to view matched suppliers in one click:",
     form: {
       title: "Requirement Criteria",
       volume: "Target Volume",
       budget: "Max Budget / Kg",
       minPa: "Min PA% Level",
       maxMoisture: "Max Moisture Level",
-      btnSubmit: "Find Recommendations",
-      btnLoading: "Calculating..."
+      btnSubmit: "Update Recommendations",
+      btnLoading: "Calculating Recommendations..."
     },
     results: {
-      title: "Matching Rank Results",
-      subtitle: "Sorted by MCDM Match Score",
+      title: "Recommended Supplier Rankings",
+      subtitle: "Ranked by highest matching score",
       readyTitle: "Ready to Match",
-      readyDesc: "Enter your target cargo specifications on the left and click \"Find Recommendations\" to instantly compare CoA matches.",
+      readyDesc: "Choose any template above or click \"Update Recommendations\" to view matched batches.",
       emptyTitle: "Specifications Too Strict",
-      emptyDesc: "Sorry, no registered batches currently meet your criteria. Please increase the Budget limit or loosen the minimum PA% requirement.",
+      emptyDesc: "Sorry, no registered batches meet these exact criteria. Try increasing the max budget or adjusting the minimum PA% requirement.",
       matchScore: "Match Score",
       stock: "Stock",
       pa: "PA",
@@ -97,21 +157,19 @@ const contentMap = {
 export default function SmartMatchingPage() {
   const { toast } = useToast()
   const locale = useLocale() as 'id' | 'en'
+  const isId = locale === 'id'
   const t = contentMap[locale] || contentMap.id
+  const presets = PRESETS[locale] || PRESETS.id
   
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState<any[]>([])
   const [hasSearched, setHasSearched] = useState(false)
-  const formRef = useRef<HTMLDivElement>(null)
+  const [activePresetId, setActivePresetId] = useState<string>('export_std')
   
-  const [criteria, setCriteria] = useState({
-    volume_kg: 100,
-    max_budget: 900000,
-    min_pa: 30,
-    max_moisture: 5
-  })
+  const defaultCriteria = presets[0].criteria
+  const [criteria, setCriteria] = useState(defaultCriteria)
 
-  // Load criteria search state from URL query params or sessionStorage if returning
+  // Initialize and run matching on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
@@ -122,53 +180,49 @@ export default function SmartMatchingPage() {
 
       if (qVolume || qMinPa || qMaxBudget || qMaxMoisture) {
         const loadedCriteria = {
-          volume_kg: qVolume ? Number(qVolume) : 200,
-          max_budget: qMaxBudget ? Number(qMaxBudget) : 850000,
+          volume_kg: qVolume ? Number(qVolume) : 100,
+          max_budget: qMaxBudget ? Number(qMaxBudget) : 900000,
           min_pa: qMinPa ? Number(qMinPa) : 30,
-          max_moisture: qMaxMoisture ? Number(qMaxMoisture) : 5
+          max_moisture: qMaxMoisture ? Number(qMaxMoisture) : 3
         };
         setCriteria(loadedCriteria);
-        // Delay search trigger slightly so page is fully mounted
-        setTimeout(() => {
-          handleSearch(loadedCriteria);
-        }, 150);
+        setActivePresetId('');
+        handleSearch(loadedCriteria);
         return;
       }
 
-      const savedVolume = sessionStorage.getItem('pub_matching_volume')
-      const savedMinPa = sessionStorage.getItem('pub_matching_minPa')
-      const savedMaxBudget = sessionStorage.getItem('pub_matching_maxBudget')
-      const savedMaxMoisture = sessionStorage.getItem('pub_matching_maxMoisture')
-      const savedHasSearched = sessionStorage.getItem('pub_matching_searched')
       const savedResults = sessionStorage.getItem('pub_matching_results')
-
-      if (savedVolume || savedMinPa || savedMaxBudget || savedMaxMoisture) {
-        setCriteria({
-          volume_kg: savedVolume ? Number(savedVolume) : 100,
-          max_budget: savedMaxBudget ? Number(savedMaxBudget) : 900000,
-          min_pa: savedMinPa ? Number(savedMinPa) : 30,
-          max_moisture: savedMaxMoisture ? Number(savedMaxMoisture) : 5
-        })
+      if (savedResults && savedResults !== '[]') {
+        try {
+          const parsed = JSON.parse(savedResults)
+          setResults(parsed)
+          setHasSearched(true)
+          return
+        } catch (e) {
+          // ignore error
+        }
       }
-      if (savedHasSearched === 'true') setHasSearched(true)
-      if (savedResults) setResults(JSON.parse(savedResults))
+
+      // If no search was run yet, immediately run matching with standard preset so user sees instant results
+      handleSearch(defaultCriteria)
     }
   }, [])
 
-  // Persist criteria state
+  // Persist results state
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('pub_matching_volume', String(criteria.volume_kg))
-      sessionStorage.setItem('pub_matching_minPa', String(criteria.min_pa))
-      sessionStorage.setItem('pub_matching_maxBudget', String(criteria.max_budget))
-      sessionStorage.setItem('pub_matching_maxMoisture', String(criteria.max_moisture))
-      sessionStorage.setItem('pub_matching_searched', String(hasSearched))
+    if (typeof window !== 'undefined' && results.length > 0) {
       sessionStorage.setItem('pub_matching_results', JSON.stringify(results))
     }
-  }, [criteria, hasSearched, results])
+  }, [results])
 
-  const scrollToForm = () => {
-    formRef.current?.scrollIntoView({ behavior: 'smooth' })
+  const applyPreset = (preset: Preset) => {
+    setActivePresetId(preset.id)
+    setCriteria(preset.criteria)
+    handleSearch(preset.criteria)
+  }
+
+  const handleReset = () => {
+    applyPreset(presets[0])
   }
 
   const handleRfqClick = (e: React.MouseEvent) => {
@@ -215,104 +269,57 @@ export default function SmartMatchingPage() {
       setResults(json.data || [])
       setHasSearched(true)
     } catch (err: any) {
-      console.warn("Backend offline, calculating locally using MCDM fallback:", err)
-      const baseProducts: any[] = []
-      
-      mockProducts.forEach((p: any) => {
-        if (p.status === 'VERIFIED' || p.status === 'ACTIVE') {
-          const supplierName = p.supplier_name || '';
-          const mappedId = 
-            supplierName.toLowerCase().includes('aceh barat') ? 'sup_aceh_west' :
-            supplierName.toLowerCase().includes('tani makmur') ? 'sup_tani_makmur' :
-            supplierName.toLowerCase().includes('gayo') ? 'sup_atsiri_gayo' :
-            supplierName.toLowerCase().includes('selatan') ? 'sup_nilam_south' :
-            supplierName.toLowerCase().includes('nusantara') ? 'sup_tani_nusantara' :
-            'sup_aceh_west';
+      console.warn("Matching endpoint failed, calculating from verified database products:", err)
+      try {
+        const pRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api'}/products?status=VERIFIED`)
+        if (pRes.ok) {
+          const pData = await pRes.json()
+          const dbProducts = pData.data || []
+          const calculated = dbProducts
+            .filter((p: any) => p.status === 'VERIFIED' && p.available_volume_kg > 0)
+            .map((item: any) => {
+              const pa = item.pa_percentage || 0
+              const moisture = item.moisture || 0
+              const price = item.price_per_kg || 0
+              const vol = item.available_volume_kg || 0
 
-          baseProducts.push({
-            id: p.id,
-            batch_code: p.batch_code,
-            supplier_name: supplierName || 'Supplier Valam',
-            supplier_id: p.supplier_id || mappedId,
-            available_volume_kg: p.available_volume_kg,
-            pa_percentage: p.pa_percentage,
-            moisture: p.moisture,
-            price_per_kg: p.price_per_kg,
-            origin_district: p.origin_district,
-            origin_village: p.origin_village
-          })
-        }
-      })
+              const volDiffRatio = Math.abs(vol - activeCriteria.volume_kg) / Math.max(activeCriteria.volume_kg, 1)
+              const volScore = Math.max(0, 100 - volDiffRatio * 50)
 
-      if (typeof window !== 'undefined') {
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i)
-          if (key && key.startsWith('valam_supplier_batches_')) {
-            const supplierEmail = key.replace('valam_supplier_batches_', '')
-            const supplierBatches = JSON.parse(localStorage.getItem(key) || '[]')
-            supplierBatches.forEach((b: any) => {
-              if (b.status === 'VERIFIED' || b.status === 'ACTIVE') {
-                if (!baseProducts.some(p => p.id === b.id || p.batch_code === b.batch_code)) {
-                  baseProducts.push({
-                    id: b.id,
-                    batch_code: b.batch_code,
-                    supplier_name: localStorage.getItem('valam_user_company_' + supplierEmail) || 'Koperasi Atsiri Mandiri',
-                    supplier_id: 'supplier_' + supplierEmail,
-                    available_volume_kg: Number(b.available_volume_kg || b.volume_kg || 100),
-                    pa_percentage: Number(b.pa_percentage || 30.0),
-                    moisture: Number(b.moisture || 4.0),
-                    price_per_kg: Number(b.price_per_kg || 900000),
-                    origin_district: b.origin_district || 'Aceh',
-                    origin_village: b.origin_village
-                  })
-                }
+              let budgetScore = 100
+              if (price > activeCriteria.max_budget) {
+                const budgetOverRatio = (price - activeCriteria.max_budget) / Math.max(activeCriteria.max_budget, 1)
+                budgetScore = Math.max(0, 100 - budgetOverRatio * 150)
+              }
+
+              let paScore = 100
+              if (pa < activeCriteria.min_pa) {
+                const paUnderRatio = (activeCriteria.min_pa - pa) / Math.max(activeCriteria.min_pa, 1)
+                paScore = Math.max(0, 100 - paUnderRatio * 200)
+              }
+
+              let moistureScore = 100
+              if (moisture > activeCriteria.max_moisture) {
+                const moistureOverRatio = (moisture - activeCriteria.max_moisture) / Math.max(activeCriteria.max_moisture, 1)
+                moistureScore = Math.max(0, 100 - moistureOverRatio * 100)
+              }
+
+              const score = (volScore * 0.25) + (budgetScore * 0.25) + (paScore * 0.35) + (moistureScore * 0.15)
+              return {
+                ...item,
+                match_score: Math.round(score)
               }
             })
-          }
+
+          calculated.sort((a: any, b: any) => b.match_score - a.match_score)
+          setResults(calculated)
+          setHasSearched(true)
+          return
         }
+      } catch (e) {
+        console.error("Failed to query verified products for matching:", e)
       }
-
-      // MCDM Scoring Fallback
-      const calculated = baseProducts.map(item => {
-        let score = 100
-        
-        // Volume match factor
-        const volDiffRatio = Math.abs(item.available_volume_kg - activeCriteria.volume_kg) / activeCriteria.volume_kg
-        const volScore = Math.max(0, 100 - volDiffRatio * 50)
-
-        // Budget match factor
-        let budgetScore = 100
-        if (item.price_per_kg > activeCriteria.max_budget) {
-          const budgetOverRatio = (item.price_per_kg - activeCriteria.max_budget) / activeCriteria.max_budget
-          budgetScore = Math.max(0, 100 - budgetOverRatio * 150)
-        }
-
-        // PA match factor
-        let paScore = 100
-        if (item.pa_percentage < activeCriteria.min_pa) {
-          const paUnderRatio = (activeCriteria.min_pa - item.pa_percentage) / activeCriteria.min_pa
-          paScore = Math.max(0, 100 - paUnderRatio * 200)
-        }
-
-        // Moisture match factor
-        let moistureScore = 100
-        if (item.moisture > activeCriteria.max_moisture) {
-          const moistureOverRatio = (item.moisture - activeCriteria.max_moisture) / activeCriteria.max_moisture
-          moistureScore = Math.max(0, 100 - moistureOverRatio * 100)
-        }
-
-        score = (volScore * 0.25) + (budgetScore * 0.25) + (paScore * 0.35) + (moistureScore * 0.15)
-
-        return {
-          ...item,
-          match_score: Math.round(score)
-        }
-      })
-
-      // Filter out matches with zero score or very poor PA
-      const filtered = calculated.filter(item => item.match_score >= 10 && item.pa_percentage >= activeCriteria.min_pa - 3)
-      filtered.sort((a, b) => b.match_score - a.match_score)
-      setResults(filtered)
+      setResults([])
       setHasSearched(true)
     } finally {
       setLoading(false)
@@ -320,61 +327,118 @@ export default function SmartMatchingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 flex flex-col selection:bg-emerald-100 selection:text-emerald-950 font-sans">
+    <div className="min-h-screen bg-zinc-50 flex flex-col selection:bg-[#1A4D2E]/10 selection:text-[#1A4D2E] font-sans">
       <Navbar />
 
-      {/* Hero Header Area */}
-      <SmartMatchingHero
-        badge={t.badge}
-        title={t.title}
-        subtitle={t.subtitle}
-        btnStart={t.btnStart}
-        onScrollToForm={scrollToForm}
-        locale={locale}
-      />
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16 space-y-6">
+        
+        {/* ─── DIRECT PAGE HEADER ──────────────────────────────────────── */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-200 pb-5">
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-[#1A4D2E] text-xs font-bold border border-emerald-200 mb-2">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{t.badge}</span>
+            </div>
+            <h1 className="text-2xl md:text-3xl font-serif font-bold text-zinc-900 tracking-tight">
+              {t.title}
+            </h1>
+            <p className="text-zinc-500 text-sm mt-1 max-w-2xl">
+              {t.subtitle}
+            </p>
+          </div>
+        </div>
 
-      {/* Step Guide - How it works */}
-      <HowItWorksSection
-        badge={t.howItWorks.badge}
-        title={t.howItWorks.title}
-        subtitle={t.howItWorks.subtitle}
-        step1={t.howItWorks.step1}
-        step2={t.howItWorks.step2}
-        step3={t.howItWorks.step3}
-      />
+        {/* ─── QUICK INDUSTRY PRESET CARDS ─────────────────────────────── */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xs font-black uppercase tracking-wider text-zinc-400">
+              {t.presetTitle}
+            </h2>
+            <span className="text-[11px] text-zinc-400 font-medium hidden sm:inline">
+              {t.presetSubtitle}
+            </span>
+          </div>
 
-      {/* Main Form and Output Block */}
-      <section ref={formRef} className="lg:h-[calc(100vh-80px)] h-auto py-10 lg:py-6 flex flex-col max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 relative z-20 overflow-hidden shrink-0">
-        <div className="grid lg:grid-cols-12 gap-8 items-stretch h-full overflow-hidden">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {presets.map((preset) => {
+              const isSelected = activePresetId === preset.id
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => applyPreset(preset)}
+                  className={`p-4 rounded-2xl border text-left transition-all relative flex flex-col justify-between cursor-pointer ${
+                    isSelected
+                      ? 'bg-emerald-50/70 border-[#1A4D2E] ring-2 ring-[#1A4D2E]/20 shadow-sm'
+                      : 'bg-white border-zinc-200 hover:border-zinc-300 hover:shadow-xs'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <span className="text-2xl">{preset.icon}</span>
+                      {isSelected && (
+                        <span className="flex items-center gap-1 text-[10px] font-black bg-[#1A4D2E] text-white px-2 py-0.5 rounded-full">
+                          <Check className="w-3 h-3" />
+                          <span>{isId ? 'Aktif' : 'Active'}</span>
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="text-xs font-bold text-zinc-900 leading-snug mb-1">
+                      {preset.title}
+                    </h3>
+                    <p className="text-[11px] text-zinc-500 leading-relaxed">
+                      {preset.desc}
+                    </p>
+                  </div>
+
+                  <div className="mt-3 pt-2.5 border-t border-zinc-150 flex items-center justify-between text-[10px] text-zinc-400 font-mono">
+                    <span>PA ≥ {preset.criteria.min_pa}%</span>
+                    <span>Air ≤ {preset.criteria.max_moisture}%</span>
+                    <span>{preset.criteria.volume_kg} Kg</span>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* ─── MAIN TOOL: CRITERIA (LEFT) + RESULTS (RIGHT) ─────────────── */}
+        <div className="grid lg:grid-cols-12 gap-6 items-start">
           
-          {/* Input criteria dark panel */}
-          <div className="lg:col-span-4 lg:h-full h-auto flex flex-col overflow-hidden">
+          {/* Left Column: Criteria Panel */}
+          <div className="lg:col-span-4 lg:sticky lg:top-24">
             <CriteriaPanel
               criteria={criteria}
-              onCriteriaChange={setCriteria}
+              onCriteriaChange={(newCriteria) => {
+                setActivePresetId('')
+                setCriteria(newCriteria)
+              }}
               onSubmit={() => handleSearch()}
+              onReset={handleReset}
               loading={loading}
               locale={locale}
               translations={t.form}
             />
           </div>
 
-          {/* Results panel list */}
-          <ResultPanel
-            hasSearched={hasSearched}
-            loading={loading}
-            results={results}
-            locale={locale}
-            onRfqClick={handleRfqClick}
-            criteria={criteria}
-            translations={t.results}
-          />
-          
+          {/* Right Column: Matched Results */}
+          <div className="lg:col-span-8 min-h-[500px]">
+            <ResultPanel
+              hasSearched={hasSearched}
+              loading={loading}
+              results={results}
+              locale={locale}
+              onRfqClick={handleRfqClick}
+              criteria={criteria}
+              translations={t.results}
+            />
+          </div>
+
         </div>
-      </section>
+
+      </main>
 
       <Footer />
     </div>
   )
 }
-

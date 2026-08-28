@@ -45,7 +45,7 @@ export function SmartMatchingWidget() {
   };
 
   return (
-    <section className="min-h-[calc(100vh-80px)] flex flex-col justify-center py-20 bg-[#08130c] text-white relative overflow-hidden">
+    <section className="py-14 sm:py-20 md:py-24 bg-[#08130c] text-white relative overflow-hidden">
       {/* Background decoration gradients */}
       <div
         className="absolute inset-0 pointer-events-none"
@@ -60,17 +60,17 @@ export function SmartMatchingWidget() {
       {/* Particle Network Background Mesh */}
       <ParticleNetwork />
 
-      <div className="container mx-auto px-6 md:px-8 max-w-7xl relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+      <div className="container mx-auto px-4 sm:px-6 md:px-8 max-w-7xl relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
 
           {/* Left Text Copy */}
-          <div className="lg:col-span-6 space-y-6">
+          <div className="lg:col-span-6 space-y-4 sm:space-y-6">
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/20 text-emerald-400 text-xs font-semibold uppercase tracking-wider">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
               <span>⚡ {isId ? 'AI-POWERED MATCHING' : 'AI-POWERED MATCHING'}</span>
             </div>
 
-            <h2 className="text-3xl md:text-5xl font-bold font-serif leading-tight">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold font-serif leading-tight">
               {isId ? 'Temukan Supplier Terideal Instan' : 'Find the Most Ideal Supplier Instantly'}
             </h2>
 

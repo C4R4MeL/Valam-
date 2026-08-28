@@ -7,7 +7,6 @@ import { ArrowLeft, CheckCircle2, Factory, MapPin, FileText, ShoppingCart, Info,
 import { Link } from '@/i18n/routing'
 import { useLocale } from 'next-intl'
 import { Button } from '@/components/ui/button'
-import { mockProducts, mockCircularProducts } from '@/lib/mock-data'
 import { formatRupiah, getPatchouliTier, isGcmsVerified, validateOrderQuantity } from '@/lib/utils'
 import { RadarChart } from '@/components/marketplace/RadarChart'
 import { Navbar } from '@/components/layout/Navbar'
@@ -66,31 +65,91 @@ export default function BatchDetailPage() {
   const fromMatching = searchParams ? searchParams.get('from') === 'matching' : false
   const matchScoreParam = searchParams ? searchParams.get('match_score') : null
 
-  // ─── 1. FETCH & PROCESS DATA ───────────────────────────────────────
-  const batch = useMemo(() => {
-    // Attempt to find inside mock essential oils
-    let base: any = mockProducts.find(p => p.id === batchId || p.batch_code === batchId)
-    let isCircular = false
+  const [apiProduct, setApiProduct] = useState<any | null>(null)
+  const [loadingProduct, setLoadingProduct] = useState(true)
 
-    if (!base) {
-      // Look inside circular products
-      base = mockCircularProducts.find(p => p.id === batchId || p.batch_code === batchId) as any
-      if (base) {
-        isCircular = true
+  useEffect(() => {
+    let isMounted = true
+    const loadBatch = async () => {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api'
+      try {
+        let res = await fetch(`${apiUrl}/products/${batchId}`, { cache: 'no-store' })
+        if (res.ok) {
+          const json = await res.json()
+          if (isMounted) {
+            setApiProduct(json)
+            setLoadingProduct(false)
+          }
+          return
+        }
+
+        res = await fetch(`${apiUrl}/circular-products/${batchId}`)
+        if (res.ok) {
+          const json = await res.json()
+          if (isMounted) {
+            setApiProduct({
+              ...json,
+              is_circular: true,
+              batch_code: json.name,
+              available_volume_kg: json.stock,
+              price_per_kg: json.price,
+              supplier_name: json.supplier?.profile?.company_name || 'Mitra Sirkular',
+              origin_district: json.supplier?.supplier_profile?.kabupaten || 'Aceh',
+              images: json.image ? [json.image] : []
+            })
+            setLoadingProduct(false)
+          }
+          return
+        }
+      } catch (err) {
+        // backend offline
+      }
+
+      // Check local storage batches
+      if (typeof window !== 'undefined') {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i)
+          if (key && key.startsWith('valam_supplier_batches_')) {
+            const batches = JSON.parse(localStorage.getItem(key) || '[]')
+            const b = batches.find((x: any) => x.id === batchId || x.batch_code === batchId)
+            if (b && isMounted) {
+              setApiProduct(b)
+              setLoadingProduct(false)
+              return
+            }
+          }
+        }
+      }
+
+      if (isMounted) {
+        setLoadingProduct(false)
       }
     }
 
+    loadBatch()
+    return () => { isMounted = false }
+  }, [batchId])
+
+  // ─── 1. FETCH & PROCESS DATA ───────────────────────────────────────
+  const batch = useMemo(() => {
+    let base: any = apiProduct
+    let isCircular = apiProduct?.is_circular || false
+
     if (!base) {
-      // Fallback fallback
-      base = mockProducts[0]
+      return null
     }
 
     // Map/extend to full B2B detailed batch schema
+    const code = base.batch_code || base.nama || base.name || 'PROD-001'
+    const availableVol = base.available_volume_kg ?? base.stok_tersedia ?? 100
+    const pricePerUnit = base.price_per_kg ?? base.harga_per_unit ?? 850000
+    const minOrder = base.moq_kg ?? base.min_order ?? 1
+
     return {
       id: base.id,
-      batch_code: base.batch_code,
-      badge_tipe: base.batch_code.includes('001') ? "Batch KC" : base.batch_code.includes('002') ? "Batch EX" : null,
-      koperasi_nama: base.supplier_name || "Koperasi Atsiri Aceh",
+      batch_code: code,
+      badge_tipe: code.includes('001') ? "Batch KC" : code.includes('002') ? "Batch EX" : null,
+      koperasi_nama: base.supplier_name || base.mitra_pengolah_nama || "Koperasi Atsiri Aceh",
       lokasi: `${base.origin_district || 'Aceh Jaya'}, Aceh`,
       rating: 4.8,
       jumlah_batch_terjual: 14,
@@ -129,20 +188,21 @@ export default function BatchDetailPage() {
         { nama: isId ? 'Indeks Bias (20°C)' : 'Refractive Index (20°C)', deskripsi: isId ? 'Indeks pembiasan cahaya' : 'Light refractive Index', nilai: '1.508', standar_industri: '1.505 - 1.515', status: 'lulus' },
         { nama: isId ? 'Rotasi Optik' : 'Optical Rotation', deskripsi: isId ? 'Sudut pemutaran cahaya' : 'Optical rotation angle', nilai: '-54°', standar_industri: '-48° s.d -65°', status: 'lulus' }
       ],
-      harga_per_kg: base.price_per_kg,
-      volume_tersedia_kg: base.available_volume_kg,
-      volume_min_order_kg: 50,
-      stok_persen: Math.round(((base.available_volume_kg || 100) / 5000) * 100) || 85,
+      harga_per_kg: pricePerUnit,
+      volume_tersedia_kg: availableVol,
+      volume_min_order_kg: minOrder,
+      stok_persen: Math.round(((availableVol || 100) / 5000) * 100) || 85,
       tanggal_uji_lab: base.tested_at || base.created_at,
-      ampas_tersedia_kg: (base.available_volume_kg || 100) * 4,
-      estimasi_co2_ton: parseFloat(((base.available_volume_kg || 100) * 0.002).toFixed(2)),
-      produk_turunan: mockCircularProducts.map(cp => ({ ...cp, sumber_batch_id: base.id }))
+      ampas_tersedia_kg: (availableVol || 100) * 4,
+      estimasi_co2_ton: parseFloat(((availableVol || 100) * 0.002).toFixed(2)),
+      produk_turunan: [] as any[]
     }
-  }, [batchId, isId, fromMatching, matchScoreParam])
+  }, [batchId, isId, fromMatching, matchScoreParam, apiProduct])
 
   // Chart Data Mapping for Recharts Radar
   const chartData = useMemo(() => {
-    return batch.radar_scores.map(item => ({
+    if (!batch?.radar_scores) return []
+    return batch.radar_scores.map((item: any) => ({
       subject: item.label,
       A: item.skor_0_100,
       B: 80, // Standard minimum comparison threshold
@@ -151,6 +211,7 @@ export default function BatchDetailPage() {
   }, [batch])
 
   const handleShare = () => {
+    if (!batch) return
     if (navigator.share) {
       navigator.share({
         title: `Batch ${batch.batch_code} - VALAM`,
@@ -163,12 +224,14 @@ export default function BatchDetailPage() {
   }
 
   const handleOpenCartModal = () => {
+    if (!batch) return
     setCartQuantity(batch.volume_min_order_kg)
     setCartError('')
     setIsCartModalOpen(true)
   }
 
   const handleCartQuantityChange = (val: number) => {
+    if (!batch) return
     const validation = validateOrderQuantity(val, batch.volume_min_order_kg, batch.volume_tersedia_kg)
     if (!validation.valid) {
       setCartError(validation.errorMsg)
@@ -179,13 +242,14 @@ export default function BatchDetailPage() {
   }
 
   const handleConfirmAddToCart = async () => {
+    if (!batch) return
     const validation = validateOrderQuantity(cartQuantity, batch.volume_min_order_kg, batch.volume_tersedia_kg)
     if (!validation.valid) {
       setCartError(validation.errorMsg)
       return
     }
     setIsAdding(true)
-    const ok = await addToCart(batch.id, cartQuantity)
+    const ok = await addToCart(batch.id, cartQuantity, batch.is_circular ? 'circular' : 'patchouli')
     setIsAdding(false)
     if (ok) {
       setIsCartModalOpen(false)
@@ -204,6 +268,41 @@ export default function BatchDetailPage() {
         )
       })
     }
+  }
+
+  if (loadingProduct) {
+    return (
+      <div className="min-h-screen bg-zinc-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1A4D2E]" />
+      </div>
+    )
+  }
+
+  if (!batch) {
+    return (
+      <div className="min-h-screen bg-zinc-50 flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+          <div className="w-16 h-16 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mb-4">
+            <AlertTriangle className="w-8 h-8" />
+          </div>
+          <h2 className="text-2xl font-serif font-bold text-zinc-900 mb-2">
+            {isId ? 'Produk Tidak Ditemukan' : 'Product Not Found'}
+          </h2>
+          <p className="text-sm text-zinc-500 max-w-md mb-6 leading-relaxed">
+            {isId 
+              ? 'Batch produk ini tidak terdaftar di database atau belum diverifikasi oleh tim QC Laboratorium Admin.' 
+              : 'This product batch is not registered in the database or has not been verified by Admin QC.'}
+          </p>
+          <Button asChild className="bg-[#1A4D2E] hover:bg-[#123320] text-white rounded-xl">
+            <Link href="/marketplace">
+              {isId ? 'Kembali ke Katalog' : 'Back to Catalog'}
+            </Link>
+          </Button>
+        </div>
+        <Footer />
+      </div>
+    )
   }
 
   return (
@@ -562,7 +661,7 @@ export default function BatchDetailPage() {
                 
                 {/* 3. Ajukan RFQ Global (Desktop) */}
                 <Link 
-                  href={`/dashboard/buyer/rfq/new?product_id=${batch.id}&qty=${batch.volume_min_order_kg}&type=global`}
+                  href={`/buyer/rfq?product_id=${batch.id}&qty=${batch.volume_min_order_kg}&type=global`}
                   className="w-full flex items-center justify-center gap-1.5 bg-[#B69A1D] text-[#1A4D2E] text-xs font-black py-3 rounded-xl hover:bg-[#A38618] transition-colors shadow-md shadow-[#B69A1D]/10 text-center"
                 >
                   <Compass className="w-4 h-4" />
@@ -936,7 +1035,7 @@ export default function BatchDetailPage() {
 
               {/* 3. Ajukan RFQ Global */}
               <Link 
-                href={`/dashboard/buyer/rfq/new?product_id=${batch.id}&qty=${batch.volume_min_order_kg}&type=global`}
+                href={`/buyer/rfq?product_id=${batch.id}&qty=${batch.volume_min_order_kg}&type=global`}
                 className="w-full flex items-center justify-center gap-1.5 bg-[#B69A1D] text-[#1A4D2E] text-xs font-black py-3 rounded-xl hover:bg-[#A38618] transition-colors shadow-md shadow-[#B69A1D]/10 text-center"
               >
                 <Compass className="w-4 h-4" />

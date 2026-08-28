@@ -85,10 +85,10 @@ export default function SupplierWalletPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isBankDialogOpen, setIsBankDialogOpen] = useState(false)
-  
+
   // Custom Bank Account State
   const [linkedBank, setLinkedBank] = useState<string>('')
-  
+
   const { toast } = useToast()
   const router = useRouter()
   const locale = useLocale() as 'id' | 'en'
@@ -109,7 +109,7 @@ export default function SupplierWalletPage() {
           'Authorization': `Bearer ${token}`
         }
       })
-      
+
       if (res.ok) {
         const data = await res.json()
         setWallet(data)
@@ -146,7 +146,7 @@ export default function SupplierWalletPage() {
 
   useEffect(() => {
     fetchWallet()
-    
+
     // Fetch bank info
     const storedBank = localStorage.getItem('valam_bank_account_info_' + email)
     if (storedBank) {
@@ -158,10 +158,10 @@ export default function SupplierWalletPage() {
   const handleWithdraw = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
-    
+
     const amount = parseFloat(withdrawAmount)
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api'
-    
+
     try {
       const token = localStorage.getItem('valam_token')
       if (amount > wallet.balance) {
@@ -169,7 +169,7 @@ export default function SupplierWalletPage() {
         setIsSubmitting(false)
         return
       }
-      
+
       const res = await fetch(`${API_URL}/wallet/withdraw`, {
         method: 'POST',
         headers: {
@@ -190,13 +190,13 @@ export default function SupplierWalletPage() {
     } catch (err) {
       console.warn("Backend offline, updating local wallet info:", err)
       const localWalletKey = 'valam_supplier_wallet_' + email
-      
+
       if (amount > wallet.balance) {
         toast({ title: "Gagal", description: "Saldo tidak mencukupi", variant: "destructive" })
         setIsSubmitting(false)
         return
       }
-      
+
       const updatedWallet = {
         balance: wallet.balance - amount,
         transactions: [
@@ -211,16 +211,16 @@ export default function SupplierWalletPage() {
           ...wallet.transactions
         ]
       }
-      
+
       localStorage.setItem(localWalletKey, JSON.stringify(updatedWallet))
       setWallet(updatedWallet)
-      
+
       // Auto-save the bank account details
       if (bankInfo !== linkedBank) {
         localStorage.setItem('valam_bank_account_info_' + email, bankInfo)
         setLinkedBank(bankInfo)
       }
-      
+
       toast({ title: "Berhasil (Mock)", description: "Permintaan penarikan dana diajukan secara lokal." })
       setIsDialogOpen(false)
       setWithdrawAmount('')
@@ -258,33 +258,31 @@ export default function SupplierWalletPage() {
 
   return (
     <div className="w-full flex flex-col min-h-[75vh] pb-16">
-      <DashboardHeader 
-        title={t.title} 
+      <DashboardHeader
+        title={t.title}
         subtitle={t.subtitle}
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         {/* Top 3 Metric Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          
+
           {/* AVAILABLE BALANCE CARD */}
           <div className="bg-gradient-to-br from-emerald-800 via-emerald-900 to-emerald-950 rounded-2xl p-6 text-white shadow-md relative overflow-hidden flex flex-col justify-between min-h-[160px] border border-emerald-850 hover:shadow-lg transition-all duration-300 group">
             <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/5 rounded-full blur-2xl group-hover:bg-white/10 transition-colors" />
-            
+
             <div>
               <p className="text-emerald-200 text-xs font-semibold uppercase tracking-wider mb-1">{t.balance}</p>
               <h2 className="text-3xl sm:text-4xl font-bold font-serif tracking-tight">
                 {formatRupiah(wallet?.balance || 0)}
               </h2>
             </div>
-            
+
             <div className="mt-4 pt-2">
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="bg-gold-500 hover:bg-gold-600 text-emerald-950 font-bold h-11 w-full rounded-xl transition-all shadow-md shadow-gold-500/10">
+                <DialogTrigger className="bg-[#B69A1D] hover:bg-[#a68c19] text-emerald-950 font-bold h-11 w-full rounded-xl transition-all shadow-md shadow-[#B69A1D]/10 inline-flex items-center justify-center cursor-pointer">
                     <ArrowUpRight className="w-4 h-4 mr-1.5" />
                     {t.btnWithdraw}
-                  </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-md bg-white rounded-2xl border-none shadow-2xl p-6">
                   <DialogHeader>
@@ -298,14 +296,14 @@ export default function SupplierWalletPage() {
                       <Label htmlFor="amount" className="text-zinc-700 font-semibold text-xs">{t.amountLabel}</Label>
                       <div className="relative">
                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 font-medium text-sm">Rp</span>
-                        <Input 
+                        <Input
                           id="amount"
-                          type="number" 
+                          type="number"
                           required
                           max={wallet?.balance}
                           value={withdrawAmount}
                           onChange={e => setWithdrawAmount(e.target.value)}
-                          className="h-12 border-zinc-200 bg-zinc-50 focus:bg-white focus:ring-1 focus:ring-emerald-500 pl-10 rounded-xl font-medium text-zinc-800" 
+                          className="h-12 border-zinc-200 bg-zinc-50 focus:bg-white focus:ring-1 focus:ring-emerald-500 pl-10 rounded-xl font-medium text-zinc-800"
                           placeholder="Contoh: 5000000"
                         />
                       </div>
@@ -314,19 +312,19 @@ export default function SupplierWalletPage() {
                         <span>Maks: <span className="font-semibold text-emerald-600">{formatRupiah(wallet?.balance || 0)}</span></span>
                       </p>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="bank" className="text-zinc-700 font-semibold text-xs">{t.bankLabel}</Label>
-                      <Input 
+                      <Input
                         id="bank"
                         required
                         value={bankInfo}
                         onChange={e => setBankInfo(e.target.value)}
-                        className="h-12 border-zinc-200 bg-zinc-50 focus:bg-white focus:ring-1 focus:ring-emerald-500 rounded-xl font-medium text-zinc-800" 
+                        className="h-12 border-zinc-200 bg-zinc-50 focus:bg-white focus:ring-1 focus:ring-emerald-500 rounded-xl font-medium text-zinc-800"
                         placeholder="Contoh: BCA - 1234567890 - John Doe"
                       />
                     </div>
-                    
+
                     <Button type="submit" disabled={isSubmitting || !withdrawAmount || !bankInfo} className="w-full h-12 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl mt-4 transition-all">
                       {isSubmitting ? "Memproses..." : t.btnSubmit}
                     </Button>
@@ -368,7 +366,7 @@ export default function SupplierWalletPage() {
 
         {/* 2-Column Responsive Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
+
           {/* LEFT: TRANSACTION HISTORY (2/3 width) */}
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
@@ -376,7 +374,7 @@ export default function SupplierWalletPage() {
                 <h3 className="text-lg font-bold text-zinc-900">{t.history}</h3>
                 <span className="text-xs text-zinc-400 font-medium">Updated live</span>
               </div>
-              
+
               {(!wallet?.transactions || wallet.transactions.length === 0) ? (
                 <div className="text-center py-16">
                   <div className="w-16 h-16 bg-zinc-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-zinc-100">
@@ -425,7 +423,7 @@ export default function SupplierWalletPage() {
 
           {/* RIGHT: BANK ACCOUNT & HELPERS (1/3 width) */}
           <div className="space-y-6">
-            
+
             {/* LINKED BANK CARD */}
             <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm flex flex-col justify-between min-h-[220px]">
               <div>
@@ -433,7 +431,7 @@ export default function SupplierWalletPage() {
                   <h4 className="font-bold text-zinc-900 text-sm">{t.bankCard.title}</h4>
                   <CreditCard className="w-5 h-5 text-emerald-600" />
                 </div>
-                
+
                 {linkedBank ? (
                   <div className="bg-gradient-to-br from-zinc-50 to-zinc-100 rounded-xl p-4 border border-zinc-200 relative overflow-hidden my-2">
                     <div className="absolute top-2 right-2 opacity-5">
@@ -451,7 +449,7 @@ export default function SupplierWalletPage() {
                   </div>
                 )}
               </div>
-              
+
               <div className="mt-4">
                 <Dialog open={isBankDialogOpen} onOpenChange={setIsBankDialogOpen}>
                   <DialogTrigger asChild>
@@ -466,20 +464,20 @@ export default function SupplierWalletPage() {
                         {locale === 'id' ? 'Tautkan Rekening Bank' : 'Link Bank Account'}
                       </DialogTitle>
                       <DialogDescription className="text-zinc-400 text-xs">
-                        {locale === 'id' 
-                          ? 'Masukkan data rekening bank Anda untuk mempercepat pencairan saldo penjualan.' 
+                        {locale === 'id'
+                          ? 'Masukkan data rekening bank Anda untuk mempercepat pencairan saldo penjualan.'
                           : 'Provide your bank information to speed up withdrawal processing.'}
                       </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleLinkBank} className="space-y-4 pt-4">
                       <div className="space-y-2">
                         <Label htmlFor="bankData" className="text-zinc-700 font-semibold text-xs">Format: Bank - No. Rekening - Nama Pemilik</Label>
-                        <Input 
+                        <Input
                           id="bankData"
                           required
                           value={bankInfo}
                           onChange={e => setBankInfo(e.target.value)}
-                          className="h-12 border-zinc-200 bg-zinc-50 focus:bg-white rounded-xl text-sm" 
+                          className="h-12 border-zinc-200 bg-zinc-50 focus:bg-white rounded-xl text-sm"
                           placeholder="BCA - 8920128912 - Koperasi Nilam Jaya"
                         />
                       </div>

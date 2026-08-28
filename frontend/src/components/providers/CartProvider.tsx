@@ -11,7 +11,8 @@ interface CartContextType {
   fetchCart: () => Promise<void>
   addToCart: (productId: string, quantityKg: number, itemType?: 'patchouli' | 'circular', sumber_batch_id?: string | null) => Promise<boolean>
   updateQuantity: (itemId: string, newQuantity: number) => Promise<boolean>
-  removeItem: (itemId: string) => Promise<boolean>
+  removeItem: (itemId: string, silent?: boolean) => Promise<boolean>
+  clearCart: (isCircular?: boolean) => Promise<void>
   totalItems: number
 }
 
@@ -49,88 +50,62 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       })
       if (res.ok) {
         const data = await res.json()
-        const pItems = (data.items || []).filter((item: any) => !item.is_circular)
-        const cItems = (data.items || []).filter((item: any) => item.is_circular)
-        setPatchouliItems(pItems)
-        setCircularItems(cItems)
+        const items = data.items || []
+        const patchouli = items.filter((item: any) => !item.is_circular)
+        const circular = items.filter((item: any) => item.is_circular)
+        setPatchouliItems(patchouli)
+        setCircularItems(circular)
       } else {
-        console.warn('Gagal memuat data keranjang belanja backend.')
+        setPatchouliItems([])
+        setCircularItems([])
       }
-    } catch (err) {
-      console.error('Error fetching cart:', err)
+    } catch (error) {
+      console.error(error)
+      setPatchouliItems([])
+      setCircularItems([])
     } finally {
       setLoading(false)
     }
   }, [token, isAuthenticated])
 
-  // Fetch cart automatically when logged in
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchCart()
-    } else {
-      setPatchouliItems([])
-      setCircularItems([])
-    }
-  }, [isAuthenticated, fetchCart])
+    fetchCart()
+  }, [fetchCart])
 
-  const addToCart = async (productId: string, quantityKg: number, itemType: 'patchouli' | 'circular' = 'patchouli', sumber_batch_id: string | null = null): Promise<boolean> => {
-    if (!isAuthenticated || !token) {
+  const addToCart = async (productId: string, quantityKg: number, itemType: 'patchouli' | 'circular' = 'patchouli', sumber_batch_id?: string | null): Promise<boolean> => {
+    const locale = typeof window !== 'undefined' && window.location.pathname.startsWith('/en') ? 'en' : 'id'
+
+    if (!token) {
       toast({
-        title: 'Harap masuk terlebih dahulu',
-        description: 'Anda harus masuk untuk menambahkan produk ke keranjang.',
+        title: 'Harap Masuk Terlebih Dahulu',
+        description: 'Anda harus masuk akun buyer untuk memasukkan produk ke keranjang.',
         variant: 'destructive'
       })
       return false
     }
 
-    // CEK DUPLIKAT: Jika produk sudah ada di keranjang, update kuantitasnya
-    const targetItems = itemType === 'circular' ? circularItems : patchouliItems
-    const existingItem = targetItems.find((item: any) => item.product_id === productId || item.circular_product_id === productId || item.product?.id === productId)
-    if (existingItem) {
-      const newQuantity = existingItem.quantity_kg + quantityKg
-      const success = await updateQuantity(existingItem.id, newQuantity)
-      if (success) {
-        if (itemType === 'circular') {
-          toast({
-            title: 'Kuantitas Diperbarui',
-            description: `Kuantitas produk sirkular telah ditambahkan menjadi ${newQuantity}.`,
-            action: (
-              <div className="flex gap-2 items-center mt-2">
-                <button 
-                  onClick={() => {}} 
-                  className="bg-white border border-zinc-200 text-zinc-700 hover:bg-zinc-50 px-3 py-1 rounded-md text-xs font-semibold"
-                >
-                  Lanjut Belanja
-                </button>
-                <button 
-                  onClick={() => window.location.href = `/${locale}/cart`} 
-                  className="bg-[#B69A1D] hover:bg-[#A38618] text-white px-3 py-1 rounded-md text-xs font-semibold"
-                >
-                  Lihat Keranjang
-                </button>
-              </div>
-            )
-          })
-        } else {
-          toast({
-            title: 'Kuantitas Diperbarui',
-            description: `Kuantitas batch telah ditambahkan menjadi ${newQuantity} kg.`
-          })
-        }
-      }
-      return success
-    }
-
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api'
-    const locale = window.location.pathname.split('/')[1] || 'id'
     try {
+      const payload: any = {
+        productId: productId,
+        product_id: productId,
+        quantity_kg: quantityKg,
+        quantity: quantityKg,
+        sumber_batch_id: sumber_batch_id || undefined
+      }
+
+      if (itemType === 'circular') {
+        payload.circular_product_id = productId
+        payload.circularProductId = productId
+      }
+
       const res = await fetch(`${API_URL}/cart`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ productId, quantity_kg: quantityKg, item_type: itemType, sumber_batch_id })
+        body: JSON.stringify(payload)
       })
 
       if (res.ok) {
@@ -186,6 +161,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const updateQuantity = async (itemId: string, newQuantity: number): Promise<boolean> => {
     if (!token) return false
 
+    if (newQuantity <= 0) {
+      return removeItem(itemId)
+    }
+
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api'
     try {
       const res = await fetch(`${API_URL}/cart/${itemId}`, {
@@ -215,8 +194,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const removeItem = async (itemId: string): Promise<boolean> => {
-    if (!token) return false
+  const removeItem = async (itemId: string, silent = false): Promise<boolean> => {
+    if (!token) {
+      setPatchouliItems(prev => prev.filter(item => item.id !== itemId))
+      setCircularItems(prev => prev.filter(item => item.id !== itemId))
+      return true
+    }
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api'
     try {
@@ -227,19 +210,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }
       })
 
-      if (res.ok) {
-        toast({
-          title: 'Item dihapus',
-          description: 'Batch berhasil dihapus dari keranjang.'
-        })
+      if (res.ok || res.status === 404) {
+        if (!silent && res.ok) {
+          toast({
+            title: 'Item dihapus',
+            description: 'Item berhasil dihapus dari keranjang.'
+          })
+        }
         await fetchCart()
         return true
       } else {
-        toast({
-          title: 'Gagal menghapus',
-          description: 'Gagal menghapus item dari keranjang.',
-          variant: 'destructive'
-        })
+        if (!silent) {
+          toast({
+            title: 'Gagal menghapus',
+            description: 'Gagal menghapus item dari keranjang.',
+            variant: 'destructive'
+          })
+        }
         return false
       }
     } catch (error) {
@@ -248,10 +235,24 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const clearCart = async (isCircular?: boolean) => {
+    if (isCircular !== undefined) {
+      if (isCircular) {
+        setCircularItems([])
+      } else {
+        setPatchouliItems([])
+      }
+    } else {
+      setPatchouliItems([])
+      setCircularItems([])
+    }
+    await fetchCart()
+  }
+
   const totalItems = patchouliItems.length + circularItems.length
 
   return (
-    <CartContext.Provider value={{ patchouliItems, circularItems, loading, fetchCart, addToCart, updateQuantity, removeItem, totalItems }}>
+    <CartContext.Provider value={{ patchouliItems, circularItems, loading, fetchCart, addToCart, updateQuantity, removeItem, clearCart, totalItems }}>
       {children}
     </CartContext.Provider>
   )

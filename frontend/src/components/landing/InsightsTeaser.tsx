@@ -47,27 +47,27 @@ export function InsightsTeaser() {
   ];
 
   return (
-    <section className="min-h-[calc(100vh-80px)] flex flex-col justify-center py-20 bg-zinc-50 relative overflow-hidden border-t border-zinc-150/60">
-      <div className="container mx-auto px-6 md:px-8 max-w-7xl relative z-10">
+    <section className="py-14 sm:py-20 md:py-24 bg-zinc-50/80 relative overflow-hidden border-t border-zinc-100">
+      <div className="container mx-auto px-4 sm:px-6 md:px-8 max-w-7xl relative z-10">
         
         {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12">
-          <div className="space-y-3">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold uppercase tracking-wider">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 sm:mb-12 gap-4">
+          <div className="space-y-2 sm:space-y-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold uppercase tracking-wider">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
               </span>
               <span>{isId ? 'VALAM INSIGHTS' : 'VALAM INSIGHTS'}</span>
             </div>
-            <h2 className="text-3xl md:text-5xl font-bold font-serif text-zinc-900 tracking-tight leading-tight">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold font-serif text-zinc-900 tracking-tight leading-tight">
               {isId ? 'Tetap Terdepan di Industri Nilam' : 'Stay Ahead in the Patchouli Industry'}
             </h2>
           </div>
-          <Link href={`/${locale}/insights`} className="hidden md:inline-block">
-            <Button variant="outline" className="border-zinc-300 text-zinc-700 hover:bg-zinc-50 font-semibold gap-2 rounded-xl">
+          <Link href={`/${locale}/insights`} className="inline-block self-start md:self-auto">
+            <Button variant="outline" className="border-zinc-300 text-zinc-700 hover:bg-zinc-100 font-medium gap-2 rounded-xl text-xs sm:text-sm">
               <span>{isId ? 'Baca Semua Insights' : 'Read All Insights'}</span>
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </Button>
           </Link>
         </div>

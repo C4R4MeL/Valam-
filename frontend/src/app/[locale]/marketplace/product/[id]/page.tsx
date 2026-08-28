@@ -5,8 +5,8 @@ import Image from 'next/image'
 import { Link } from '@/i18n/routing'
 import { useParams } from 'next/navigation'
 import { ArrowLeft, CheckCircle2, Factory, MapPin, FileText, ShoppingCart, Info, MessageSquare, FlaskConical, Tractor, Microscope, Warehouse, ShieldCheck, Star, Download, Beaker, Globe, Leaf } from 'lucide-react'
+import { mockProducts, mockCircularProducts, formatRupiah } from '@/lib/mock-data'
 import { Button } from '@/components/ui/button'
-import { mockProducts, formatRupiah } from '@/lib/mock-data'
 import { RadarChart } from '@/components/marketplace/RadarChart'
 import { ParameterGauge } from '@/components/marketplace/ParameterGauge'
 import { Navbar } from '@/components/layout/Navbar'
@@ -296,14 +296,40 @@ export default function ProductDetailPage() {
         throw new Error('Offline fallback')
       } catch (err) {
         console.warn("Backend offline, loading product from mock data or local storage:", err)
-        let found = mockProducts.find(p => p.id === productId)
+        let found: any = mockProducts.find(p => p.id === productId || p.batch_code === productId)
+        if (!found) {
+          const cp = mockCircularProducts.find(c => c.id === productId || (c as any).nama === productId)
+          if (cp) {
+            found = {
+              id: cp.id,
+              batch_code: cp.nama,
+              supplier_name: cp.mitra_pengolah_nama,
+              status: cp.status,
+              origin_district: cp.origin_district,
+              pa_percentage: 0,
+              moisture: 0,
+              available_volume_kg: cp.stok_tersedia,
+              price_per_kg: cp.harga_per_unit,
+              images: cp.images,
+              is_circular: true,
+              category: cp.category,
+              benefit: cp.benefit,
+              description: cp.description,
+              unit: cp.unit,
+              supplier: {
+                company_name: cp.mitra_pengolah_nama,
+                address: `${cp.origin_district}, Aceh`
+              }
+            }
+          }
+        }
         if (!found) {
           for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i)
             if (key && key.startsWith('valam_supplier_batches_')) {
               const email = key.replace('valam_supplier_batches_', '')
               const batches = JSON.parse(localStorage.getItem(key) || '[]')
-              const b = batches.find((x: any) => x.id === productId)
+              const b = batches.find((x: any) => x.id === productId || x.batch_code === productId)
               if (b) {
                 found = {
                   ...b,
@@ -372,7 +398,7 @@ export default function ProductDetailPage() {
       }, 1200)
       return
     }
-    router.push(`/dashboard/buyer/rfq/new?product=${product?.id}&supplier=${(product as any)?.supplier_id || 'mock_supplier_id'}`)
+    router.push(`/buyer/rfq?product=${product?.id}&supplier=${(product as any)?.supplier_id || 'mock_supplier_id'}`)
   }
 
   const handleRequestSample = () => {

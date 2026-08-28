@@ -53,6 +53,12 @@ export class OrdersController {
     return this.ordersService.payOrder(req.user.userId, orderId, body.payment_method);
   }
 
+  @Put(':id/complete')
+  @Roles('BUYER')
+  async completeOrder(@Request() req: any, @Param('id') orderId: string) {
+    return this.ordersService.completeOrder(req.user.userId, orderId);
+  }
+
   @Put(':id/reset')
   @Roles('BUYER', 'SUPPLIER')
   async resetOrder(@Request() req: any, @Param('id') orderId: string) {

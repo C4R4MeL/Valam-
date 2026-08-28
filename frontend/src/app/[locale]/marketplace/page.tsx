@@ -4,7 +4,6 @@ import { useState, useEffect, Suspense } from 'react'
 import { SlidersHorizontal, Search, Layers, X, ShieldCheck, Beaker, Leaf } from 'lucide-react'
 import { FilterSidebar } from '@/components/marketplace/FilterSidebar'
 import { ProductCard } from '@/components/marketplace/ProductCard'
-import { mockProducts, mockCircularProducts } from '@/lib/mock-data'
 import { Button } from '@/components/ui/button'
 import { Navbar } from '@/components/layout/Navbar'
 import { Footer } from '@/components/layout/Footer'
@@ -127,68 +126,72 @@ function MarketplaceContent({ isFilterOpen, setIsFilterOpen }: { isFilterOpen: b
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api'
       if (activeTab === 'oil') {
         try {
-          const res = await fetch(`${apiUrl}/products`, { cache: 'no-store' })
+          const res = await fetch(`${apiUrl}/products?status=VERIFIED`, { cache: 'no-store' })
           if (res.ok) {
             const result = await res.json()
             const dbProducts = result.data || []
             
-            const list = dbProducts.map((p: any) => ({
-              ...p,
-              supplier: {
-                company_name: p.supplier_name || 'Koperasi Nilam Atsiri'
-              }
-            }))
-            
-            mockProducts.forEach(mp => {
-              if (!list.some((lp: any) => lp.id === mp.id || lp.batch_code === mp.batch_code)) {
-                list.push(mp)
-              }
-            })
+            // Only verified products from database
+            const list = dbProducts
+              .filter((p: any) => p.status === 'VERIFIED')
+              .map((p: any) => ({
+                ...p,
+                supplier: {
+                  company_name: p.supplier_name || p.supplier?.profile?.company_name || p.supplier?.supplier_profile?.nama_koperasi || 'Koperasi Nilam Atsiri'
+                }
+              }))
             
             setProducts(list)
             return
           }
-          throw new Error('Offline fallback')
+          setProducts([])
         } catch (err) {
-          const list: any[] = [...mockProducts]
-          setProducts(list)
+          console.error("Error fetching oil products:", err)
+          setProducts([])
         }
       } else {
         try {
-          const res = await fetch(`${apiUrl}/circular-products`)
+          const res = await fetch(`${apiUrl}/circular-products`, { cache: 'no-store' })
           if (res.ok) {
             const result = await res.json()
-            const mapped = result.map((cp: any) => ({
-              id: cp.id,
-              batch_code: cp.name,
-              supplier_name: cp.supplier?.profile?.company_name || 'N/A',
-              status: cp.status,
-              origin_district: cp.supplier?.supplier_profile?.kabupaten || 'Aceh',
-              pa_percentage: 0,
-              moisture: 0,
-              available_volume_kg: cp.stock,
-              price_per_kg: cp.price,
-              images: cp.image ? [cp.image] : [],
-              is_circular: true,
-              category: cp.category,
-              benefit: cp.benefit,
-              description: cp.description,
-              unit: cp.unit,
-              created_at: cp.created_at
-            }))
-            
-            mockCircularProducts.forEach(mcp => {
-              if (!mapped.some((item: any) => item.id === mcp.id || item.batch_code === mcp.batch_code)) {
-                mapped.push(mcp)
-              }
-            })
+            // Only approved circular products from database
+            const mapped = (Array.isArray(result) ? result : [])
+              .filter((cp: any) => cp.status === 'APPROVED')
+              .map((cp: any) => {
+                const partnerName = cp.supplier?.supplier_profile?.nama_koperasi || cp.supplier?.profile?.company_name || 'Mitra Sirkular Valam'
+                return {
+                  id: cp.id,
+                  batch_code: cp.name,
+                  nama: cp.name,
+                  supplier_name: partnerName,
+                  mitra_pengolah_nama: partnerName,
+                  status: cp.status,
+                  origin_district: cp.supplier?.supplier_profile?.kabupaten || 'Aceh Barat',
+                  pa_percentage: 0,
+                  moisture: 0,
+                  available_volume_kg: cp.stock,
+                  stok_tersedia: cp.stock,
+                  price_per_kg: cp.price,
+                  harga_per_unit: cp.price,
+                  min_order: cp.supplier?.supplier_profile?.minimum_order || 5,
+                  sustainability_score: 5,
+                  images: cp.image ? [cp.image] : [],
+                  is_circular: true,
+                  category: cp.category,
+                  benefit: cp.benefit,
+                  description: cp.description,
+                  unit: cp.unit || 'Kg',
+                  created_at: cp.created_at
+                }
+              })
 
             setProducts(mapped)
           } else {
-            throw new Error('Offline fallback')
+            setProducts([])
           }
         } catch (err) {
-          setProducts([...mockCircularProducts])
+          console.error("Error fetching circular products:", err)
+          setProducts([])
         }
       }
     }
@@ -363,7 +366,7 @@ function MarketplaceContent({ isFilterOpen, setIsFilterOpen }: { isFilterOpen: b
   }
 
   return (
-    <div className="flex-1 flex w-full max-w-7xl mx-auto md:px-6 pt-0 pb-20 md:pt-0 md:pb-6 mt-14">
+    <div className="flex-1 flex w-full max-w-7xl mx-auto md:px-6 pt-2 pb-20 md:pt-4 md:pb-6 mt-16 md:mt-14">
       <FilterSidebar 
         isOpen={isFilterOpen} 
         onClose={() => setIsFilterOpen(false)} 

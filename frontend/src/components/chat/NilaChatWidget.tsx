@@ -115,14 +115,26 @@ export function NilaChatWidget() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Listen for open event from custom triggers
+  // Listen for open/toggle events from custom triggers
   useEffect(() => {
     const handleOpenChat = () => {
       setIsOpen(true);
     };
+    const handleToggleChat = () => {
+      setIsOpen(prev => !prev);
+    };
     window.addEventListener('valam_open_chat', handleOpenChat);
-    return () => window.removeEventListener('valam_open_chat', handleOpenChat);
+    window.addEventListener('valam_toggle_chat', handleToggleChat);
+    return () => {
+      window.removeEventListener('valam_open_chat', handleOpenChat);
+      window.removeEventListener('valam_toggle_chat', handleToggleChat);
+    };
   }, []);
+
+  // Dispatch state updates to external observers (e.g. Navbar)
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('valam_chat_state', { detail: { isOpen } }));
+  }, [isOpen]);
 
   // Auto-show greeting bubble after 3 seconds (once per session)
   useEffect(() => {
@@ -265,58 +277,7 @@ export function NilaChatWidget() {
 
   return (
     <>
-      {/* ── Floating Action Button + Greeting Bubble ────────────── */}
-      <AnimatePresence>
-        {!isOpen && (
-          <div className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-[9998] flex items-end gap-3">
-            {/* Greeting Bubble - hidden on mobile */}
-            <AnimatePresence>
-              {showGreeting && (
-                <motion.div
-                  initial={{ opacity: 0, x: 20, scale: 0.9 }}
-                  animate={{ opacity: 1, x: 0, scale: 1 }}
-                  exit={{ opacity: 0, x: 20, scale: 0.9 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                  onClick={() => { setShowGreeting(false); setIsOpen(true) }}
-                  className="hidden md:block cursor-pointer bg-white rounded-2xl rounded-br-md shadow-lg shadow-emerald-900/10 border border-zinc-100 px-4 py-3 max-w-[220px] hover:shadow-xl transition-shadow"
-                >
-                  <div className="flex items-start gap-2">
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <Leaf className="w-3.5 h-3.5 text-emerald-950" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-emerald-900">Nila</p>
-                      <p className="text-sm text-zinc-700 leading-snug mt-0.5">{t.greeting}</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setShowGreeting(false) }}
-                    className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full bg-zinc-200 hover:bg-zinc-300 flex items-center justify-center text-zinc-500 text-xs transition-colors"
-                    aria-label="Dismiss"
-                  >
-                    ×
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
 
-            {/* FAB Button */}
-            <motion.button
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-              onClick={() => setIsOpen(true)}
-              className="w-14 h-14 rounded-full bg-gradient-to-br from-emerald-700 to-emerald-900 text-white shadow-lg shadow-emerald-900/30 hover:shadow-xl hover:shadow-emerald-900/40 hover:scale-105 transition-all flex items-center justify-center group relative"
-              aria-label="Open Nila chat"
-            >
-              <MessageCircle className="w-6 h-6 group-hover:scale-110 transition-transform" />
-              {/* Pulse indicator */}
-              <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-gold-400 rounded-full border-2 border-white animate-pulse" />
-            </motion.button>
-          </div>
-        )}
-      </AnimatePresence>
 
       {/* ── Chat Panel ───────────────────────────────────────────── */}
       <AnimatePresence>

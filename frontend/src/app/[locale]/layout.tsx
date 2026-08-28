@@ -9,7 +9,6 @@ import {routing} from '@/i18n/routing';
 import Script from 'next/script';
 import { AuthProvider } from '@/components/providers/AuthProvider';
 import { CartProvider } from '@/components/providers/CartProvider';
-import { NilaChatWidget } from '@/components/chat/NilaChatWidget';
 import { CircularOrderModal } from '@/components/marketplace/CircularOrderModal';
 
 const inter = Inter({
@@ -59,7 +58,6 @@ export default async function RootLayout({
           <AuthProvider>
             <CartProvider>
               {children}
-              <NilaChatWidget />
               <CircularOrderModal />
               <Toaster />
             </CartProvider>

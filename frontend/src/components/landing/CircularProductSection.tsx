@@ -63,14 +63,14 @@ export function CircularProductSection() {
   };
 
   return (
-    <section className="min-h-[calc(100vh-80px)] flex flex-col justify-center py-20 bg-white border-t border-b border-zinc-100 relative overflow-hidden">
+    <section className="py-14 sm:py-20 md:py-24 bg-white border-t border-b border-zinc-100 relative overflow-hidden">
       {/* Decorative leaf blur background element */}
       <div className="absolute -top-40 -left-40 w-96 h-96 bg-emerald-100/30 rounded-full blur-3xl pointer-events-none" />
       
-      <div className="container mx-auto px-6 md:px-8 max-w-7xl relative z-10">
+      <div className="container mx-auto px-4 sm:px-6 md:px-8 max-w-7xl relative z-10">
         
         {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
+        <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16 space-y-3 sm:space-y-4">
           <motion.div 
             initial={{ opacity: 0, y: 15 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -85,7 +85,7 @@ export function CircularProductSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="text-3xl md:text-5xl font-bold font-sans text-zinc-900 leading-tight"
+            className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold font-sans text-zinc-900 leading-tight"
           >
             {content.title}
           </motion.h2>

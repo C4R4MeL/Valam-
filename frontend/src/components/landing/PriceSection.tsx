@@ -57,12 +57,12 @@ export function PriceSection() {
   ];
 
   return (
-    <section className="min-h-[calc(100vh-80px)] flex flex-col justify-center py-20 bg-white border-t border-zinc-100 relative overflow-hidden">
-      <div className="container mx-auto px-6 md:px-8 max-w-7xl">
-        <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
-          <h2 className="text-3xl md:text-5xl font-bold font-sans text-zinc-900 leading-tight inline-flex items-center justify-center gap-3 flex-wrap w-full">
+    <section className="py-14 sm:py-20 md:py-24 bg-white border-t border-zinc-100 relative overflow-hidden">
+      <div className="container mx-auto px-4 sm:px-6 md:px-8 max-w-7xl">
+        <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14 space-y-3 sm:space-y-4">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold font-sans text-zinc-900 leading-tight inline-flex items-center justify-center gap-2 sm:gap-3 flex-wrap w-full">
             <span>{content.title}</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-700 text-xs font-semibold uppercase tracking-wider">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-semibold uppercase tracking-wider">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -70,20 +70,20 @@ export function PriceSection() {
               Live
             </span>
           </h2>
-          <p className="text-sm md:text-base text-zinc-500 font-light">
+          <p className="text-xs sm:text-sm md:text-base text-zinc-500 font-normal">
             {content.subtitle}
           </p>
         </div>
 
-        <div className="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl shadow-zinc-200/50 border border-zinc-100 overflow-hidden">
+        <div className="max-w-4xl mx-auto bg-white rounded-2xl sm:rounded-3xl shadow-xl shadow-zinc-200/40 border border-zinc-100 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse min-w-[540px]">
               <thead>
                 <tr className="bg-emerald-950 text-white text-xs md:text-sm font-semibold uppercase tracking-wider">
-                  <th className="px-6 py-4 md:py-5">{content.thGrade}</th>
-                  <th className="px-6 py-4 md:py-5">{content.thPa}</th>
-                  <th className="px-6 py-4 md:py-5">{content.thPrice}</th>
-                  <th className="px-6 py-4 md:py-5">{content.thMarket}</th>
+                  <th className="px-4 sm:px-6 py-3.5 md:py-5">{content.thGrade}</th>
+                  <th className="px-4 sm:px-6 py-3.5 md:py-5">{content.thPa}</th>
+                  <th className="px-4 sm:px-6 py-3.5 md:py-5">{content.thPrice}</th>
+                  <th className="px-4 sm:px-6 py-3.5 md:py-5">{content.thMarket}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100 text-sm md:text-base">

@@ -17,8 +17,20 @@ export class CartController {
 
   @Post()
   @Roles('BUYER')
-  async addToCart(@Request() req: any, @Body() body: { productId: string; quantity_kg: number }) {
-    return this.cartService.addToCart(req.user.userId, body.productId, body.quantity_kg);
+  async addToCart(
+    @Request() req: any, 
+    @Body() body: { 
+      productId?: string; 
+      product_id?: string; 
+      circular_product_id?: string; 
+      circularProductId?: string;
+      quantity_kg?: number; 
+      quantity?: number;
+    }
+  ) {
+    const targetId = body.productId || body.circular_product_id || body.circularProductId || body.product_id;
+    const qty = Number(body.quantity_kg ?? body.quantity ?? 1);
+    return this.cartService.addToCart(req.user.userId, targetId as string, qty);
   }
 
   @Put(':id')

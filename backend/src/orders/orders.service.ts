@@ -356,6 +356,40 @@ export class OrdersService {
     return updated;
   }
 
+  async completeOrder(userId: string, orderId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId }
+    });
+    if (!order) throw new NotFoundException('Order not found');
+    if (order.buyer_id !== userId) throw new ForbiddenException('Not your order');
+
+    const updated = await this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        status: 'COMPLETED'
+      }
+    });
+
+    // Add tracking log
+    const shipment = await this.prisma.shipment.findFirst({
+      where: { order_id: orderId }
+    });
+    if (shipment) {
+      await this.prisma.shipmentTrackingLog.create({
+        data: {
+          shipment_id: shipment.id,
+          status: 'COMPLETED',
+          description: 'Pesanan telah diterima oleh pembeli. Transaksi berhasil diselesaikan.'
+        }
+      });
+    }
+
+    // Release escrow to supplier wallet
+    await this.addFundsToWallet(order.supplier_id, order.total_amount, order.id);
+
+    return updated;
+  }
+
   async resetOrder(userId: string, orderId: string) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId }

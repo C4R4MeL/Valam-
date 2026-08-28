@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { CheckCircle2, FlaskConical, MapPin, Star, Beaker, FileText, ArrowRight, Leaf, Download, Calendar, ShieldCheck, Archive, ChevronDown, Droplets } from 'lucide-react'
+import { CheckCircle2, FlaskConical, MapPin, Star, Beaker, FileText, ArrowRight, Leaf, Calendar, ShieldCheck, Archive, ChevronDown, Droplets } from 'lucide-react'
 import { useLocale } from 'next-intl'
 import React, { useMemo, useState } from 'react'
 import { formatRupiah, getPatchouliTier, getTierColorClass, isGcmsVerified } from '@/lib/utils'
@@ -34,6 +34,7 @@ interface ProductCardProps {
     sustainability_score?: number
     harga_per_unit?: number
     min_order?: number
+    moq_kg?: number
     nama?: string
   }
 }
@@ -41,15 +42,21 @@ interface ProductCardProps {
 const resolveProductImage = (imagePath?: string) => {
   if (!imagePath) return '/images/premium_oil_dark.png';
   if (imagePath.includes('compost')) {
-    return "https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=600&h=400&fit=crop";
+    return "https://images.unsplash.com/photo-1615811361523-6bd03d7748e7?w=600&h=400&fit=crop";
   }
   if (imagePath.includes('biochar')) {
-    return "https://images.unsplash.com/photo-1605647540924-852290f6b0d5?w=600&h=400&fit=crop";
+    return "https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&h=400&fit=crop";
   }
   if (imagePath.includes('hydrosol')) {
-    return "https://images.unsplash.com/photo-1617897903246-719242758050?w=600&h=400&fit=crop";
+    return "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=600&h=400&fit=crop";
   }
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    if (imagePath.includes('photo-1605647540924-852290f6b0d5')) {
+      return "https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&h=400&fit=crop";
+    }
+    if (imagePath.includes('photo-1599599810769-bcde5a160d32')) {
+      return "https://images.unsplash.com/photo-1615811361523-6bd03d7748e7?w=600&h=400&fit=crop";
+    }
     return imagePath;
   }
   if (imagePath.startsWith('/uploads/')) {
@@ -68,6 +75,18 @@ const UNSPLASH_IMAGES = [
 const getProductImage = (product: any) => {
   if (product.images && product.images.length > 0 && !product.images[0].includes("premium_oil_dark")) {
     return resolveProductImage(product.images[0]);
+  }
+  if (product.is_circular) {
+    const cat = `${product.category || ''} ${product.jenis || ''} ${product.nama || ''} ${product.batch_code || ''}`.toLowerCase();
+    if (cat.includes('compost') || cat.includes('kompos')) {
+      return "https://images.unsplash.com/photo-1615811361523-6bd03d7748e7?w=600&h=400&fit=crop";
+    }
+    if (cat.includes('biochar') || cat.includes('arang')) {
+      return "https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&h=400&fit=crop";
+    }
+    if (cat.includes('hydrosol') || cat.includes('hidrosol')) {
+      return "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=600&h=400&fit=crop";
+    }
   }
   let hash = 0;
   const str = product.batch_code || "";
@@ -187,15 +206,15 @@ export function ProductCard({ product }: ProductCardProps) {
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
           
           <div className="absolute bottom-3 left-3 right-3 flex justify-between items-end text-white">
-            <div className="font-mono text-sm tracking-wider font-bold truncate max-w-[150px]" title={product.batch_code}>
-              {product.batch_code}
+            <div className={`${product.is_circular ? 'font-sans text-xs' : 'font-mono text-sm'} tracking-wider font-bold truncate max-w-[240px]`} title={product.is_circular ? (product.nama || product.batch_code) : product.batch_code}>
+              {product.is_circular ? (product.nama || product.batch_code) : product.batch_code}
             </div>
           </div>
           
           {/* Action Overlay */}
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20 flex items-center justify-center backdrop-blur-[2px]">
             <Link 
-              href={product.is_circular ? `/${locale}/katalog/circular/${product.id}` : `/${locale}/katalog/${product.id}`}
+              href={`/${locale}/katalog/${product.id}`}
               className="bg-white/95 text-[#1A4D2E] hover:bg-[#1A4D2E] hover:text-white px-5 py-2.5 rounded-full font-bold text-sm shadow-xl transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 border border-white/50"
             >
               {isId ? "Lihat Detail" : "View Detail"}
@@ -217,19 +236,19 @@ export function ProductCard({ product }: ProductCardProps) {
         <div className="p-4 flex flex-col flex-1 relative z-30 bg-white">
           <div className="flex-1">
             <h3 className="font-serif font-bold text-zinc-900 text-[15px] mb-1 line-clamp-2 leading-snug group-hover:text-[#1A4D2E] transition-colors">
-              {product.is_circular ? product.nama : product.supplier_name}
+              {product.is_circular ? (product.nama || product.batch_code) : product.supplier_name}
             </h3>
             
             <p className="text-[11px] text-zinc-500 font-medium mb-3 flex items-center gap-1.5 line-clamp-1">
               {product.is_circular ? (
                 <>
-                  <Leaf className="w-3.5 h-3.5 text-[#1A4D2E]" />
-                  Mitra: {product.mitra_pengolah_nama}
+                  <Leaf className="w-3.5 h-3.5 text-[#1A4D2E] shrink-0" />
+                  <span>Mitra: {product.mitra_pengolah_nama || product.supplier_name || 'Mitra Sirkular'}</span>
                 </>
               ) : (
                 <>
-                  <MapPin className="w-3.5 h-3.5 text-[#1A4D2E]" />
-                  {product.origin_district} • {product.origin_village || 'Lokal'}
+                  <MapPin className="w-3.5 h-3.5 text-[#1A4D2E] shrink-0" />
+                  <span>{product.origin_district} • {product.origin_village || 'Lokal'}</span>
                 </>
               )}
             </p>
@@ -259,22 +278,22 @@ export function ProductCard({ product }: ProductCardProps) {
                 <>
                   <div className="bg-zinc-50/80 rounded-lg p-2 flex items-center gap-2 border border-zinc-100 group-hover:border-[#1A4D2E]/20 transition-colors">
                     <div className="bg-white p-1 rounded shadow-sm border border-zinc-100 shrink-0">
-                      <Droplets className="w-3.5 h-3.5 text-zinc-500" />
+                      <Droplets className="w-3.5 h-3.5 text-emerald-700" />
                     </div>
                     <div>
                       <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">{isId ? "Stok" : "Stock"}</p>
-                      <p className="text-xs font-bold text-zinc-900">{product.stok_tersedia} {product.unit || 'Kg'}</p>
+                      <p className="text-xs font-bold text-zinc-900">{(product.stok_tersedia ?? product.available_volume_kg ?? 0).toLocaleString()} {product.unit || 'Unit'}</p>
                     </div>
                   </div>
                   <div className="bg-zinc-50/80 rounded-lg p-2 flex items-center gap-2 border border-zinc-100 group-hover:border-[#1A4D2E]/20 transition-colors">
                     <div className="bg-white p-1 rounded shadow-sm border border-zinc-100 shrink-0">
-                      <ShieldCheck className="w-3.5 h-3.5 text-zinc-500" />
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
                     </div>
                     <div>
-                      <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">Score</p>
+                      <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">Eco Score</p>
                       <div className="flex">
                         {[...Array(5)].map((_, i) => (
-                          <Star key={i} className={`w-3 h-3 ${i < (product.sustainability_score || 0) ? 'text-valam-gold-400 fill-valam-gold-400' : 'text-zinc-200'}`} />
+                          <Star key={i} className={`w-3 h-3 ${i < (product.sustainability_score || 5) ? 'text-valam-gold-400 fill-valam-gold-400' : 'text-zinc-200'}`} />
                         ))}
                       </div>
                     </div>
@@ -308,17 +327,23 @@ export function ProductCard({ product }: ProductCardProps) {
                 </p>
                 <div className="flex items-baseline gap-1">
                   <span className="text-lg font-black text-[#1A4D2E] leading-none">
-                    {formatRupiah(product.is_circular ? (product.harga_per_unit || 0) : product.price_per_kg)}
+                    {formatRupiah(product.is_circular ? (product.harga_per_unit ?? product.price_per_kg ?? 0) : product.price_per_kg)}
                   </span>
                   <span className="text-[10px] font-semibold text-zinc-400">
-                    (MOQ: {product.is_circular ? product.min_order : '1'} {product.is_circular ? product.unit || 'Unit' : 'Kg'})
+                    (MOQ: {product.is_circular ? (product.min_order ?? product.moq_kg ?? 1) : '1'} {product.is_circular ? (product.unit || 'Unit') : 'Kg'})
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              {product.is_circular ? (
+            {product.is_circular ? (
+              <div className="grid grid-cols-2 gap-2 w-full">
+                <Link 
+                  href={`/${locale}/katalog/${product.id}`}
+                  className="flex items-center justify-center gap-1.5 bg-[#1A4D2E] text-white text-xs font-bold py-2.5 rounded-xl hover:bg-[#123320] transition-colors shadow-md shadow-[#1A4D2E]/10 text-center"
+                >
+                  {isId ? "View Detail" : "View Detail"}
+                </Link>
                 <button 
                   onClick={(e) => {
                     e.preventDefault();
@@ -327,43 +352,33 @@ export function ProductCard({ product }: ProductCardProps) {
                       (window as any).openCircularOrderModal(product);
                     }
                   }}
-                  className="flex items-center justify-center gap-1.5 bg-[#1A4D2E] text-white text-xs font-bold py-2 rounded-xl hover:bg-[#123320] transition-colors shadow-md shadow-[#1A4D2E]/10"
+                  className="flex items-center justify-center gap-1 bg-white border border-[#B69A1D] text-[#B69A1D] hover:bg-valam-gold-50 text-xs font-bold py-2.5 rounded-xl transition-colors shadow-sm cursor-pointer text-center"
                 >
                   {isId ? "Pesan Sekarang" : "Order Now"}
                 </button>
-              ) : (
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
                 <Link 
                   href={`/${locale}/katalog/${product.id}`}
-                  className="flex items-center justify-center gap-1.5 bg-[#1A4D2E] text-white text-xs font-bold py-2 rounded-xl hover:bg-[#123320] transition-colors shadow-md shadow-[#1A4D2E]/10"
+                  className="flex items-center justify-center gap-1.5 bg-[#1A4D2E] text-white text-xs font-bold py-2.5 rounded-xl hover:bg-[#123320] transition-colors shadow-md shadow-[#1A4D2E]/10 text-center"
                 >
-                  {isId ? "Lihat Detail" : "View Detail"}
-                </Link>
-              )}
-              
-              <div className="grid grid-cols-2 gap-1.5">
-                <Link 
-                  href={product.is_circular ? `/${locale}/katalog/circular/${product.id}` : `/${locale}/katalog/${product.id}`}
-                  className="flex items-center justify-center gap-1 bg-white border border-[#1A4D2E] text-[#1A4D2E] text-[10px] font-bold py-2 rounded-xl hover:bg-[#1A4D2E]/5 transition-colors"
-                >
-                  {!product.is_circular && <Download className="w-3.5 h-3.5" />}
-                  {product.is_circular ? (isId ? "Detail" : "Detail") : (isId ? "Unduh CoA" : "CoA")}
+                  {isId ? "View Detail" : "View Detail"}
                 </Link>
                 
-                {!product.is_circular && (
-                  <button 
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      window.location.href = `/${locale}/dashboard/buyer/rfq/new?product_id=${product.id}`;
-                    }}
-                    className="flex items-center justify-center gap-1 bg-white border border-[#B69A1D] text-[#B69A1D] text-[10px] font-bold py-2 rounded-xl hover:bg-valam-gold-50 transition-colors"
-                  >
-                    <FileText className="w-3.5 h-3.5" />
-                    {isId ? "Create RFQ" : "Create RFQ"}
-                  </button>
-                )}
+                <button 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.location.href = `/${locale}/buyer/rfq?product_id=${product.id}`;
+                  }}
+                  className="flex items-center justify-center gap-1 bg-white border border-[#B69A1D] text-[#B69A1D] hover:bg-valam-gold-50 text-xs font-bold py-2.5 rounded-xl transition-colors shadow-sm cursor-pointer"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>{isId ? "Create RFQ" : "Create RFQ"}</span>
+                </button>
               </div>
-            </div>
+            )}
 
           </div>
 

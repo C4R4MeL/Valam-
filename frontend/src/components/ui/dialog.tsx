@@ -98,9 +98,17 @@ export function DialogDescription({
 
 export function DialogTrigger({
   children,
+  asChild,
   ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & { asChild?: boolean }) {
   const { onOpenChange } = React.useContext(DialogContext)
+
+  if (asChild && React.isValidElement(children)) {
+    return React.cloneElement(children as React.ReactElement<any>, {
+      onClick: () => onOpenChange?.(true),
+    })
+  }
+
   return (
     <button onClick={() => onOpenChange?.(true)} {...props}>
       {children}

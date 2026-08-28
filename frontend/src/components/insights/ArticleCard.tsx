@@ -183,11 +183,11 @@ export function ArticleCard({
 
           {/* Reading progress visualizer bar */}
           <div className="pt-4 flex flex-col gap-3">
-            <div className="flex items-center justify-between text-[10px] font-mono text-warm-700 bg-zinc-50/50 p-2 rounded-lg border border-zinc-100">
+            <div className="flex items-center justify-between text-[10px] font-mono text-zinc-600 bg-zinc-50 p-2 rounded-lg border border-zinc-100">
               <span className="text-zinc-600 font-medium">
                 📖 <span className="text-emerald-600 font-bold ml-1">{blocksStr}</span>
               </span>
-              <span className="font-sans font-semibold text-warm-700 uppercase tracking-wider">
+              <span className="font-sans font-semibold text-zinc-600 uppercase tracking-wider">
                 {readTime} Min {isEn ? 'Read' : 'Baca'}
               </span>
             </div>
@@ -213,7 +213,7 @@ export function ArticleCard({
                 <p className="text-[11px] font-semibold text-zinc-800 truncate leading-none">
                   {article.insights_authors?.name || 'Tim Valam'}
                 </p>
-                <p className="text-[9px] text-warm-700 mt-1 font-sans leading-none">
+                <p className="text-[9px] text-zinc-400 mt-1 font-sans leading-none">
                   {new Date(article.published_at || new Date()).toLocaleDateString(
                     locale === 'id' ? 'id-ID' : 'en-US',
                     { day: 'numeric', month: 'short', year: 'numeric' }

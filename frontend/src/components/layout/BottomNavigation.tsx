@@ -40,8 +40,8 @@ export function BottomNavigation() {
     {
       label: 'Akun',
       icon: <User className="w-5 h-5" />,
-      href: role ? (role === 'buyer' ? '/dashboard/buyer/orders' : `/dashboard/${role}`) : '/login',
-      isActive: pathname.startsWith('/dashboard') || pathname.startsWith('/profile')
+      href: role ? (role === 'buyer' ? '/buyer/orders' : `/dashboard/${role}`) : '/login',
+      isActive: pathname.startsWith('/dashboard') || pathname.startsWith('/profile') || pathname.startsWith('/buyer')
     }
   ]
 

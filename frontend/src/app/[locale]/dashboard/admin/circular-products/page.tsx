@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { formatRupiah } from '@/lib/mock-data'
-import { CheckCircle, XCircle, AlertCircle, Search, FileText, ChevronRight, Edit2, ShieldAlert } from 'lucide-react'
+import { CheckCircle, XCircle, AlertCircle, Search, FileText, ChevronRight, Edit2, ShieldAlert, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLocale } from 'next-intl'
 import { useToast } from '@/hooks/use-toast'

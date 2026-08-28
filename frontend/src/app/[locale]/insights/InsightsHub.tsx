@@ -165,8 +165,8 @@ export function InsightsHub() {
     view_count: 0,
     like_count: 0,
     published_at: item.published_at,
-    created_at: item.published_at,
-    updated_at: item.published_at,
+    created_at: item.published_at || new Date().toISOString(),
+    updated_at: item.published_at || new Date().toISOString(),
     insights_authors: {
       id: '',
       user_id: null,

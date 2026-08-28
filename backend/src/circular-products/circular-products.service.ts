@@ -36,8 +36,18 @@ export class CircularProductsService {
   }
 
   async findOne(id: string) {
-    const product = await this.prisma.circularProduct.findUnique({
-      where: { id },
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    const product = await this.prisma.circularProduct.findFirst({
+      where: isUuid
+        ? {
+            OR: [
+              { id },
+              { name: id }
+            ]
+          }
+        : {
+            name: id
+          },
       include: {
         supplier: {
           include: {

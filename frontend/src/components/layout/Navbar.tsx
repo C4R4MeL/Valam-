@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { User, LogOut, Settings, ShoppingBag, Globe, ShoppingCart, Search, X, Menu, ChevronRight, Sparkles, BarChart3, Home } from "lucide-react"
+import { User, LogOut, Settings, ShoppingBag, Globe, ShoppingCart, Search, X, Menu, ChevronRight, Sparkles, BarChart3, Home, MessageCircle } from "lucide-react"
 import { Link, usePathname, useRouter } from "@/i18n/routing"
 import { useTranslations, useLocale } from "next-intl"
 import { useAuthContext } from '@/components/providers/AuthProvider'
@@ -33,6 +33,8 @@ interface NavItem {
   icon: React.ReactNode
   exact?: boolean
   condition?: boolean
+  onClick?: (e: React.MouseEvent) => void
+  isActive?: boolean
 }
 
 export function Navbar() {
@@ -44,10 +46,15 @@ export function Navbar() {
   const [isClient, setIsClient] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [scrolled, setScrolled] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
+  const [isNavigating, setIsNavigating] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [isChatOpen, setIsChatOpen] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
   const navRef = useRef<HTMLElement>(null)
+
+  // Derived state: if we are navigating away, force navbar back to normal mode
+  const scrolled = isScrolled && !isNavigating
 
   const { role, email, logout, isAuthenticated } = useAuthContext()
   const { totalItems } = useCart()
@@ -56,14 +63,43 @@ export function Navbar() {
     setIsClient(true)
   }, [])
 
+  // Chat state sync listener
+  useEffect(() => {
+    const handleChatStateChange = (e: any) => {
+      setIsChatOpen(e.detail?.isOpen ?? false)
+    }
+    window.addEventListener('valam_chat_state', handleChatStateChange)
+    return () => window.removeEventListener('valam_chat_state', handleChatStateChange)
+  }, [])
+
   // Scroll listener for navbar glass effect
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 10)
+      setIsScrolled(window.scrollY > 10)
     }
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
+
+  // Navigation interceptor to allow closing animation before route changes
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (pathname === href) {
+      setMobileMenuOpen(false)
+      return
+    }
+
+    if (scrolled) {
+      e.preventDefault()
+      setIsNavigating(true)
+      setTimeout(() => {
+        router.push(href)
+        setIsNavigating(false)
+        setMobileMenuOpen(false)
+      }, 700) // Match the duration-700 of the visual bar transition
+    } else {
+      setMobileMenuOpen(false)
+    }
+  }
 
   // Keyboard shortcut ⌘K / Ctrl+K to open search
   useEffect(() => {
@@ -158,6 +194,12 @@ export function Navbar() {
       condition: !isAdminPage,
     }] : []),
     {
+      label: t('Chatbot') || 'Tanya Nila',
+      href: '/chat',
+      icon: <MessageCircle className="w-3.5 h-3.5" />,
+      condition: !isAdminPage,
+    },
+    {
       label: 'Insights',
       href: '/insights',
       icon: <BarChart3 className="w-3.5 h-3.5" />,
@@ -184,8 +226,8 @@ export function Navbar() {
           <div
             className={`relative mx-auto transition-all duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] overflow-hidden ${
               scrolled
-                ? 'max-w-[900px] bg-[#0f2e1b]/90 backdrop-blur-2xl rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.4)] border border-emerald-800/40'
-                : 'max-w-[2400px] bg-[#1A4D2E] rounded-none border border-transparent'
+                ? 'max-w-[1050px] bg-[#0f2e1b]/90 backdrop-blur-2xl rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.4)] border border-emerald-800/40'
+                : 'max-w-[2400px] bg-[#1A4D2E] rounded-b-3xl border border-transparent'
             }`}
           >
             {/* Subtle top accent line */}
@@ -197,7 +239,11 @@ export function Navbar() {
             }`}>
 
           {/* ── Logo ── */}
-          <Link className="flex items-center gap-2 group shrink-0" href="/">
+          <Link 
+            className="flex items-center gap-2 group shrink-0" 
+            href="/"
+            onClick={(e) => handleNavClick(e, '/')}
+          >
             <div className={`relative rounded-xl bg-gradient-to-br from-valam-gold/20 to-white/5 backdrop-blur-sm flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:from-valam-gold/30 border border-white/10 group-hover:border-valam-gold/30 group-hover:shadow-[0_0_20px_rgba(182,154,29,0.15)] ${scrolled ? 'w-7 h-7 rounded-lg' : 'w-9 h-9'}`}>
               <IconLeaf className={`text-valam-gold-300 transition-all duration-500 group-hover:rotate-[-8deg] ${scrolled ? 'w-4 h-4' : 'w-5 h-5'}`} />
               {/* Glow dot */}
@@ -218,12 +264,20 @@ export function Navbar() {
           {/* ── Navigation ── */}
           <nav className={`hidden lg:flex items-center gap-0.5 rounded-2xl border border-white/[0.06] transition-all duration-500 ${scrolled ? 'bg-white/[0.03] px-1 py-0.5 rounded-xl' : 'bg-white/[0.04] px-1.5 py-1'}`}>
             {navItems.map((item) => {
-              const active = isNavActive(item.href, item.exact)
+              const active = item.isActive !== undefined ? item.isActive : isNavActive(item.href, item.exact)
+              const clickHandler = (e: React.MouseEvent<HTMLAnchorElement>) => {
+                if (item.onClick) {
+                  item.onClick(e)
+                } else {
+                  handleNavClick(e, item.href)
+                }
+              }
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`relative flex items-center gap-1.5 font-medium rounded-xl transition-all duration-300 group overflow-hidden ${
+                  onClick={clickHandler}
+                  className={`relative flex items-center gap-1.5 font-medium rounded-xl transition-all duration-300 group overflow-hidden whitespace-nowrap ${
                     scrolled ? 'text-[12px] px-3 py-1.5' : 'text-[13px] px-4 py-2'
                   } ${
                     active
@@ -269,30 +323,6 @@ export function Navbar() {
               </button>
             )}
 
-            {/* Language Switcher */}
-            {!isLandingPage && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className={`rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] hover:border-white/[0.15] text-white/50 hover:text-white transition-all duration-300 flex items-center justify-center ${scrolled ? 'h-8 w-8' : 'h-9 w-9'}`}>
-                    <Globe className="w-4 h-4" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-36 mt-2 rounded-xl bg-[#1a3526]/95 backdrop-blur-xl border-white/10 text-white shadow-xl">
-                  <DropdownMenuItem
-                    onClick={() => switchLocale('id')}
-                    className={`cursor-pointer text-sm rounded-lg ${locale === 'id' ? 'text-valam-gold bg-valam-gold/10 font-semibold' : 'text-white/70 hover:text-white hover:bg-white/5'}`}
-                  >
-                    🇮🇩 Bahasa Indonesia
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => switchLocale('en')}
-                    className={`cursor-pointer text-sm rounded-lg ${locale === 'en' ? 'text-valam-gold bg-valam-gold/10 font-semibold' : 'text-white/70 hover:text-white hover:bg-white/5'}`}
-                  >
-                    🇬🇧 English
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
 
             {/* Cart Icon */}
             <Link
@@ -331,43 +361,84 @@ export function Navbar() {
                         </div>
                       </div>
                     </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <Link href={role === 'buyer' ? '/marketplace' : `/dashboard/${role}`} className="cursor-pointer flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-[#1A4D2E]/5">
-                        <div className="w-7 h-7 rounded-lg bg-[#1A4D2E]/10 flex items-center justify-center">
-                          <User className="h-3.5 w-3.5 text-[#1A4D2E]" />
-                        </div>
-                        <span className="text-sm">{role === 'buyer' ? (locale === 'id' ? 'Katalog Produk' : 'Product Catalog') : role === 'supplier' ? t('SupplierDashboard') : t('AdminDashboard')}</span>
-                        <ChevronRight className="ml-auto h-3.5 w-3.5 text-muted-foreground" />
-                      </Link>
-                    </DropdownMenuItem>
-                    {role === 'buyer' && (
-                      <DropdownMenuItem asChild>
-                        <Link href="/dashboard/buyer/orders" className="cursor-pointer flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-[#1A4D2E]/5">
-                          <div className="w-7 h-7 rounded-lg bg-valam-gold/10 flex items-center justify-center">
-                            <ShoppingBag className="h-3.5 w-3.5 text-valam-gold-600" />
+                    <DropdownMenuSeparator className="bg-zinc-100" />
+                    {role === 'buyer' ? (
+                      <div className="p-1 space-y-0.5">
+                        {/* BUYER LINKS */}
+                        <DropdownMenuItem asChild>
+                          <Link href="/profile" className="cursor-pointer flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[#1A4D2E]/5 outline-none transition-colors group">
+                            <div className="w-8 h-8 rounded-lg bg-[#1A4D2E]/10 flex items-center justify-center text-[#1A4D2E] group-hover:bg-[#1A4D2E]/20 transition-colors">
+                              <User className="h-4 w-4" />
+                            </div>
+                            <span className="text-sm font-medium text-zinc-700 group-hover:text-[#1A4D2E] transition-colors">
+                              {locale === 'id' ? 'Profil' : 'Profile'}
+                            </span>
+                            <ChevronRight className="ml-auto h-3.5 w-3.5 text-zinc-400 group-hover:text-[#1A4D2E] transition-colors" />
+                          </Link>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem asChild>
+                          <Link href="/buyer/orders" className="cursor-pointer flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[#1A4D2E]/5 outline-none transition-colors group">
+                            <div className="w-8 h-8 rounded-lg bg-[#1A4D2E]/10 flex items-center justify-center text-[#1A4D2E] group-hover:bg-[#1A4D2E]/20 transition-colors">
+                              <ShoppingBag className="h-4 w-4" />
+                            </div>
+                            <span className="text-sm font-medium text-zinc-700 group-hover:text-[#1A4D2E] transition-colors">
+                              {locale === 'id' ? 'Pesanan Saya' : 'My Order'}
+                            </span>
+                            <ChevronRight className="ml-auto h-3.5 w-3.5 text-zinc-400 group-hover:text-[#1A4D2E] transition-colors" />
+                          </Link>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuSeparator className="my-1.5 bg-zinc-100" />
+
+                        <DropdownMenuItem onClick={handleLogout} className="cursor-pointer flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-rose-600 focus:text-rose-650 hover:bg-rose-50/50 focus:bg-rose-50/50 outline-none transition-colors group">
+                          <div className="w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center text-rose-500 group-hover:bg-rose-100 transition-colors">
+                            <LogOut className="h-4 w-4" />
                           </div>
-                          <span className="text-sm">{t('MyOrders')}</span>
-                          <ChevronRight className="ml-auto h-3.5 w-3.5 text-muted-foreground" />
-                        </Link>
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem asChild>
-                      <Link href="/profile" className="cursor-pointer flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-[#1A4D2E]/5">
-                        <div className="w-7 h-7 rounded-lg bg-[#1A4D2E]/10 flex items-center justify-center">
-                          <Settings className="h-3.5 w-3.5 text-[#1A4D2E]" />
-                        </div>
-                        <span className="text-sm">{t('PengaturanProfil')}</span>
-                        <ChevronRight className="ml-auto h-3.5 w-3.5 text-muted-foreground" />
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleLogout} className="cursor-pointer flex items-center gap-2 px-3 py-2.5 rounded-lg text-red-600 focus:text-red-600 hover:bg-red-50 focus:bg-red-50">
-                      <div className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center">
-                        <LogOut className="h-3.5 w-3.5 text-red-500" />
+                          <span className="text-sm font-bold">
+                            {locale === 'id' ? 'Keluar Akun' : 'Sign Out'}
+                          </span>
+                        </DropdownMenuItem>
                       </div>
-                      <span className="text-sm font-medium">{t('KeluarAkun')}</span>
-                    </DropdownMenuItem>
+                    ) : (
+                      <div className="p-1 space-y-0.5">
+                        {/* SUPPLIER & ADMIN LINKS */}
+                        <DropdownMenuItem asChild>
+                          <Link href={`/dashboard/${role}`} className="cursor-pointer flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[#1A4D2E]/5 outline-none transition-colors group">
+                            <div className="w-8 h-8 rounded-lg bg-[#1A4D2E]/10 flex items-center justify-center text-[#1A4D2E] group-hover:bg-[#1A4D2E]/20 transition-colors">
+                              <User className="h-4 w-4" />
+                            </div>
+                            <span className="text-sm font-medium text-zinc-700 group-hover:text-[#1A4D2E] transition-colors">
+                              {role === 'supplier' ? t('SupplierDashboard') : t('AdminDashboard')}
+                            </span>
+                            <ChevronRight className="ml-auto h-3.5 w-3.5 text-zinc-400 group-hover:text-[#1A4D2E] transition-colors" />
+                          </Link>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem asChild>
+                          <Link href="/profile" className="cursor-pointer flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[#1A4D2E]/5 outline-none transition-colors group">
+                            <div className="w-8 h-8 rounded-lg bg-[#1A4D2E]/10 flex items-center justify-center text-[#1A4D2E] group-hover:bg-[#1A4D2E]/20 transition-colors">
+                              <Settings className="h-4 w-4" />
+                            </div>
+                            <span className="text-sm font-medium text-zinc-700 group-hover:text-[#1A4D2E] transition-colors">
+                              {t('PengaturanProfil')}
+                            </span>
+                            <ChevronRight className="ml-auto h-3.5 w-3.5 text-zinc-400 group-hover:text-[#1A4D2E] transition-colors" />
+                          </Link>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuSeparator className="my-1.5 bg-zinc-100" />
+
+                        <DropdownMenuItem onClick={handleLogout} className="cursor-pointer flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-rose-600 focus:text-rose-650 hover:bg-rose-50/50 focus:bg-rose-50/50 outline-none transition-colors group">
+                          <div className="w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center text-rose-500 group-hover:bg-rose-100 transition-colors">
+                            <LogOut className="h-4 w-4" />
+                          </div>
+                          <span className="text-sm font-bold">
+                            {locale === 'id' ? 'Keluar Akun' : 'Sign Out'}
+                          </span>
+                        </DropdownMenuItem>
+                      </div>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
@@ -392,8 +463,8 @@ export function Navbar() {
       <header
         className={`fixed top-0 left-0 right-0 z-50 md:hidden transition-all duration-500 ${
           scrolled
-            ? 'bg-[#0f2e1b]/95 backdrop-blur-xl shadow-[0_4px_20px_rgba(0,0,0,0.2)]'
-            : 'bg-gradient-to-r from-[#1A4D2E] via-[#1d5533] to-[#1A4D2E]'
+            ? 'bg-[#0f2e1b]/95 backdrop-blur-xl shadow-[0_4px_20px_rgba(0,0,0,0.2)] rounded-b-2xl'
+            : 'bg-gradient-to-r from-[#1A4D2E] via-[#1d5533] to-[#1A4D2E] rounded-b-3xl'
         }`}
       >
         {/* Subtle top accent line */}
@@ -476,11 +547,20 @@ export function Navbar() {
         {/* Drawer Nav Items */}
         <nav className="flex flex-col gap-1 px-3 py-4">
           {navItems.map((item, idx) => {
-            const active = isNavActive(item.href, item.exact)
+            const active = item.isActive !== undefined ? item.isActive : isNavActive(item.href, item.exact)
+            const clickHandler = (e: React.MouseEvent<HTMLAnchorElement>) => {
+              if (item.onClick) {
+                item.onClick(e)
+                setMobileMenuOpen(false)
+              } else {
+                handleNavClick(e, item.href)
+              }
+            }
             return (
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={clickHandler}
                 className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
                   active
                     ? 'bg-gradient-to-r from-valam-gold/20 to-valam-gold/5 text-valam-gold border border-valam-gold/20'
@@ -500,44 +580,6 @@ export function Navbar() {
           })}
         </nav>
 
-        {/* Drawer Divider */}
-        {!isLandingPage && (
-          <>
-            <div className="mx-5 border-t border-white/[0.06]" />
-
-            {/* Language Switcher in Drawer */}
-            <div className="px-3 py-4">
-              <p className="px-3 text-[10px] uppercase tracking-[0.15em] text-white/25 font-semibold mb-2">
-                {locale === 'id' ? 'Bahasa' : 'Language'}
-              </p>
-              <div className="flex gap-1.5 px-3">
-                <button
-                  onClick={() => switchLocale('id')}
-                  className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all ${
-                    locale === 'id'
-                      ? 'bg-valam-gold/20 text-valam-gold border border-valam-gold/20'
-                      : 'bg-white/[0.04] text-white/40 border border-transparent hover:bg-white/[0.08]'
-                  }`}
-                >
-                  🇮🇩 ID
-                </button>
-                <button
-                  onClick={() => switchLocale('en')}
-                  className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all ${
-                    locale === 'en'
-                      ? 'bg-valam-gold/20 text-valam-gold border border-valam-gold/20'
-                      : 'bg-white/[0.04] text-white/40 border border-transparent hover:bg-white/[0.08]'
-                  }`}
-                >
-                  🇬🇧 EN
-                </button>
-              </div>
-            </div>
-
-            {/* Drawer Divider */}
-            <div className="mx-5 border-t border-white/[0.06]" />
-          </>
-        )}
 
         {/* User Auth in Drawer */}
         <div className="px-3 py-4">

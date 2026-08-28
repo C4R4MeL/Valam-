@@ -84,7 +84,7 @@ export default function Home() {
 
       <main className="flex-1">
         {/* ═══════════════════ HERO SECTION ═══════════════════ */}
-        <section className="relative w-full min-h-[calc(100vh-80px)] flex flex-col justify-center pt-28 pb-20 overflow-hidden">
+        <section className="relative w-full min-h-[88vh] flex flex-col justify-center pt-24 sm:pt-28 md:pt-32 pb-14 sm:pb-16 overflow-hidden">
           {/* Background Image Carousel */}
           {content.heroSlides.map((slide, index) => (
             <div 
@@ -95,82 +95,77 @@ export default function Home() {
                 src={slide.image}
                 alt={slide.title}
                 fill
-                className="object-cover blur-[2px] scale-105"
+                className="object-cover blur-[1.5px] scale-105"
                 priority={index === 0}
               />
-              {/* Overlay for text readability */}
-              <div className="absolute inset-0 bg-emerald-950/65 mix-blend-multiply" />
-              <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/75 to-transparent h-32" />
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-zinc-50 via-zinc-50/40 to-transparent h-[60%]" />
+              {/* Overlay for optimal text readability */}
+              <div className="absolute inset-0 bg-emerald-950/70 mix-blend-multiply" />
+              <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/80 via-black/40 to-transparent h-36" />
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent h-48" />
             </div>
           ))}
 
-          {/* Floating Gold Particles Animation */}
+          {/* Floating Subtle Ambient Particles */}
           <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-            <div className="absolute top-[25%] left-[12%] w-2 h-2 rounded-full bg-gold-400 opacity-60 blur-[1px] animate-float" style={{ animationDuration: '9s' }} />
-            <div className="absolute top-[65%] left-[20%] w-3.5 h-3.5 rounded-full bg-emerald-400 opacity-40 blur-[1.5px] animate-float-slow" style={{ animationDuration: '14s' }} />
-            <div className="absolute top-[35%] right-[15%] w-3 h-3 rounded-full bg-gold-300 opacity-55 blur-[1px] animate-float" style={{ animationDuration: '11s', animationDelay: '3s' }} />
-            <div className="absolute top-[75%] right-[25%] w-2 h-2 rounded-full bg-amber-400 opacity-70 blur-[0.5px] animate-float-slow" style={{ animationDuration: '8s', animationDelay: '1s' }} />
-            <div className="absolute top-[45%] left-[45%] w-1.5 h-1.5 rounded-full bg-emerald-300 opacity-50 blur-[0.5px] animate-float-slow" style={{ animationDuration: '12s', animationDelay: '2s' }} />
+            <div className="absolute top-[25%] left-[12%] w-2 h-2 rounded-full bg-amber-400 opacity-50 blur-[1px] animate-float" style={{ animationDuration: '9s' }} />
+            <div className="absolute top-[65%] left-[20%] w-3 h-3 rounded-full bg-emerald-400 opacity-35 blur-[1.5px] animate-float-slow" style={{ animationDuration: '14s' }} />
+            <div className="absolute top-[35%] right-[15%] w-2.5 h-2.5 rounded-full bg-amber-300 opacity-45 blur-[1px] animate-float" style={{ animationDuration: '11s', animationDelay: '3s' }} />
+            <div className="absolute top-[75%] right-[25%] w-2 h-2 rounded-full bg-amber-400 opacity-60 blur-[0.5px] animate-float-slow" style={{ animationDuration: '8s', animationDelay: '1s' }} />
           </div>
 
-          {/* Decorative Elements */}
-          <div className="absolute top-20 left-10 w-72 h-72 bg-emerald-400/20 rounded-full blur-3xl animate-float z-0 pointer-events-none" />
-          <div className="absolute bottom-20 right-10 w-96 h-96 bg-gold-400/10 rounded-full blur-3xl animate-float pointer-events-none" style={{ animationDelay: "2s" }} />
-
-          <div className="container relative z-10 px-4 md:px-6 mx-auto">
-            <div className="flex flex-col items-center space-y-6 text-center max-w-4xl mx-auto min-h-[300px] md:min-h-[340px] justify-center mt-8 md:mt-0">
+          <div className="container relative z-10 px-4 sm:px-6 md:px-8 mx-auto">
+            <div className="flex flex-col items-center space-y-5 sm:space-y-6 text-center max-w-4xl mx-auto justify-center">
               
-              {/* Dynamic Content wrapper with key to trigger animation on slide change */}
-              <div key={currentSlide} className="flex flex-col items-center space-y-6 animate-fade-up">
+              {/* Dynamic Content wrapper */}
+              <div key={currentSlide} className="flex flex-col items-center space-y-4 sm:space-y-5 animate-fade-up">
                 {/* Badge */}
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-950/60 border border-emerald-500/20 text-emerald-100 text-sm font-medium backdrop-blur-md">
-                  <span className="w-2 h-2 rounded-full bg-gold-400 animate-pulse" />
+                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-950/70 border border-emerald-500/25 text-emerald-100 text-xs sm:text-sm font-medium backdrop-blur-md">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
                   {content.heroSlides[currentSlide].badge}
                 </div>
 
-                {/* Headline - Serif Luxury */}
-                <h1 className="text-4xl font-serif font-medium sm:text-5xl md:text-6xl lg:text-7xl text-white tracking-tight leading-[1.1] pb-2">
+                {/* Headline - Serif Luxury with eye-friendly sizing */}
+                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif font-medium text-white tracking-tight leading-[1.18] pb-1 max-w-4xl">
                   {content.heroSlides[currentSlide].title}{" "}
-                  <span className="font-sans italic gradient-text-gold inline-block mt-2 pb-3 pr-2 font-light">
+                  <span className="font-serif italic text-amber-300 inline-block mt-1 sm:mt-2">
                     {content.heroSlides[currentSlide].highlight}
                   </span>
                 </h1>
 
                 {/* Subtitle */}
-                <p className="mx-auto max-w-[700px] text-base md:text-lg text-zinc-200 leading-relaxed font-sans font-light">
+                <p className="mx-auto max-w-[660px] text-sm sm:text-base md:text-lg text-zinc-100/90 leading-relaxed font-sans font-normal px-2">
                   {content.heroSlides[currentSlide].subtitle}
                 </p>
               </div>
 
               {/* Carousel Indicators */}
-              <div className="flex gap-3 mt-4">
+              <div className="flex gap-2.5 mt-2">
                 {content.heroSlides.map((_, idx) => (
                   <button 
                     key={idx}
                     onClick={() => setCurrentSlide(idx)}
-                    className={`h-1.5 rounded-full transition-all duration-300 ${currentSlide === idx ? 'w-8 bg-gold-400' : 'w-4 bg-white/30 hover:bg-white/50'}`}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${currentSlide === idx ? 'w-8 bg-amber-400' : 'w-3.5 bg-white/35 hover:bg-white/60'}`}
                     aria-label={`Go to slide ${idx + 1}`}
                   />
                 ))}
               </div>
 
-              {/* CTA Buttons */}
-              <div className="flex flex-col sm:flex-row items-center gap-4 pt-2 animate-fade-up" style={{ animationDelay: "0.3s" }}>
-                <Link href={`/${locale}/marketplace`}>
+              {/* CTA Buttons - Full width on small screens for easy tapping */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 pt-2 w-full sm:w-auto px-4 sm:px-0 animate-fade-up" style={{ animationDelay: "0.3s" }}>
+                <Link href={`/${locale}/marketplace`} className="w-full sm:w-auto">
                   <Button
                     size="lg"
-                    className="h-12 px-8 text-base bg-emerald-700 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-900/30 border border-emerald-600 transition-all duration-300 hover:translate-y-[-1px] font-semibold"
+                    className="w-full sm:w-auto h-12 px-7 text-sm sm:text-base bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-950/40 rounded-xl transition-all duration-300 hover:translate-y-[-1px] font-semibold border-0"
                   >
                     {content.buttons.searchOil}
                     <ArrowRight className="ml-2 w-4 h-4" />
                   </Button>
                 </Link>
-                <Link href={`/${locale}/register`}>
+                <Link href={`/${locale}/register`} className="w-full sm:w-auto">
                   <Button
                     size="lg"
                     variant="outline"
-                    className="h-12 px-8 text-base bg-white/5 border border-white/20 text-white hover:bg-white/10 hover:border-white/40 transition-all duration-300 hover:translate-y-[-1px]"
+                    className="w-full sm:w-auto h-12 px-7 text-sm sm:text-base bg-white/15 hover:bg-white/25 border border-white/30 hover:border-white/50 text-white backdrop-blur-md rounded-xl transition-all duration-300 hover:translate-y-[-1px] font-medium"
                   >
                     {content.buttons.startSupplier}
                   </Button>
@@ -179,34 +174,34 @@ export default function Home() {
 
             </div>
 
-            {/* Floating Stats Bar */}
+            {/* Floating Stats Bar - Responsive padding & typography */}
             <motion.div
               onViewportEnter={() => { suppliersCounter.start(); destinationsCounter.start(); verifiedCounter.start(); }}
-              className="mt-8 w-full max-w-3xl mx-auto rounded-2xl p-6 shadow-2xl shadow-emerald-950/30 animate-fade-up bg-emerald-950/45 backdrop-blur-lg border border-emerald-800/30"
+              className="mt-8 sm:mt-10 w-full max-w-3xl mx-auto rounded-2xl p-4 sm:p-6 shadow-2xl shadow-emerald-950/40 animate-fade-up bg-emerald-950/60 backdrop-blur-xl border border-emerald-700/30"
               style={{ animationDelay: "0.5s" }}
             >
-              <div className="grid grid-cols-3 divide-x divide-emerald-800/50">
-                <div className="flex flex-col items-center px-4">
-                  <span className="text-3xl md:text-4xl font-bold text-white">
+              <div className="grid grid-cols-3 divide-x divide-emerald-700/40">
+                <div className="flex flex-col items-center px-2 sm:px-4">
+                  <span className="text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-tight">
                     {suppliersCounter.count}+
                   </span>
-                  <span className="text-xs md:text-sm text-emerald-100/70 mt-1 uppercase tracking-widest text-center">
+                  <span className="text-[10px] sm:text-xs text-emerald-200/80 mt-1 uppercase tracking-wider text-center font-medium">
                     {content.stats.suppliers}
                   </span>
                 </div>
-                <div className="flex flex-col items-center px-4">
-                  <span className="text-3xl md:text-4xl font-bold text-white">
+                <div className="flex flex-col items-center px-2 sm:px-4">
+                  <span className="text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-tight">
                     {destinationsCounter.count}
                   </span>
-                  <span className="text-xs md:text-sm text-emerald-100/70 mt-1 uppercase tracking-widest text-center">
+                  <span className="text-[10px] sm:text-xs text-emerald-200/80 mt-1 uppercase tracking-wider text-center font-medium">
                     {content.stats.destinations}
                   </span>
                 </div>
-                <div className="flex flex-col items-center px-4">
-                  <span className="text-3xl md:text-4xl font-bold text-white">
+                <div className="flex flex-col items-center px-2 sm:px-4">
+                  <span className="text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-tight">
                     {verifiedCounter.count.toLocaleString()}
                   </span>
-                  <span className="text-xs md:text-sm text-emerald-100/70 mt-1 uppercase tracking-widest text-center">
+                  <span className="text-[10px] sm:text-xs text-emerald-200/80 mt-1 uppercase tracking-wider text-center font-medium">
                     {content.stats.verified}
                   </span>
                 </div>
@@ -215,52 +210,52 @@ export default function Home() {
           </div>
         </section>
 
-        {/* VISION SECTION - Asymmetrical Layout */}
-        <section className="min-h-[calc(100vh-80px)] flex flex-col justify-center py-20 bg-white relative overflow-hidden">
-          <div className="container mx-auto px-6 md:px-8 max-w-7xl">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
+        {/* VISION SECTION - Natural comfortable spacing */}
+        <section className="py-14 sm:py-20 md:py-24 bg-white relative overflow-hidden">
+          <div className="container mx-auto px-4 sm:px-6 md:px-8 max-w-7xl">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
               <motion.div 
                 initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer}
-                className="lg:col-span-5 space-y-6"
+                className="lg:col-span-5 space-y-5 sm:space-y-6"
               >
-                <div className="space-y-4">
-                  <motion.div variants={fadeInUp} className="text-emerald-600 font-semibold tracking-wider text-xs uppercase">{content.vision.badge}</motion.div>
-                  <motion.h2 variants={fadeInUp} className="text-3xl md:text-5xl font-bold font-sans text-zinc-900 leading-tight">
-                    {content.vision.title1} <span className="text-emerald-600">{content.vision.titleHighlight}</span> {content.vision.title2}
+                <div className="space-y-3">
+                  <motion.div variants={fadeInUp} className="text-emerald-700 font-semibold tracking-wider text-xs uppercase">{content.vision.badge}</motion.div>
+                  <motion.h2 variants={fadeInUp} className="text-2xl sm:text-3xl md:text-4xl font-bold font-sans text-zinc-900 leading-tight">
+                    {content.vision.title1} <span className="text-emerald-700">{content.vision.titleHighlight}</span> {content.vision.title2}
                   </motion.h2>
                 </div>
-                <motion.p variants={fadeInUp} className="text-base md:text-lg text-zinc-600 leading-relaxed font-light">
+                <motion.p variants={fadeInUp} className="text-sm sm:text-base md:text-lg text-zinc-600 leading-relaxed font-normal">
                   {isId 
                     ? "Indonesia menyuplai 90% kebutuhan minyak nilam dunia. Komoditas ini merupakan bahan pengikat aroma parfum mewah. Valam hadir untuk menghubungkan petani langsung ke pasar ekspor dengan standar mutu terjamin."
                     : "Indonesia supplies 90% of global patchouli oil. This essential oil is the primary fixative for luxury perfumery. Valam connects local cooperatives directly with global buyers under fair pricing."}
                 </motion.p>
 
-                {/* Inline Mini Stats */}
-                <motion.div variants={fadeInUp} className="grid grid-cols-3 gap-4 pt-6 border-t border-zinc-200">
+                {/* Inline Mini Stats - Responsive grid & font sizes */}
+                <motion.div variants={fadeInUp} className="grid grid-cols-3 gap-3 sm:gap-6 pt-5 border-t border-zinc-100">
                   <div>
-                    <div className="text-2xl md:text-3xl font-extrabold text-emerald-700">90%</div>
-                    <div className="text-xs text-zinc-500 mt-1 leading-snug">
+                    <div className="text-xl sm:text-2xl md:text-3xl font-extrabold text-emerald-700">90%</div>
+                    <div className="text-[11px] sm:text-xs text-zinc-500 mt-1 leading-normal">
                       {isId ? "Pasokan Dunia dari Indonesia" : "World Supply from Indonesia"}
                     </div>
                   </div>
                   <div>
-                    <div className="text-2xl md:text-3xl font-extrabold text-emerald-700">28</div>
-                    <div className="text-xs text-zinc-500 mt-1 leading-snug">
+                    <div className="text-xl sm:text-2xl md:text-3xl font-extrabold text-emerald-700">28</div>
+                    <div className="text-[11px] sm:text-xs text-zinc-500 mt-1 leading-normal">
                       {isId ? "Negara Tujuan Ekspor" : "Export Destinations"}
                     </div>
                   </div>
                   <div>
-                    <div className="text-2xl md:text-3xl font-extrabold text-emerald-700">{isId ? "Rp 450k" : "IDR 450k"}</div>
-                    <div className="text-xs text-zinc-500 mt-1 leading-snug">
+                    <div className="text-xl sm:text-2xl md:text-3xl font-extrabold text-emerald-700">{isId ? "Rp 450k" : "IDR 450k"}</div>
+                    <div className="text-[11px] sm:text-xs text-zinc-500 mt-1 leading-normal">
                       {isId ? "Harga Grade A / Kg" : "Grade A Price / Kg"}
                     </div>
                   </div>
                 </motion.div>
 
-                <motion.div variants={fadeInUp} className="pt-2">
-                  <Link href={`/${locale}/marketplace`} className="inline-flex items-center gap-2 text-emerald-700 font-semibold hover:text-emerald-800 transition-colors group">
+                <motion.div variants={fadeInUp} className="pt-1">
+                  <Link href={`/${locale}/marketplace`} className="inline-flex items-center gap-2 text-emerald-700 font-semibold hover:text-emerald-800 transition-colors group text-sm sm:text-base">
                     {content.vision.cta}
-                    <IconArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    <IconArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
                   </Link>
                 </motion.div>
               </motion.div>
@@ -300,16 +295,16 @@ export default function Home() {
         </section>
 
         {/* ENHANCED FEATURES SECTION - Redesigned Grid */}
-        <section className="min-h-[calc(100vh-80px)] flex flex-col justify-center py-20 bg-zinc-50 relative overflow-hidden">
-          <div className="container mx-auto px-6 md:px-8 max-w-7xl relative z-10">
-            <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
-              <motion.div variants={fadeInUp} className="inline-block px-3 py-1 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-700 text-xs font-semibold tracking-widest uppercase">
+        <section className="py-14 sm:py-20 md:py-24 bg-zinc-50/70 border-t border-zinc-100 relative overflow-hidden">
+          <div className="container mx-auto px-4 sm:px-6 md:px-8 max-w-7xl relative z-10">
+            <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16 space-y-3 sm:space-y-4 px-2">
+              <motion.div variants={fadeInUp} className="inline-block px-3 py-1 rounded-full bg-emerald-100/80 border border-emerald-200 text-emerald-800 text-xs font-semibold tracking-wider uppercase">
                 {content.features.badge}
               </motion.div>
-              <h2 className="text-3xl md:text-5xl font-bold font-sans text-zinc-900 leading-tight">
-                {content.features.title} <span className="text-emerald-600">{content.features.titleHighlight}</span>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold font-sans text-zinc-900 leading-tight">
+                {content.features.title} <span className="text-emerald-700">{content.features.titleHighlight}</span>
               </h2>
-              <p className="text-base md:text-lg text-zinc-600 leading-relaxed max-w-2xl mx-auto font-light">
+              <p className="text-sm sm:text-base md:text-lg text-zinc-600 leading-relaxed max-w-2xl mx-auto font-normal">
                 {content.features.desc}
               </p>
             </div>
@@ -453,29 +448,29 @@ export default function Home() {
         <InsightsTeaser />
 
         {/* CTA SECTION */}
-        <section className="pt-20 md:pt-28 pb-6 bg-white relative overflow-hidden">
-          <div className="absolute inset-0 bg-emerald-50/50" />
-          <div className="container relative mx-auto px-6 md:px-8 max-w-4xl text-center">
+        <section className="py-16 sm:py-20 md:py-24 bg-white relative overflow-hidden">
+          <div className="absolute inset-0 bg-emerald-50/60" />
+          <div className="container relative mx-auto px-4 sm:px-6 md:px-8 max-w-3xl text-center">
             <motion.h2 
               initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-              className="text-4xl md:text-5xl font-bold text-zinc-900 mb-6"
+              className="text-3xl sm:text-4xl md:text-5xl font-bold text-zinc-900 mb-4 sm:mb-6 tracking-tight leading-tight"
             >
-              {content.cta.title1} <span className="text-emerald-600">{content.cta.titleHighlight}</span> {content.cta.title2}
+              {content.cta.title1} <span className="text-emerald-700">{content.cta.titleHighlight}</span> {content.cta.title2}
             </motion.h2>
             <motion.p 
               initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}
-              className="text-xl text-zinc-600 mb-10"
+              className="text-base sm:text-lg text-zinc-600 mb-8 sm:mb-10 font-normal leading-relaxed max-w-xl mx-auto"
             >
               {content.cta.desc}
             </motion.p>
             <motion.div 
               initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }}
-              className="flex flex-col sm:flex-row justify-center gap-4"
+              className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 px-4 sm:px-0"
             >
-              <Button asChild size="lg" className="h-14 px-8 text-base bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-lg border-0">
+              <Button asChild size="lg" className="w-full sm:w-auto h-12 sm:h-13 px-8 text-sm sm:text-base bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl shadow-lg shadow-emerald-950/20 border-0 font-medium">
                 <Link href={`/${locale}/register`}>{content.cta.supplierButton}</Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="h-14 px-8 text-base rounded-xl bg-white">
+              <Button asChild size="lg" variant="outline" className="w-full sm:w-auto h-12 sm:h-13 px-8 text-sm sm:text-base rounded-xl bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50 font-medium">
                 <Link href={`/${locale}/register`}>{content.cta.buyerButton}</Link>
               </Button>
             </motion.div>

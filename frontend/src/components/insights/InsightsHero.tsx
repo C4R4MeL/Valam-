@@ -163,7 +163,7 @@ export function InsightsHero({
           {/* Search Bar */}
           <motion.div variants={fadeUp} className="max-w-xl mx-auto pt-2">
             <div className="relative group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40 group-focus-within:text-forest-500 transition-colors" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 group-focus-within:text-emerald-400 transition-colors" />
               <input
                 id="insights-search"
                 type="text"
@@ -173,7 +173,7 @@ export function InsightsHero({
                   setPage(1);
                 }}
                 placeholder={isEn ? 'Search articles, guides...' : 'Cari artikel, panduan...'}
-                className="w-full pl-12 pr-4 py-4 rounded-2xl bg-forest-900 backdrop-blur-md border border-forest-700 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-forest-500/30 focus:border-forest-500/50 transition-all shadow-sm"
+                className="w-full pl-12 pr-4 py-4 rounded-2xl bg-emerald-950/60 backdrop-blur-md border border-emerald-800/50 text-white placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500/60 transition-all shadow-lg"
               />
             </div>
           </motion.div>
@@ -193,8 +193,8 @@ export function InsightsHero({
                   }}
                   className={`inline-flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 ${
                     isActive
-                      ? 'bg-white text-gray-900 shadow-lg scale-105'
-                      : 'bg-white/[0.05] text-white/60 hover:bg-white/[0.1] hover:text-white border border-white/5'
+                      ? 'bg-white text-zinc-900 shadow-lg scale-105'
+                      : 'bg-white/[0.05] text-zinc-300 hover:bg-white/[0.1] hover:text-white border border-white/10'
                   }`}
                 >
                   <Icon className="w-4 h-4" />
@@ -207,26 +207,26 @@ export function InsightsHero({
           {/* Enhanced Glassmorphic Stats Container */}
           <motion.div 
             variants={fadeUp} 
-            className="grid grid-cols-2 md:grid-cols-5 gap-6 p-6 md:p-8 mt-12 bg-white/[0.02] backdrop-blur-lg border border-white/10 rounded-3xl max-w-5xl mx-auto shadow-2xl relative group/stats"
+            className="grid grid-cols-2 md:grid-cols-5 gap-6 p-6 md:p-8 mt-12 bg-white/[0.04] backdrop-blur-lg border border-white/10 rounded-3xl max-w-5xl mx-auto shadow-2xl relative group/stats"
           >
             {/* Ambient gold glow behind stats container on hover */}
             <div className="absolute inset-0 bg-gradient-to-r from-amber-500/0 via-amber-500/5 to-emerald-500/0 rounded-3xl opacity-0 group-hover/stats:opacity-100 transition-opacity duration-700 pointer-events-none" />
 
             {[
-              { label: isEn ? 'Articles' : 'Artikel', val: stats.articles, icon: BookOpen, color: 'text-forest-500', bg: 'bg-forest-500/10' },
-              { label: isEn ? 'Guides' : 'Panduan', val: stats.guides, icon: TrendingUp, color: 'text-gold-500', bg: 'bg-gold-500/10' },
-              { label: isEn ? 'Stories' : 'Cerita Koperasi', val: stats.stories, icon: Users, color: 'text-terracotta-500', bg: 'bg-terracotta-500/10' },
-              { label: isEn ? 'Active Weeks' : 'Minggu Aktif', val: stats.weeks, icon: Calendar, color: 'text-forest-500', bg: 'bg-forest-500/10' },
-              { label: isEn ? 'Read Regions' : 'Negara Pembaca', val: stats.countries, icon: Globe, color: 'text-gold-500', bg: 'bg-gold-500/10' },
+              { label: isEn ? 'Articles' : 'Artikel', val: stats.articles, icon: BookOpen, color: 'text-emerald-400', bg: 'bg-emerald-500/20' },
+              { label: isEn ? 'Guides' : 'Panduan', val: stats.guides, icon: TrendingUp, color: 'text-[#B69A1D]', bg: 'bg-[#B69A1D]/20' },
+              { label: isEn ? 'Stories' : 'Cerita Koperasi', val: stats.stories, icon: Users, color: 'text-amber-400', bg: 'bg-amber-500/20' },
+              { label: isEn ? 'Active Weeks' : 'Minggu Aktif', val: stats.weeks, icon: Calendar, color: 'text-emerald-300', bg: 'bg-emerald-400/20' },
+              { label: isEn ? 'Read Regions' : 'Negara Pembaca', val: stats.countries, icon: Globe, color: 'text-teal-300', bg: 'bg-teal-500/20' },
             ].map((stat, idx) => {
               const StatIcon = stat.icon;
               return (
                 <div 
                   key={idx} 
-                  className="flex flex-col items-center justify-center relative p-4 rounded-2xl hover:bg-white/[0.03] transition-all duration-300 hover:-translate-y-1 group/item"
+                  className="flex flex-col items-center justify-center relative p-4 rounded-2xl hover:bg-white/[0.05] transition-all duration-300 hover:-translate-y-1 group/item"
                 >
                   {/* Floating Icon Circle */}
-                  <div className={`p-2.5 rounded-full ${stat.bg} mb-3 border border-white/5 group-hover/item:border-white/10 group-hover/item:scale-110 transition-all`}>
+                  <div className={`p-2.5 rounded-full ${stat.bg} mb-3 border border-white/10 group-hover/item:scale-110 transition-all`}>
                     <StatIcon className={`w-4 h-4 ${stat.color}`} />
                   </div>
                   
@@ -236,7 +236,7 @@ export function InsightsHero({
                   </div>
                   
                   {/* Label */}
-                  <div className="text-[10px] uppercase font-bold tracking-widest text-warm-300 mt-2 text-center">
+                  <div className="text-[10px] uppercase font-bold tracking-widest text-zinc-400 mt-2 text-center">
                     {stat.label}
                   </div>
                   

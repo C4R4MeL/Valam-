@@ -30,18 +30,18 @@ export function TestimonialsSection() {
   };
 
   return (
-    <section className="min-h-[calc(100vh-80px)] flex flex-col justify-center py-20 bg-white border-t border-zinc-100 relative overflow-hidden">
-      <div className="container mx-auto px-6 md:px-8 max-w-7xl">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 max-w-5xl mx-auto mb-16 border-b border-zinc-100 pb-8">
-          <div className="flex items-center gap-4">
-            <span className="text-3xl md:text-4xl font-extrabold text-amber-500 bg-amber-50 px-4 py-2 rounded-2xl border border-amber-200 shadow-sm shrink-0">
+    <section className="py-14 sm:py-20 md:py-24 bg-white border-t border-zinc-100 relative overflow-hidden">
+      <div className="container mx-auto px-4 sm:px-6 md:px-8 max-w-7xl">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 max-w-5xl mx-auto mb-12 sm:mb-16 border-b border-zinc-100 pb-8">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <span className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-amber-500 bg-amber-50 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-2xl border border-amber-200 shadow-sm shrink-0">
               4.9★
             </span>
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold font-sans text-zinc-900 leading-tight">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold font-sans text-zinc-900 leading-tight">
               {content.title}
             </h2>
           </div>
-          <p className="text-base text-zinc-500 max-w-sm font-light leading-relaxed">
+          <p className="text-sm sm:text-base text-zinc-500 max-w-sm font-normal leading-relaxed">
             {content.subtitle}
           </p>
         </div>

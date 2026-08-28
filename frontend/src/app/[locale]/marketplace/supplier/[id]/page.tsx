@@ -282,7 +282,7 @@ export default function SupplierStorePage() {
           p.supplier_name.toLowerCase().replace(/\s+/g, '').includes(mockInfo.name.toLowerCase().replace(/\s+/g, ''))
         )
         const circularList = mockCircularProducts.filter(cp =>
-          cp.supplier_name.toLowerCase().replace(/\s+/g, '').includes(mockInfo.name.toLowerCase().replace(/\s+/g, ''))
+          ((cp as any).supplier_name || cp.mitra_pengolah_nama || '').toLowerCase().replace(/\s+/g, '').includes(mockInfo.name.toLowerCase().replace(/\s+/g, ''))
         )
         setBatches([...list, ...circularList])
       } finally {
@@ -338,7 +338,7 @@ export default function SupplierStorePage() {
       router.push(`/${locale}/login?redirect=/marketplace/supplier/${supplierId}`)
       return
     }
-    router.push(`/${locale}/dashboard/buyer/rfq/new?supplier=${supplierId}`)
+    router.push(`/${locale}/buyer/rfq?supplier=${supplierId}`)
   }
 
   if (loading) {
@@ -368,7 +368,7 @@ export default function SupplierStorePage() {
                 if (typeof window !== 'undefined' && window.history.length > 1) {
                   router.back()
                 } else {
-                  router.push(`/dashboard/buyer/matching`)
+                  router.push(`/matching`)
                 }
               }} 
               className="inline-flex items-center gap-2 text-zinc-500 hover:text-zinc-900 transition-colors mb-6 text-sm font-medium"

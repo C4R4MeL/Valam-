@@ -95,7 +95,10 @@ export default function AdminDashboardPage() {
     pendingSuppliers: number,
     pendingQc: number,
     transactionsToday: number,
-    revenue: number
+    revenue: number,
+    gmv?: number,
+    platformFee?: number,
+    qcRevenue?: number
   } | null>(null)
   const [qcQueue, setQcQueue] = useState<any[]>([])
   const [pendingSuppliersList, setPendingSuppliersList] = useState<any[]>([])

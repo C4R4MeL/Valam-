@@ -51,10 +51,10 @@ export function FAQSection() {
   };
 
   return (
-    <section className="pb-20 md:pb-28 pt-6 bg-white relative overflow-hidden">
+    <section className="pb-16 sm:pb-20 md:pb-24 pt-4 sm:pt-6 bg-white relative overflow-hidden">
       <div className="absolute inset-0 bg-emerald-50/50" />
 
-      <div className="container mx-auto px-6 md:px-8 max-w-3xl relative z-10">
+      <div className="container mx-auto px-4 sm:px-6 md:px-8 max-w-3xl relative z-10">
         
         {/* Header Section */}
         <div className="text-left space-y-1 mb-5">

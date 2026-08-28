@@ -115,8 +115,7 @@ export function ResultPanel({
       initial={prefersReducedMotion ? {} : { opacity: 0, x: 40 }}
       whileInView={prefersReducedMotion ? {} : { opacity: 1, x: 0 }}
       viewport={{ once: true }}
-      transition={{ duration: 0.6, ease: 'easeOut' }}
-      className="lg:col-span-8 w-full lg:h-full h-auto flex flex-col overflow-hidden"
+      className="w-full flex flex-col"
     >
       <AnimatePresence mode="wait">
         
@@ -199,7 +198,7 @@ export function ResultPanel({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="space-y-4 lg:flex-1 lg:flex lg:flex-col lg:overflow-hidden h-full"
+            className="space-y-4 w-full"
           >
             <div className="flex items-center justify-between mb-1 px-1 shrink-0">
               <div>
@@ -212,7 +211,7 @@ export function ResultPanel({
               </div>
             </div>
 
-            <div className="space-y-4 lg:flex-1 lg:overflow-y-auto pr-1 no-scrollbar pb-16 lg:pb-0">
+            <div className="space-y-4 w-full pb-8">
               {results.map((product, idx) => (
                 <MatchResultCard
                   key={product.id || String(idx)}
