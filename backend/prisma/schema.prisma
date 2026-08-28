@@ -1,0 +1,558 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id              String         @id @default(uuid()) @db.Uuid
+  email           String         @unique
+  role_id         String         @db.Uuid
+  status          String         @default("pending")
+  email_verified  Boolean        @default(false)
+  created_at      DateTime       @default(now())
+  updated_at      DateTime       @updatedAt
+  password        String
+  cart_items      CartItem[]
+  notifications   Notification[]
+  buyer_orders    Order[]        @relation("BuyerOrders")
+  supplier_orders Order[]        @relation("SupplierOrders")
+  products        Product[]
+  circular_products CircularProduct[]
+  profile         Profile?
+  qc_results      QcResult[]
+  buyer_rfqs      RfqRequest[]   @relation("BuyerRfqs")
+  supplier_rfqs   RfqRequest[]   @relation("SupplierRfqs")
+  rfq_responses   RfqResponse[]
+  role            Role           @relation(fields: [role_id], references: [id])
+  wallet          Wallet?
+  supplier_profile SupplierProfile?
+
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  permissions Json     @default("{}")
+  created_at  DateTime @default(now())
+  users       User[]
+
+  @@map("roles")
+}
+
+model Profile {
+  id             String  @id @default(uuid()) @db.Uuid
+  user_id        String  @unique @db.Uuid
+  company_name   String?
+  legal_number   String?
+  npwp           String?
+  chairman_name  String?
+  country        String?
+  contact_person String?
+  phone          String?
+  address        String?
+  avatar_url     String?
+  user           User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+model Product {
+  id                  String             @id @default(uuid()) @db.Uuid
+  supplier_id         String             @db.Uuid
+  batch_code          String             @unique
+  status              String             @default("DRAFT")
+  origin_village      String?
+  origin_district     String?
+  origin_province     String?
+  production_date     DateTime?
+  total_volume_kg     Float
+  available_volume_kg Float
+  moq_kg              Float              @default(1.0)
+  price_per_kg        Float
+  images              String[]           @default([])
+  is_featured         Boolean            @default(false)
+  created_at          DateTime           @default(now())
+  updated_at          DateTime           @updatedAt
+  cart_items          CartItem[]
+  certificate         Certificate?
+  order_items         OrderItem[]
+  parameters          ProductParameter[]
+  supplier            User               @relation(fields: [supplier_id], references: [id])
+  qc_result           QcResult?
+  trace_logs          TraceLog[]
+
+  @@map("products")
+}
+
+model ProductParameter {
+  id             String  @id @default(uuid()) @db.Uuid
+  product_id     String  @db.Uuid
+  parameter_name String
+  value          Float
+  unit           String
+  standard_min   Float?
+  standard_max   Float?
+  status         String  @default("pass")
+  product        Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@map("product_parameters")
+}
+
+model QcResult {
+  id               String       @id @default(uuid()) @db.Uuid
+  product_id       String       @unique @db.Uuid
+  admin_id         String       @db.Uuid
+  pa_percentage    Float
+  moisture         Float
+  specific_gravity Float
+  refractive_index Float
+  optical_rotation Float
+  overall_status   String       @default("pass")
+  tested_at        DateTime     @default(now())
+  lab_notes        String?
+  certificate      Certificate?
+  admin            User         @relation(fields: [admin_id], references: [id])
+  product          Product      @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@map("qc_results")
+}
+
+model Certificate {
+  id                  String   @id @default(uuid()) @db.Uuid
+  product_id          String   @unique @db.Uuid
+  qc_result_id        String   @unique @db.Uuid
+  certificate_number  String   @unique
+  issued_at           DateTime @default(now())
+  admin_name          String
+  admin_signature_url String?
+  pdf_url             String?
+  qr_code_url         String?
+  product             Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  qc_result           QcResult @relation(fields: [qc_result_id], references: [id], onDelete: Cascade)
+
+  @@map("certificates")
+}
+
+model TraceLog {
+  id                String   @id @default(uuid()) @db.Uuid
+  product_id        String   @db.Uuid
+  event_type        String
+  location_name     String
+  location_district String?
+  gps_latitude      Float?
+  gps_longitude     Float?
+  description       String?
+  event_date        DateTime @default(now())
+  created_at        DateTime @default(now())
+  product           Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@map("trace_logs")
+}
+
+model Order {
+  id               String      @id @default(uuid()) @db.Uuid
+  order_number     String      @unique
+  buyer_id         String      @db.Uuid
+  supplier_id      String      @db.Uuid
+  status           String      @default("PENDING")
+  total_amount     Float
+  shipping_cost    Float       @default(0)
+  shipping_address Json        @default("{}")
+  payment_status   String      @default("PENDING")
+  delivery_proof_url String?
+  created_at       DateTime    @default(now())
+  items            OrderItem[]
+  buyer            User        @relation("BuyerOrders", fields: [buyer_id], references: [id])
+  supplier         User        @relation("SupplierOrders", fields: [supplier_id], references: [id])
+  payment          Payment?
+  shipment         Shipment?
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id                  String           @id @default(uuid()) @db.Uuid
+  order_id            String           @db.Uuid
+  product_id          String?          @db.Uuid
+  circular_product_id String?          @db.Uuid
+  quantity_kg         Float
+  price_per_kg        Float
+  subtotal            Float
+  order               Order            @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  product             Product?         @relation(fields: [product_id], references: [id])
+  circular_product    CircularProduct? @relation(fields: [circular_product_id], references: [id])
+
+  @@map("order_items")
+}
+
+model Payment {
+  id                 String    @id @default(uuid()) @db.Uuid
+  order_id           String    @unique @db.Uuid
+  payment_method     String?
+  payment_gateway_id String?
+  amount             Float
+  status             String    @default("pending")
+  paid_at            DateTime?
+  order              Order     @relation(fields: [order_id], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+enum ShipmentType {
+  DOMESTIK
+  EKSPOR
+}
+
+enum ShipmentStatus {
+  MENUNGGU_KONFIRMASI
+  TERKONFIRMASI
+  DIPROSES
+  DIKIRIM
+  DALAM_PERJALANAN
+  TIBA_DI_TUJUAN
+  SELESAI
+  BERMASALAH
+  DIBATALKAN
+}
+
+enum Incoterms {
+  EXW
+  FOB
+  CIF
+}
+
+model Shipment {
+  id                  String         @id @default(uuid()) @db.Uuid
+  order_id            String         @unique @db.Uuid
+  shipment_type       ShipmentType   @default(DOMESTIK)
+
+  // === DOMESTIK (Biteship) ===
+  biteship_rate_id    String?        
+  courier_name        String?        
+  courier_code        String?        
+  service_name        String?        
+  service_code        String?        
+  estimated_days      Int?           
+
+  // Komponen biaya domestik
+  base_shipping_cost  Decimal?       @db.Decimal(15, 2)
+  insurance_fee       Decimal?       @db.Decimal(15, 2)
+  packaging_fee       Decimal?       @db.Decimal(15, 2)
+  total_shipping_cost Decimal?       @db.Decimal(15, 2)
+
+  // Dimensi & Berat
+  actual_weight       Decimal?       @db.Decimal(10, 3)
+  volumetric_weight   Decimal?       @db.Decimal(10, 3)
+  billed_weight       Decimal?       @db.Decimal(10, 3)
+  drum_count          Int?
+
+  // Tracking info
+  tracking_number     String?
+  tracking_url        String?
+  last_tracking_data  Json?          
+
+  // === EKSPOR ===
+  incoterms           Incoterms?
+  port_origin         String?        
+  port_destination    String?        
+  forwarder_name      String?
+  estimated_freight   Decimal?       @db.Decimal(15, 2)  
+  export_notes        String?
+
+  // Snapshot Alamat
+  origin_address      Json          
+  destination_address Json          
+
+  // Status & Timestamps
+  status              ShipmentStatus @default(MENUNGGU_KONFIRMASI)
+  shipped_at          DateTime?
+  estimated_arrival   DateTime?
+  delivered_at        DateTime?
+  completed_at        DateTime?
+  issue_notes         String?
+
+  created_at          DateTime       @default(now())
+  updated_at          DateTime       @updatedAt
+
+  order               Order          @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  tracking_logs       ShipmentTrackingLog[]
+
+  @@map("shipments")
+}
+
+model ShipmentTrackingLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  shipment_id String   @db.Uuid
+  status      String
+  description String
+  location    String?
+  raw_data    Json?    
+  created_at  DateTime @default(now())
+  shipment    Shipment @relation(fields: [shipment_id], references: [id], onDelete: Cascade)
+
+  @@map("shipment_tracking_logs")
+}
+
+model CartItem {
+  id                  String           @id @default(uuid()) @db.Uuid
+  user_id             String           @db.Uuid
+  product_id          String?          @db.Uuid
+  circular_product_id String?          @db.Uuid
+  quantity_kg         Float
+  created_at          DateTime         @default(now())
+  product             Product?         @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  circular_product    CircularProduct? @relation(fields: [circular_product_id], references: [id], onDelete: Cascade)
+  user                User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("cart_items")
+}
+
+model Wallet {
+  id           String              @id @default(uuid()) @db.Uuid
+  user_id      String              @unique @db.Uuid
+  balance      Decimal             @default(0.0) @db.Decimal(15, 2)
+  updated_at   DateTime            @updatedAt
+  transactions WalletTransaction[]
+  user         User                @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  withdrawals  Withdrawal[]
+
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id                 String   @id @default(uuid()) @db.Uuid
+  wallet_id          String   @db.Uuid
+  type               String
+  amount             Decimal  @db.Decimal(15, 2)
+  reference_order_id String?
+  description        String?
+  created_at         DateTime @default(now())
+  wallet             Wallet   @relation(fields: [wallet_id], references: [id], onDelete: Cascade)
+
+  @@map("wallet_transactions")
+}
+
+model Withdrawal {
+  id                  String    @id @default(uuid()) @db.Uuid
+  wallet_id           String    @db.Uuid
+  amount              Decimal   @db.Decimal(15, 2)
+  bank_name           String
+  account_number      String
+  account_holder_name String
+  status              String    @default("PENDING")
+  requested_at        DateTime  @default(now())
+  processed_at        DateTime?
+  wallet              Wallet    @relation(fields: [wallet_id], references: [id], onDelete: Cascade)
+
+  @@map("withdrawals")
+}
+
+model RfqRequest {
+  id                String       @id @default(uuid()) @db.Uuid
+  rfq_number        String       @unique
+  buyer_id          String       @db.Uuid
+  supplier_id       String       @db.Uuid
+  volume_kg         Float
+  budget_per_kg     Float
+  min_pa_percentage Float
+  max_moisture      Float
+  notes             String?
+  status            String       @default("SENT")
+  created_at        DateTime     @default(now())
+  buyer             User         @relation("BuyerRfqs", fields: [buyer_id], references: [id])
+  supplier          User         @relation("SupplierRfqs", fields: [supplier_id], references: [id])
+  response          RfqResponse?
+
+  @@map("rfq_requests")
+}
+
+model RfqResponse {
+  id                    String     @id @default(uuid()) @db.Uuid
+  rfq_id                String     @unique @db.Uuid
+  supplier_id           String     @db.Uuid
+  proposed_price_per_kg Float
+  proposed_volume_kg    Float
+  message               String?
+  status                String     @default("RESPONDED")
+  responded_at          DateTime   @default(now())
+  rfq_request           RfqRequest @relation(fields: [rfq_id], references: [id], onDelete: Cascade)
+  supplier              User       @relation(fields: [supplier_id], references: [id])
+
+  @@map("rfq_responses")
+}
+
+model Notification {
+  id         String   @id @default(uuid()) @db.Uuid
+  user_id    String   @db.Uuid
+  type       String
+  title      String
+  message    String
+  is_read    Boolean  @default(false)
+  action_url String?
+  created_at DateTime @default(now())
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+// ── Supplier Verification Enums ───────────────────────────────────
+
+enum SupplierStatus {
+  TERDAFTAR
+  DALAM_VERIFIKASI
+  TERVERIFIKASI
+  LEGACY_VERIFIED
+}
+
+enum GradeNilam {
+  GRADE_A
+  GRADE_B
+  GRADE_C
+}
+
+enum TipeDocument {
+  AKTA_KOPERASI
+  COA
+  FOTO_FASILITAS
+  SURAT_PERNYATAAN
+}
+
+enum StatusDokumen {
+  PENDING
+  APPROVED
+  REJECTED
+  REVISION_REQUESTED
+}
+
+enum AksiVerifikasi {
+  APPROVE_DOCUMENT
+  REJECT_DOCUMENT
+  REQUEST_REVISION
+  FINALIZE_VERIFIED
+  RESET_TO_TERDAFTAR
+  LEGACY_REMINDER_SENT
+  LEGACY_DEADLINE_ENFORCED
+}
+
+// ── Supplier Verification Models ──────────────────────────────────
+
+model SupplierProfile {
+  id                 String             @id @default(uuid()) @db.Uuid
+  user_id            String             @unique @db.Uuid
+
+  // Poin 1 — Data Wajib Registrasi
+  nama_koperasi      String
+  nib                String
+  npwp               String
+  nama_pic           String
+  ktp_pic            String
+  whatsapp           String
+  alamat_lengkap     String
+  kabupaten          String
+  kecamatan          String
+  desa               String
+  kapasitas_produksi Float
+
+  // Opsional — rekening bank
+  nomor_rekening     String?
+  nama_bank          String?
+  nama_rekening      String?
+
+  // Storefront Additional Data
+  tahun_berdiri      String?
+  jumlah_anggota     Int?               @default(15)
+  minimum_order      Float?             @default(10)
+  durasi_produksi    String?            @default("7-14 Hari")
+  metode_distilasi   String?            @default("Uap (Steam Distillation)")
+  bahan_baku         String?            @default("100% Daun Nilam Segar")
+  website            String?
+
+  // Grade & Status
+  grade_nilam        GradeNilam[]
+  status             SupplierStatus     @default(TERDAFTAR)
+
+  // Legacy
+  is_legacy          Boolean            @default(false)
+  legacy_deadline    DateTime?
+
+  // Timestamps
+  verified_at        DateTime?
+  created_at         DateTime           @default(now())
+  updated_at         DateTime           @updatedAt
+
+  // Relations
+  user               User               @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  documents          SupplierDocument[]
+  verification_logs  VerificationLog[]
+
+  @@index([status])
+  @@map("supplier_profiles")
+}
+
+model SupplierDocument {
+  id                 String             @id @default(uuid()) @db.Uuid
+  supplier_id        String             @db.Uuid
+  tipe_document      TipeDocument
+  file_url           String
+  file_name          String
+  file_size          Int
+  status_dokumen     StatusDokumen      @default(PENDING)
+  catatan_reviewer   String?
+  tanggal_coa        DateTime?
+  reviewed_at        DateTime?
+  reviewed_by        String?            @db.Uuid
+  uploaded_at        DateTime           @default(now())
+  updated_at         DateTime           @updatedAt
+
+  supplier           SupplierProfile    @relation(fields: [supplier_id], references: [id], onDelete: Cascade)
+  verification_logs  VerificationLog[]
+
+  @@index([supplier_id, tipe_document])
+  @@map("supplier_documents")
+}
+
+model VerificationLog {
+  id                 String             @id @default(uuid()) @db.Uuid
+  supplier_id        String             @db.Uuid
+  admin_id           String             @db.Uuid
+  aksi               AksiVerifikasi
+  document_id        String?            @db.Uuid
+  catatan            String?
+  created_at         DateTime           @default(now())
+
+  supplier           SupplierProfile    @relation(fields: [supplier_id], references: [id], onDelete: Cascade)
+  document           SupplierDocument?  @relation(fields: [document_id], references: [id], onDelete: SetNull)
+
+  @@index([supplier_id])
+  @@map("verification_logs")
+}
+
+model CircularProduct {
+  id               String      @id @default(uuid()) @db.Uuid
+  supplier_id      String      @db.Uuid
+  name             String
+  category         String      // Organic Compost, Biochar, Patchouli Hydrosol
+  description      String
+  benefit          String
+  price            Float
+  stock            Float
+  unit             String
+  image            String?     @default("")
+  status           String      @default("DRAFT") // DRAFT, PENDING, APPROVED, REJECTED
+  rejection_reason String?     
+  created_at       DateTime    @default(now())
+  updated_at       DateTime    @updatedAt
+  supplier         User        @relation(fields: [supplier_id], references: [id], onDelete: Cascade)
+  cart_items       CartItem[]
+  order_items      OrderItem[]
+
+  @@map("circular_products")
+}
+

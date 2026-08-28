@@ -1,0 +1,29 @@
+{
+  "Navbar": {
+    "Beranda": "Home",
+    "Marketplace": "Marketplace",
+    "Katalog": "Catalog",
+    "SmartMatching": "Smart Matching",
+    "CircularEconomy": "Circular Economy",
+    "RFQGlobal": "RFQ Global",
+    "Tentang": "About",
+    "RFQRequest": "RFQ Request",
+    "Inventori": "Inventory",
+    "TambahBatch": "Add Batch",
+    "Pesanan": "Orders",
+    "Dompet": "Wallet",
+    "RFQ": "RFQ",
+    "AntrianQC": "QC Queue",
+    "ValidasiSupplier": "Supplier Validation",
+    "Masuk": "Login",
+    "Daftar": "Register",
+    "BerandaBuyer": "Dashboard",
+    "SupplierDashboard": "Dashboard",
+    "AdminDashboard": "Dashboard",
+    "MyOrders": "My Orders",
+    "PengaturanProfil": "Profile Settings",
+    "KeluarAkun": "Sign Out",
+    "Insights": "Insights",
+    "SearchPlaceholder": "Search batch, cooperative, PA%..."
+  }
+}

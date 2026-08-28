@@ -1,0 +1,29 @@
+{
+  "Navbar": {
+    "Beranda": "Beranda",
+    "Marketplace": "Marketplace",
+    "Katalog": "Katalog",
+    "SmartMatching": "Smart Matching",
+    "CircularEconomy": "Circular Economy",
+    "RFQGlobal": "RFQ Global",
+    "Tentang": "Tentang",
+    "RFQRequest": "RFQ Request",
+    "Inventori": "Inventori",
+    "TambahBatch": "Tambah Batch",
+    "Pesanan": "Pesanan",
+    "Dompet": "Dompet",
+    "RFQ": "RFQ",
+    "AntrianQC": "Antrian QC",
+    "ValidasiSupplier": "Validasi Supplier",
+    "Masuk": "Masuk",
+    "Daftar": "Daftar",
+    "BerandaBuyer": "Dashboard",
+    "SupplierDashboard": "Dashboard",
+    "AdminDashboard": "Dashboard",
+    "MyOrders": "Pesanan Saya",
+    "PengaturanProfil": "Pengaturan Profil",
+    "KeluarAkun": "Keluar Akun",
+    "Insights": "Insights",
+    "SearchPlaceholder": "Cari batch, koperasi, PA%..."
+  }
+}

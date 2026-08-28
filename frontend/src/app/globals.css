@@ -1,0 +1,213 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ── Valam Brand Palette ── */
+    --background: 150 20% 98%;
+    --foreground: 152 48% 20%;
+    --card: 150 15% 97%;
+    --card-foreground: 152 48% 20%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 152 48% 20%;
+
+    /* Primary: Dark Green #1A4D2E */
+    --primary: 152 48% 20%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary: Earth Brown #5C3D1E */
+    --secondary: 24 51% 24%;
+    --secondary-foreground: 0 0% 100%;
+
+    /* Accent: Gold #B69A1D */
+    --accent: 47 73% 41%;
+    --accent-foreground: 152 48% 8%;
+
+    --muted: 150 10% 95%;
+    --muted-foreground: 152 6% 46%;
+
+    --destructive: 346 84% 61%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 150 15% 88%;
+    --input: 150 15% 88%;
+    --ring: 152 48% 20%;
+    --radius: 0.625rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* ── Custom CSS Styles (Placed outside @layer to avoid Tailwind/PostCSS processing warnings) ── */
+
+/* Gradient text effect */
+.gradient-text {
+  color: #1A4D2E; /* fallback color */
+  @supports (-webkit-background-clip: text) or (background-clip: text) {
+    background-image: linear-gradient(135deg, #1A4D2E, #2E8B57, #B69A1D);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+.gradient-text-gold {
+  color: #B69A1D; /* fallback color */
+  @supports (-webkit-background-clip: text) or (background-clip: text) {
+    background-image: linear-gradient(135deg, #B69A1D, #D4B52A, #F0D96B);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+/* Glassmorphism */
+.glass {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(26, 77, 46, 0.08);
+}
+
+/* Mesh gradient background for hero */
+.mesh-gradient {
+  background:
+    radial-gradient(at 20% 30%, rgba(26, 77, 46, 0.12) 0%, transparent 50%),
+    radial-gradient(at 80% 20%, rgba(182, 154, 29, 0.10) 0%, transparent 50%),
+    radial-gradient(at 50% 80%, rgba(46, 139, 87, 0.08) 0%, transparent 50%),
+    radial-gradient(at 90% 70%, rgba(92, 61, 30, 0.06) 0%, transparent 50%);
+  background-size: 200% 200%;
+}
+
+/* Glow effects */
+.glow-emerald {
+  box-shadow: 0 0 30px rgba(26, 77, 46, 0.25), 0 0 60px rgba(26, 77, 46, 0.12);
+}
+
+.glow-gold {
+  box-shadow: 0 0 30px rgba(182, 154, 29, 0.3), 0 0 60px rgba(182, 154, 29, 0.12);
+}
+
+/* Hover glow transition */
+.hover-glow {
+  transition: box-shadow 0.4s ease, transform 0.3s ease;
+}
+
+.hover-glow:hover {
+  box-shadow: 0 8px 32px rgba(26, 77, 46, 0.18), 0 0 0 1px rgba(26, 77, 46, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Subtle shine sweep on hover */
+.shine-hover {
+  position: relative;
+  overflow: hidden;
+}
+
+.shine-hover::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+  transition: left 0.5s ease;
+}
+
+.shine-hover:hover::after {
+  left: 100%;
+}
+
+/* Hide scrollbar utility */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Custom scrollbar utility */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(26, 77, 46, 0.2);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(26, 77, 46, 0.4);
+}
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(26, 77, 46, 0.2) transparent;
+}
+
+/* Dual Range Slider styling */
+.dual-range-track {
+  position: relative;
+  height: 6px;
+  border-radius: 9999px;
+  background: #E7E5E4;
+}
+.dual-range-track-active {
+  position: absolute;
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #1A4D2E, #2E8B57);
+}
+.dual-range-thumb {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: white;
+  border: 2.5px solid #1A4D2E;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  cursor: grab;
+  z-index: 10;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.dual-range-thumb:hover,
+.dual-range-thumb:active {
+  border-color: #B69A1D;
+  box-shadow: 0 0 0 4px rgba(182, 154, 29, 0.15), 0 2px 6px rgba(0, 0, 0, 0.15);
+  cursor: grabbing;
+}
+
+/* Article Drop Cap — Premium editorial first-letter */
+.article-drop-cap > p:first-of-type::first-letter {
+  float: left;
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 4.5rem;
+  font-weight: 700;
+  line-height: 0.8;
+  color: #1A4D2E;
+  margin-right: 8px;
+  margin-top: 4px;
+  padding: 0;
+}
