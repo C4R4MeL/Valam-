@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { Link } from '@/i18n/routing'
 import { useParams } from 'next/navigation'
-import { ArrowLeft, CheckCircle2, Factory, MapPin, FileText, ShoppingCart, Info, MessageSquare, FlaskConical, Tractor, Microscope, Warehouse, ShieldCheck, Star, Download, Beaker, Globe, Leaf } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Factory, MapPin, FileText, ShoppingCart, Info, MessageSquare, FlaskConical, Tractor, Microscope, Warehouse, ShieldCheck, Star, Download, Beaker, Globe, Leaf, Zap, Plus, Minus } from 'lucide-react'
 import { mockProducts, mockCircularProducts, formatRupiah } from '@/lib/mock-data'
 import { Button } from '@/components/ui/button'
 import { RadarChart } from '@/components/marketplace/RadarChart'
@@ -110,9 +110,12 @@ const contentMap = {
       minOrderLabel: "Minimum Order",
       shippingLabel: "Kondisi Pengiriman",
       btnBuy: "Beli Sekarang",
+      btnBuyNow: "Beli Sekarang",
       btnAddToCart: "Masukkan Keranjang",
       btnOffer: "Ajukan Penawaran",
       btnSample: "Minta Sampel (10ml)",
+      qtyLabel: "Jumlah Order",
+      subtotalLabel: "Subtotal Estimasi",
       protectionText: "Pembayaran dilindungi secara otomatis melalui Sistem Rekening Bersama (Escrow) hingga barang diterima dan lolos verifikasi."
     }
   },
@@ -187,9 +190,12 @@ const contentMap = {
       minOrderLabel: "Minimum Order",
       shippingLabel: "Shipping Terms",
       btnBuy: "Buy Now",
+      btnBuyNow: "Buy Now",
       btnAddToCart: "Add to Cart",
       btnOffer: "Make an Offer",
       btnSample: "Request Sample (10ml)",
+      qtyLabel: "Order Quantity",
+      subtotalLabel: "Estimated Subtotal",
       protectionText: "Payments are automatically protected through the Escrow System until goods are received and verified."
     }
   }
@@ -205,6 +211,8 @@ export default function ProductDetailPage() {
   const { toast } = useToast()
   const router = useRouter()
   const [isAdding, setIsAdding] = useState(false)
+  const [orderQty, setOrderQty] = useState(1)
+  const [qtyInitialized, setQtyInitialized] = useState(false)
 
   const handleDownloadCoA = async () => {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api'
@@ -364,6 +372,40 @@ export default function ProductDetailPage() {
 
   const { addToCart } = useCart()
 
+  // Initialize orderQty from product min order once product is loaded
+  if (product && !qtyInitialized) {
+    const minOrder = product.is_circular ? (product.min_order || 1) : (product.moq_kg || 5)
+    setOrderQty(minOrder)
+    setQtyInitialized(true)
+  }
+
+  const minOrder = product?.is_circular ? (product?.min_order || 1) : (product?.moq_kg || 5)
+  const maxStock = product?.available_volume_kg || 999
+
+  const handleQtyChange = (delta: number) => {
+    setOrderQty(prev => {
+      const next = prev + delta
+      if (next < minOrder) return minOrder
+      if (next > maxStock) return maxStock
+      return next
+    })
+  }
+
+  const handleQtyInput = (value: string) => {
+    const num = parseInt(value)
+    if (isNaN(num) || num < 1) {
+      setOrderQty(minOrder)
+      return
+    }
+    if (num > maxStock) {
+      setOrderQty(maxStock)
+      return
+    }
+    setOrderQty(num)
+  }
+
+  const subtotal = (product?.price_per_kg || 0) * orderQty
+
   const handleAddToCart = async () => {
     if (role !== 'buyer') {
       toast({
@@ -378,12 +420,52 @@ export default function ProductDetailPage() {
     }
 
     setIsAdding(true)
-    const success = await addToCart(product?.id, product?.moq_kg || 1)
+    const success = await addToCart(product?.id, orderQty)
     setIsAdding(false)
 
     if (success) {
-      router.push('/cart')
+      toast({
+        title: locale === 'id' ? 'Berhasil Ditambahkan' : 'Added to Cart',
+        description: locale === 'id' 
+          ? `${orderQty} ${product?.unit || 'Kg'} batch ${product?.batch_code || product?.nama || ''} telah dimasukkan ke keranjang.`
+          : `${orderQty} ${product?.unit || 'Kg'} of batch ${product?.batch_code || product?.nama || ''} has been added to your cart.`,
+        action: (
+          <div className="flex gap-2 items-center mt-2">
+            <button 
+              onClick={() => {}} 
+              className="bg-white border border-zinc-200 text-zinc-700 hover:bg-zinc-50 px-3 py-1 rounded-md text-xs font-semibold"
+            >
+              {locale === 'id' ? 'Lanjut Belanja' : 'Continue Shopping'}
+            </button>
+            <button 
+              onClick={() => window.location.href = `/${locale}/cart`} 
+              className="bg-[#B69A1D] hover:bg-[#A38618] text-white px-3 py-1 rounded-md text-xs font-semibold"
+            >
+              {locale === 'id' ? 'Lihat Keranjang' : 'View Cart'}
+            </button>
+          </div>
+        )
+      })
     }
+  }
+
+  const handleBuyNow = () => {
+    if (role !== 'buyer') {
+      toast({
+        title: "Login Dibutuhkan",
+        description: locale === 'id'
+          ? "Silakan masuk ke akun Buyer (Pembeli) untuk melanjutkan pembelian. Mengarahkan ke halaman login..."
+          : "Please log in as a Buyer to proceed with your purchase. Redirecting to login...",
+        variant: "destructive"
+      })
+      setTimeout(() => {
+        window.location.href = `/${locale}/login?redirect=/marketplace/product/${productId}`
+      }, 1200)
+      return
+    }
+
+    const isCircularProduct = product?.is_circular ? '&type=circular' : ''
+    router.push(`/checkout?direct=true&productId=${product?.id}&qty=${orderQty}${isCircularProduct}`)
   }
 
   const handleOfferClick = () => {
@@ -514,8 +596,8 @@ export default function ProductDetailPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid lg:grid-cols-3 gap-8">
           
-          {/* LEFT PANEL: Images & Content */}
-          <div className="lg:col-span-2 space-y-8">
+          {/* LEFT PANEL: Images & Content with Vertical Scroll */}
+          <div className="lg:col-span-2 space-y-8 max-h-[calc(100vh-7rem)] overflow-y-auto pr-2 custom-scrollbar">
             
             {/* Premium Hero Visuals */}
             <div className="bg-white rounded-3xl border border-zinc-200 overflow-hidden shadow-sm flex flex-col md:flex-row">
@@ -560,7 +642,7 @@ export default function ProductDetailPage() {
                     
                     <div className="flex items-center gap-3 mb-8 border-b border-zinc-100 pb-8">
                       <span className="text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full font-mono text-sm border border-emerald-200 font-semibold shadow-sm">
-                        {product.is_circular ? (locale === 'id' ? "Circular Product" : "Circular Product") : `${t.hero.batchPrefix} ${product.batch_code}`}
+                        {product.is_circular ? "Eco Products" : `${t.hero.batchPrefix} ${product.batch_code}`}
                       </span>
                       <span className="text-zinc-400 text-sm">|</span>
                       <span className="text-zinc-650 text-sm font-medium">{product.is_circular ? (locale === 'id' ? "Olahan Hasil Samping Sulingan" : "Distillation Side-Product") : t.hero.pure}</span>
@@ -585,7 +667,7 @@ export default function ProductDetailPage() {
                             <Leaf className="w-5 h-5" />
                           </div>
                           <div>
-                            <h4 className="font-semibold text-emerald-900">{locale === 'id' ? 'Kategori Circular' : 'Circular Category'}</h4>
+                            <h4 className="font-semibold text-emerald-900">{locale === 'id' ? 'Kategori Eco Products' : 'Eco Products Category'}</h4>
                             <p className="text-sm text-emerald-700/80 mt-0.5 font-bold uppercase tracking-wider">
                               {product.category}
                             </p>
@@ -636,7 +718,7 @@ export default function ProductDetailPage() {
                     <div className="space-y-6 animate-in fade-in duration-300">
                       <div className="border-b border-zinc-100 pb-4">
                         <h3 className="text-xl font-serif font-bold text-emerald-950">
-                          {locale === 'id' ? 'Detail & Manfaat Produk Circular' : 'Circular Product Details & Usage'}
+                          {locale === 'id' ? 'Detail & Manfaat Eco Products' : 'Eco Products Details & Usage'}
                         </h3>
                         <p className="text-zinc-500 text-sm mt-1">
                           {locale === 'id' ? 'Karakteristik olahan limbah suling nilam' : 'Characteristics of processed patchouli distillation residue'}
@@ -994,7 +1076,7 @@ export default function ProductDetailPage() {
                                 <span className="text-[10px] text-zinc-500 mt-1 block">Dikelola kelompok tani binaan</span>
                               </div>
                               <div className="border-r border-zinc-250/60 pr-2">
-                                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">{locale === 'id' ? 'Prinsip Circular' : 'Circular Concept'}</span>
+                                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">{locale === 'id' ? 'Prinsip Eco Products' : 'Eco Products Concept'}</span>
                                 <span className="text-xs font-bold text-emerald-800 mt-2 block flex items-center gap-1.5">
                                   <Leaf className="w-4 h-4 text-emerald-600 animate-pulse" />
                                   100% Zero-Waste Economy
@@ -1202,8 +1284,8 @@ export default function ProductDetailPage() {
             </div>
           </div>
 
-          {/* RIGHT PANEL: Checkout Sidebar */}
-          <div className="lg:col-span-1">
+          {/* RIGHT PANEL: Checkout Sidebar with Vertical Scroll */}
+          <div className="lg:col-span-1 max-h-[calc(100vh-7rem)] overflow-y-auto pr-1.5 custom-scrollbar sticky top-24">
             <div className="relative space-y-6">
               
               <div className="bg-white rounded-3xl border border-zinc-200 p-8 shadow-xl shadow-zinc-200/50">
@@ -1216,20 +1298,70 @@ export default function ProductDetailPage() {
                   {formatRupiah(product.price_per_kg)}
                 </div>
 
-                <div className="space-y-4 mb-8">
+                <div className="space-y-4 mb-6">
                   <div className="flex justify-between items-center py-3 border-b border-zinc-100">
                     <span className="text-zinc-600 font-medium">{t.checkout.stockLabel}</span>
                     <span className="font-bold text-zinc-900">{product.available_volume_kg} {product.unit || 'Kg'}</span>
                   </div>
                   <div className="flex justify-between items-center py-3 border-b border-zinc-100">
                     <span className="text-zinc-600 font-medium">{t.checkout.minOrderLabel}</span>
-                    <span className="font-bold text-zinc-900">{product.is_circular ? `1 ${product.unit || 'Unit'}` : "5 Kg"}</span>
+                    <span className="font-bold text-zinc-900">{product.is_circular ? `${product.min_order || 1} ${product.unit || 'Unit'}` : `${product.moq_kg || 5} Kg`}</span>
                   </div>
                   <div className="flex justify-between items-center py-3 border-b border-zinc-100">
                     <span className="text-zinc-600 font-medium">{t.checkout.shippingLabel}</span>
                     <span className="font-bold text-zinc-900 text-right">{product.is_circular ? "EXW Basecamp" : "FOB Jakarta"}</span>
                   </div>
                 </div>
+
+                {/* Quantity Selector — only for local buyers (not supplier, not international) */}
+                {isClient && role !== 'supplier' && country === 'ID' && (
+                  <div className="mb-6">
+                    <label className="text-sm font-semibold text-zinc-600 mb-2.5 block">{t.checkout.qtyLabel}</label>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => handleQtyChange(product.is_circular ? -1 : -5)}
+                        disabled={orderQty <= minOrder}
+                        className="w-11 h-11 rounded-xl border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-all active:scale-95"
+                      >
+                        <Minus className="w-4 h-4 text-zinc-600" />
+                      </button>
+                      <div className="flex-1 relative">
+                        <input
+                          type="number"
+                          value={orderQty}
+                          onChange={(e) => handleQtyInput(e.target.value)}
+                          onBlur={() => { if (orderQty < minOrder) setOrderQty(minOrder) }}
+                          min={minOrder}
+                          max={maxStock}
+                          className="w-full h-11 text-center text-lg font-bold text-zinc-900 border border-zinc-200 rounded-xl bg-white focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 outline-none transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-zinc-400">{product.unit || 'Kg'}</span>
+                      </div>
+                      <button
+                        onClick={() => handleQtyChange(product.is_circular ? 1 : 5)}
+                        disabled={orderQty >= maxStock}
+                        className="w-11 h-11 rounded-xl border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-all active:scale-95"
+                      >
+                        <Plus className="w-4 h-4 text-zinc-600" />
+                      </button>
+                    </div>
+                    {orderQty < minOrder && (
+                      <p className="text-xs text-red-500 mt-1.5 font-medium">
+                        {locale === 'id' ? `Minimum order: ${minOrder} ${product.unit || 'Kg'}` : `Minimum order: ${minOrder} ${product.unit || 'Kg'}`}
+                      </p>
+                    )}
+                    {/* Subtotal */}
+                    <div className="mt-4 p-4 bg-emerald-50/70 border border-emerald-100 rounded-xl">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-emerald-700">{t.checkout.subtotalLabel}</span>
+                        <span className="text-xl font-bold text-emerald-900">{formatRupiah(subtotal)}</span>
+                      </div>
+                      <p className="text-[10px] text-emerald-600/70 mt-1">
+                        {orderQty} {product.unit || 'Kg'} × {formatRupiah(product.price_per_kg)}/{product.unit || 'Kg'}
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-3">
                   {!isClient ? (
@@ -1247,21 +1379,35 @@ export default function ProductDetailPage() {
                     <>
                       {country === 'ID' ? (
                         <>
+                          {/* PRIMARY CTA: Buy Now (Direct Checkout) */}
+                          <Button 
+                            onClick={handleBuyNow}
+                            disabled={orderQty < minOrder}
+                            className="w-full h-14 rounded-xl bg-gold-500 hover:bg-gold-600 text-emerald-950 font-bold shadow-lg shadow-gold-500/20 text-base transition-all active:scale-[0.98]"
+                          >
+                            <Zap className="w-5 h-5 mr-2" />
+                            {t.checkout.btnBuyNow}
+                          </Button>
+                          {/* SECONDARY CTA: Add to Cart */}
                           <Button 
                             onClick={handleAddToCart}
-                            disabled={isAdding}
-                            className="w-full h-14 rounded-xl bg-gold-500 hover:bg-gold-600 text-emerald-950 font-bold shadow-lg shadow-gold-500/20 text-base mb-3"
+                            disabled={isAdding || orderQty < minOrder}
+                            variant="outline"
+                            className="w-full h-14 rounded-xl border-zinc-200 text-zinc-700 font-bold hover:bg-zinc-50 hover:border-zinc-300 transition-all flex justify-center items-center gap-2 active:scale-[0.98]"
                           >
-                            <ShoppingCart className="w-5 h-5 mr-2" />
-                            {isAdding ? "Loading..." : t.checkout.btnAddToCart}
+                            <ShoppingCart className="w-5 h-5" />
+                            {isAdding 
+                              ? (locale === 'id' ? 'Menambahkan...' : 'Adding...') 
+                              : t.checkout.btnAddToCart}
                           </Button>
+                          {/* TERTIARY: RFQ Offer */}
                           {!product.is_circular && (
                             <Button 
                               onClick={handleOfferClick}
-                              variant="outline" 
-                              className="w-full h-14 rounded-xl border-emerald-200 text-emerald-800 font-bold hover:bg-emerald-50 hover:border-emerald-300 transition-all flex justify-center items-center gap-2"
+                              variant="ghost" 
+                              className="w-full h-12 rounded-xl text-emerald-700 font-bold hover:bg-emerald-50 transition-all flex justify-center items-center gap-2"
                             >
-                              <MessageSquare className="w-5 h-5" />
+                              <MessageSquare className="w-4 h-4" />
                               {t.checkout.btnOffer}
                             </Button>
                           )}

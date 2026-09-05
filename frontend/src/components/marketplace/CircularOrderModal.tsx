@@ -1,21 +1,23 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { X, ShoppingCart, Leaf, Plus, Minus, Info, BadgeCheck, Droplets, Check } from 'lucide-react'
+import { X, ShoppingCart, Leaf, Plus, Minus, Info, BadgeCheck, Droplets, Check, Zap } from 'lucide-react'
 import { useLocale } from 'next-intl'
+import { useRouter } from 'next/navigation'
 import { useCart } from '@/components/providers/CartProvider'
 import { formatRupiah } from '@/lib/mock-data'
 import { validateOrderQuantity } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export function CircularOrderModal() {
+  const router = useRouter()
   const locale = useLocale()
   const isId = locale === 'id'
   const { addToCart } = useCart()
   
   const [isOpen, setIsOpen] = useState(false)
   const [sumberBatchId, setSumberBatchId] = useState<string | null>(null)
-  
+
   // States for Multi-Product Selection (Detail Batch)
   const [availableProducts, setAvailableProducts] = useState<any[]>([])
   const [selectedItems, setSelectedItems] = useState<Record<string, { checked: boolean, qty: number, error: string }>>({})
@@ -131,26 +133,36 @@ export function CircularOrderModal() {
     }))
   }
 
-  const handleAddToCart = async () => {
+  const handleAddToCart = async (): Promise<boolean> => {
     if (sumberBatchId) {
-      // Add all checked items to cart
       const promises = Object.entries(selectedItems)
         .filter(([_, item]) => item.checked && !item.error)
         .map(([id, item]) => {
-          const prod = availableProducts.find(p => p.id === id)
           return addToCart(id, item.qty, 'circular', sumberBatchId)
         })
 
       if (promises.length > 0) {
-        await Promise.all(promises)
-        setIsOpen(false)
+        const results = await Promise.all(promises)
+        const allOk = results.every(Boolean)
+        if (allOk) setIsOpen(false)
+        return allOk
       }
+      return false
     } else if (singleProduct) {
-      if (singleQty < (singleProduct.min_order || 1) || singleQty > (singleProduct.stok_tersedia || 9999)) return
+      if (singleQty < (singleProduct.min_order || 1) || singleQty > (singleProduct.stok_tersedia || 9999)) return false
       const success = await addToCart(singleProduct.id, singleQty, 'circular', null)
       if (success) {
         setIsOpen(false)
       }
+      return success
+    }
+    return false
+  }
+
+  const handleDirectCheckout = async () => {
+    const success = await handleAddToCart()
+    if (success) {
+      router.push('/checkout')
     }
   }
 
@@ -358,20 +370,22 @@ export function CircularOrderModal() {
             <span className="text-2xl font-black text-[#1A4D2E]">{formatRupiah(totalAmount)}</span>
           </div>
 
-          <div className="flex gap-3 pt-2">
-            <button 
-              onClick={() => setIsOpen(false)}
-              className="w-1/3 py-3 rounded-xl border-2 border-zinc-200 text-zinc-600 font-bold hover:bg-zinc-50 hover:border-zinc-300 transition-all text-sm"
-            >
-              {isId ? 'Batal' : 'Cancel'}
-            </button>
+          <div className="flex flex-col sm:flex-row gap-2 pt-2">
             <button 
               onClick={handleAddToCart}
               disabled={isSubmitDisabled}
-              className="w-2/3 flex items-center justify-center gap-2 py-3 rounded-xl bg-[#B69A1D] hover:bg-[#A38618] disabled:bg-zinc-200 disabled:text-zinc-400 disabled:shadow-none text-white font-bold transition-all text-sm shadow-lg shadow-[#B69A1D]/20"
+              className="flex-1 flex items-center justify-center gap-1.5 py-3 px-3 rounded-xl border-2 border-[#B69A1D] text-[#B69A1D] hover:bg-[#B69A1D]/10 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all text-xs"
             >
               <ShoppingCart className="w-4 h-4" />
-              {isId ? 'Tambah ke Keranjang Sirkular' : 'Add to Circular Cart'}
+              {isId ? '+ Keranjang' : '+ Cart'}
+            </button>
+            <button 
+              onClick={handleDirectCheckout}
+              disabled={isSubmitDisabled}
+              className="flex-1 flex items-center justify-center gap-1.5 py-3 px-3 rounded-xl bg-[#B69A1D] hover:bg-[#A38618] disabled:bg-zinc-200 disabled:text-zinc-400 disabled:shadow-none text-white font-bold transition-all text-xs shadow-md shadow-[#B69A1D]/20"
+            >
+              <Zap className="w-4 h-4 fill-current text-amber-300" />
+              {isId ? 'Langsung Transaksi' : 'Direct Order'}
             </button>
           </div>
         </div>

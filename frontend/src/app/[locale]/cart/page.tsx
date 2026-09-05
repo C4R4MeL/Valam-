@@ -160,7 +160,7 @@ export default function CartPage() {
                 : 'text-zinc-500 hover:text-zinc-800'
             }`}
           >
-            <span>Circular Economy</span>
+            <span>Eco Products</span>
             <span className={`px-2 py-0.5 text-[10px] rounded-full font-bold transition-colors ${
               activeTab === 'circular' ? 'bg-[#B69A1D] text-white' : 'bg-zinc-200 text-zinc-600'
             }`}>
@@ -177,7 +177,7 @@ export default function CartPage() {
             <h2 className="text-2xl font-bold text-zinc-800 mb-2">
               {activeTab === 'patchouli' 
                 ? (isId ? 'Keranjang Minyak Nilam Anda masih kosong' : 'Your patchouli oil cart is empty')
-                : (isId ? 'Keranjang Circular Economy masih kosong' : 'Your circular economy cart is empty')}
+                : (isId ? 'Keranjang Eco Products masih kosong' : 'Your Eco Products cart is empty')}
             </h2>
             <p className="text-zinc-500 text-sm max-w-md mx-auto mb-8 leading-relaxed">
               {activeTab === 'patchouli' 
@@ -189,7 +189,7 @@ export default function CartPage() {
                 <Link href={activeTab === 'patchouli' ? "/katalog" : "/marketplace?tab=circular"}>
                   {activeTab === 'patchouli' 
                     ? (isId ? 'Jelajahi Katalog Nilam' : 'Explore Patchouli Catalog')
-                    : (isId ? 'Jelajahi Produk Sirkular' : 'Explore Circular Economy')}
+                    : (isId ? 'Jelajahi Eco Products' : 'Explore Eco Products')}
                 </Link>
               </Button>
             </div>
@@ -201,7 +201,7 @@ export default function CartPage() {
             <div className="lg:col-span-8 space-y-6">
               <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-serif font-black tracking-wide text-zinc-900">
-                  {activeTab === 'circular' ? (isId ? 'Keranjang Produk Sirkular' : 'Circular Economy Cart') : (isId ? 'Keranjang Minyak Nilam' : 'Patchouli Oil Cart')}
+                  {activeTab === 'circular' ? (isId ? 'Keranjang Eco Products' : 'Eco Products Cart') : (isId ? 'Keranjang Minyak Nilam' : 'Patchouli Oil Cart')}
                 </h1>
                 <span className="text-xs font-semibold text-zinc-500">
                   {totalBatches} {activeTab === 'circular' ? (isId ? 'item produk' : 'items') : (isId ? 'batch dipilih' : 'batches')}

@@ -11,12 +11,12 @@ export function CircularProductSection() {
   const isId = locale === 'id';
 
   const content = {
-    badge: isId ? 'EKONOMI SIRKULAR' : 'CIRCULAR ECONOMY',
+    badge: 'ECO PRODUCTS',
     title: isId ? 'Zero-Waste & Produk Olahan Sampingan' : 'Zero-Waste & Valued Co-Products',
     subtitle: isId
       ? 'Kami mengolah 100% residu penyulingan daun nilam menjadi produk sekunder bernilai guna tinggi, mendukung pertanian berkelanjutan dan menjaga kelestarian lingkungan.'
       : 'We upcycle 100% of patchouli distillation residues into high-value agricultural co-products, championing sustainability and soil regeneration.',
-    cta: isId ? 'Jelajahi Circular Marketplace' : 'Explore Circular Marketplace',
+    cta: isId ? 'Jelajahi Eco Products' : 'Explore Eco Products',
     
     products: [
       {

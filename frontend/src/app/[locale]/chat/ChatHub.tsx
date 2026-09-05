@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { MessageCircle, Send, Leaf, AlertCircle, Trash2, HelpCircle, ArrowRight, User } from 'lucide-react'
+import { MessageCircle, Send, Leaf, AlertCircle, Trash2, HelpCircle, ArrowRight, User, Sparkles, Info } from 'lucide-react'
 import { useLocale } from 'next-intl'
 import { Navbar } from '@/components/layout/Navbar'
 import { Footer } from '@/components/layout/Footer'
@@ -110,6 +110,18 @@ function renderMarkdown(text: string): string {
     .replace(/(<li>.*<\/li>\n?)+/g, (match) => `<ul class="list-disc pl-4 space-y-1 my-1">${match}</ul>`)
     .replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>')
     .replace(/\n/g, '<br/>')
+}
+
+function formatTime(date: Date): string {
+  try {
+    return new Date(date).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    })
+  } catch {
+    return '04:12 PM'
+  }
 }
 
 export function ChatHub() {
@@ -244,221 +256,223 @@ export function ChatHub() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-zinc-50/50 text-zinc-900 font-sans">
+    <div className="min-h-screen flex flex-col bg-[#FAF9F6] text-zinc-900 font-sans selection:bg-[#1A4D2E]/10 selection:text-[#1A4D2E]">
       <Navbar />
 
-      {/* Hero Accent Header */}
-      <section className="bg-gradient-to-r from-emerald-800 to-emerald-950 text-white pt-24 pb-12 px-6 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-gold-400 via-emerald-900 to-black pointer-events-none" />
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-          <div>
-            <div className="flex items-center gap-3">
-              <span className="bg-gold-400/20 text-gold-400 text-xs px-2.5 py-1 rounded-full font-bold uppercase tracking-wider border border-gold-400/30">
-                AI Assistant
-              </span>
-            </div>
-            <h1 className="font-serif font-bold text-3xl md:text-4xl mt-3 text-white">
-              {locale === 'id' ? 'Tanya Nila' : 'Ask Nila'}
-            </h1>
-            <p className="text-emerald-100/70 text-sm md:text-base mt-2 max-w-xl">
-              {locale === 'id' 
-                ? 'Konsultasi instan seputar standar mutu minyak nilam, harga pasar terkini, dan panduan platform Valam.'
-                : 'Instant consultation on patchouli oil quality standards, current market prices, and Valam guides.'}
-            </p>
-          </div>
-          <button 
-            onClick={handleClearHistory}
-            className="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 hover:border-white/20 transition-all self-start md:self-center"
-            title="Reset Chat"
-          >
-            <Trash2 className="w-4 h-4 text-emerald-300" />
-            {locale === 'id' ? 'Hapus Riwayat' : 'Clear Chat'}
-          </button>
-        </div>
-      </section>
-
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
-        {/* Left Column: AI Assistant Info Panel */}
-        <aside className="lg:col-span-4 space-y-6">
+      <main className="flex-1 pt-24 sm:pt-28 md:pt-32 pb-16">
+        <div className="max-w-[1140px] w-full mx-auto px-4 sm:px-6">
           
-          {/* Nila Profile Card */}
-          <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-6 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-50 rounded-bl-full -z-10 transition-transform group-hover:scale-110" />
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center shadow-lg shadow-gold-500/10 flex-shrink-0">
-                <Leaf className="w-7 h-7 text-emerald-950" />
-              </div>
-              <div>
-                <h3 className="font-serif font-bold text-lg text-emerald-900">{t.title}</h3>
-                <p className="text-zinc-400 text-xs font-medium">{t.subtitle}</p>
-                <div className="flex items-center gap-1.5 mt-1">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-[10px] text-emerald-600 font-semibold uppercase tracking-wider">Online</span>
-                </div>
-              </div>
+          {/* ─── 2. PAGE INTRODUCTION / COMPACT HERO ─── */}
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 md:mb-8">
+            <div>
+              <h1 className="font-serif font-bold text-2xl md:text-3xl text-zinc-900 tracking-tight">
+                {locale === 'id' ? 'Tanya Nila' : 'Ask Nila'}
+              </h1>
+              <p className="text-zinc-600 text-xs sm:text-sm mt-1.5 max-w-2xl leading-relaxed">
+                {locale === 'id' 
+                  ? 'Konsultasi instan seputar standar mutu minyak nilam, harga pasar terkini, dan panduan platform Valam.'
+                  : 'Instant consultation on patchouli oil quality standards, current market prices, and Valam guides.'}
+              </p>
             </div>
-
-            <hr className="my-5 border-zinc-100" />
-
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-1.5 mb-1.5">
-                  <HelpCircle className="w-3.5 h-3.5 text-emerald-700" /> {t.infoTitle}
-                </h4>
-                <p className="text-zinc-600 text-xs leading-relaxed">{t.infoDesc}</p>
-              </div>
-            </div>
+            
+            <button 
+              onClick={handleClearHistory}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-600 hover:text-zinc-900 shadow-xs transition-all self-start sm:self-auto cursor-pointer active:scale-95"
+              title={locale === 'id' ? 'Hapus Riwayat Percakapan' : 'Clear Chat History'}
+            >
+              <Trash2 className="w-3.5 h-3.5 text-zinc-400" />
+              <span>{locale === 'id' ? 'Hapus Riwayat' : 'Clear Chat'}</span>
+            </button>
           </div>
 
-          {/* Quick Guide Card */}
-          <div className="bg-gradient-to-br from-[#1A4D2E] to-[#0f2e1b] text-white rounded-2xl p-6 shadow-sm border border-emerald-800/20">
-            <h4 className="text-gold-400 text-xs font-bold uppercase tracking-wider mb-2">
-              {t.guideTitle}
-            </h4>
-            <p className="text-emerald-100/70 text-xs mb-4">
-              {t.guideDesc}
-            </p>
-            <div className="space-y-3">
-              {t.guides.map((guide, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => sendMessage(guide)}
-                  className="w-full text-left p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all text-xs flex items-start gap-2.5 group"
-                >
-                  <ArrowRight className="w-3.5 h-3.5 text-gold-400 mt-0.5 flex-shrink-0 group-hover:translate-x-0.5 transition-transform" />
-                  <span className="text-emerald-50 leading-snug">{guide}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </aside>
-
-        {/* Right Column: Main Chat Window */}
-        <section className="lg:col-span-8 flex flex-col bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden h-[620px] relative">
-          
-          {/* Chat Messages Log */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-zinc-50/30">
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div className={`flex gap-3 max-w-[85%] ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                  
-                  {/* Avatar */}
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs flex-shrink-0 font-bold ${
-                    msg.role === 'user' 
-                      ? 'bg-zinc-100 text-zinc-700' 
-                      : 'bg-gradient-to-br from-gold-400 to-gold-600 text-emerald-950'
-                  }`}>
-                    {msg.role === 'user' ? <User className="w-4 h-4" /> : <Leaf className="w-4 h-4" />}
+          {/* ─── 3. MAIN WORKSPACE (2 COLUMNS) ─── */}
+          <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-6 lg:gap-8 items-start">
+            
+            {/* ─── LEFT COLUMN: SIDEBAR ─── */}
+            <aside className="space-y-5">
+              
+              {/* 4. Nila Profile Card */}
+              <div className="bg-white rounded-2xl border border-zinc-200/80 shadow-xs p-5 md:p-6 transition-all hover:shadow-sm">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#1A4D2E] to-[#123320] flex items-center justify-center shadow-xs text-white shrink-0">
+                    <Leaf className="w-6 h-6 text-amber-300" />
                   </div>
-
-                  {/* Message Bubble */}
-                  <div
-                    className={`rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm ${msg.role === 'user'
-                      ? 'bg-emerald-800 text-white rounded-tr-none'
-                      : 'bg-white text-zinc-800 border border-zinc-100 rounded-tl-none'
-                    }`}
-                  >
-                    <div
-                      className="prose prose-sm max-w-none"
-                      dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
-                    />
-                    <p
-                      className={`text-[9px] mt-2 text-right ${msg.role === 'user' ? 'text-emerald-200/60' : 'text-zinc-400'}`}
-                    >
-                      {msg.timestamp.toLocaleTimeString(locale, {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </p>
-                  </div>
-
-                </div>
-              </div>
-            ))}
-
-            {/* Loading / Typing Indicator */}
-            {isLoading && (
-              <div className="flex justify-start">
-                <div className="flex gap-3 items-start max-w-[85%]">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center flex-shrink-0">
-                    <Leaf className="w-4 h-4 text-emerald-950" />
-                  </div>
-                  <div className="bg-white border border-zinc-100 shadow-sm rounded-2xl rounded-tl-none px-4 py-3.5">
-                    <div className="flex items-center gap-3">
-                      <div className="flex gap-1">
-                        <span className="w-2 h-2 bg-emerald-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <span className="w-2 h-2 bg-emerald-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <span className="w-2 h-2 bg-emerald-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                      </div>
-                      <span className="text-xs text-zinc-400 font-medium">{t.typing}</span>
+                  <div>
+                    <h3 className="font-serif font-bold text-lg text-zinc-900 leading-snug">{t.title}</h3>
+                    <p className="text-zinc-500 text-xs font-medium">{t.subtitle}</p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="text-[10px] text-[#1A4D2E] font-bold uppercase tracking-wider">Online</span>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
 
-            {/* Error Message */}
-            {error && (
-              <div className="flex justify-center">
-                <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 flex items-center gap-2.5 text-sm text-red-700 shadow-sm">
-                  <AlertCircle className="w-4.5 h-4.5 flex-shrink-0 text-red-500" />
-                  <span>{error}</span>
+                <hr className="my-4 border-zinc-100" />
+
+                <div>
+                  <h4 className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-1.5 mb-2">
+                    <Info className="w-3.5 h-3.5 text-[#1A4D2E]" />
+                    <span>{t.infoTitle}</span>
+                  </h4>
+                  <p className="text-zinc-600 text-xs leading-relaxed">{t.infoDesc}</p>
                 </div>
               </div>
-            )}
 
-            <div ref={messagesEndRef} />
-          </div>
+              {/* 5. Sample Queries Card */}
+              <div className="bg-[#1A4D2E] text-white rounded-2xl p-5 md:p-6 shadow-sm border border-[#143D24]">
+                <h4 className="text-amber-300 text-xs font-bold uppercase tracking-wider mb-1.5">
+                  {t.guideTitle}
+                </h4>
+                <p className="text-emerald-100/75 text-xs mb-4 leading-relaxed">
+                  {t.guideDesc}
+                </p>
+                <div className="space-y-2.5">
+                  {t.guides.map((guide, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => sendMessage(guide)}
+                      disabled={isLoading}
+                      className="w-full text-left p-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 hover:border-white/20 transition-all text-xs flex items-start gap-2.5 group cursor-pointer active:scale-[0.99] disabled:opacity-50"
+                    >
+                      <ArrowRight className="w-3.5 h-3.5 text-amber-300 mt-0.5 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                      <span className="text-emerald-50 group-hover:text-white leading-snug">{guide}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-          {/* Quick Action Suggested Chips */}
-          <div className="px-6 py-3 border-t border-zinc-100 bg-white flex-shrink-0">
-            <div className="flex flex-wrap gap-2">
-              {t.chips.map((chip) => (
-                <button
-                  key={chip}
-                  onClick={() => handleChipClick(chip)}
+            </aside>
+
+            {/* ─── RIGHT COLUMN: CHAT PANEL ─── */}
+            <section className="bg-white rounded-2xl border border-zinc-200/90 shadow-xs flex flex-col min-h-[620px] h-[660px] overflow-hidden">
+              
+              {/* 7 & 8. Conversation Area */}
+              <div className="flex-1 overflow-y-auto p-5 md:p-6 space-y-4 bg-zinc-50/25">
+                {messages.map((msg) => {
+                  const isUser = msg.role === 'user'
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div className={`flex gap-3 max-w-[88%] sm:max-w-[80%] ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+                        
+                        {/* Avatar */}
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs shrink-0 font-bold shadow-xs ${
+                          isUser 
+                            ? 'bg-zinc-200 text-zinc-700' 
+                            : 'bg-[#1A4D2E] text-white'
+                        }`}>
+                          {isUser ? <User className="w-4 h-4" /> : <Leaf className="w-4 h-4 text-amber-300" />}
+                        </div>
+
+                        {/* Bubble */}
+                        <div
+                          className={`rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-xs ${
+                            isUser
+                              ? 'bg-[#1A4D2E] text-white rounded-tr-none'
+                              : 'bg-white text-zinc-800 border border-zinc-200/70 rounded-tl-none'
+                          }`}
+                        >
+                          <div
+                            className={`prose prose-sm max-w-none ${isUser ? 'prose-invert text-white' : 'text-zinc-800'}`}
+                            dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
+                          />
+                          <p
+                            className={`text-[10px] mt-1.5 text-right font-medium ${
+                              isUser ? 'text-emerald-200/70' : 'text-zinc-400'
+                            }`}
+                          >
+                            {formatTime(msg.timestamp)}
+                          </p>
+                        </div>
+
+                      </div>
+                    </div>
+                  )
+                })}
+
+                {/* Loading / Typing Indicator */}
+                {isLoading && (
+                  <div className="flex justify-start">
+                    <div className="flex gap-3 items-start max-w-[80%]">
+                      <div className="w-8 h-8 rounded-full bg-[#1A4D2E] text-white flex items-center justify-center shrink-0 shadow-xs">
+                        <Leaf className="w-4 h-4 text-amber-300" />
+                      </div>
+                      <div className="bg-white border border-zinc-200/70 shadow-xs rounded-2xl rounded-tl-none px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex gap-1">
+                            <span className="w-1.5 h-1.5 bg-[#1A4D2E] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                            <span className="w-1.5 h-1.5 bg-[#1A4D2E] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                            <span className="w-1.5 h-1.5 bg-[#1A4D2E] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                          </div>
+                          <span className="text-xs text-zinc-400 font-medium">{t.typing}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Error Message */}
+                {error && (
+                  <div className="flex justify-center">
+                    <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-2.5 flex items-center gap-2 text-xs text-red-700 shadow-xs">
+                      <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
+                      <span>{error}</span>
+                    </div>
+                  </div>
+                )}
+
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* 9. Quick Actions */}
+              <div className="px-5 py-3 border-t border-zinc-100 bg-white shrink-0">
+                <div className="flex flex-wrap gap-2">
+                  {t.chips.map((chip) => (
+                    <button
+                      key={chip}
+                      onClick={() => handleChipClick(chip)}
+                      disabled={isLoading}
+                      className="px-3.5 py-1.5 text-xs font-semibold rounded-full border border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-[#1A4D2E]/5 hover:border-[#1A4D2E]/30 hover:text-[#1A4D2E] transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95"
+                    >
+                      {chip}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 10. Chat Input */}
+              <form
+                onSubmit={handleSubmit}
+                className="flex items-center gap-2.5 px-5 py-3.5 border-t border-zinc-100 bg-white shrink-0"
+              >
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder={t.placeholder}
+                  maxLength={1000}
                   disabled={isLoading}
-                  className="px-3.5 py-2 text-xs font-semibold rounded-full border border-emerald-200/60 bg-emerald-50/40 text-emerald-800 hover:bg-emerald-100/50 hover:border-emerald-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 h-11 px-4 rounded-xl border border-zinc-200 bg-zinc-50 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]/15 focus:border-[#1A4D2E] focus:bg-white disabled:opacity-50 transition-all"
+                />
+                <button
+                  type="submit"
+                  disabled={!input.trim() || isLoading}
+                  className="h-11 px-5 rounded-xl bg-[#1A4D2E] hover:bg-[#123320] text-white font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm shadow-[#1A4D2E]/20 active:scale-[0.98] cursor-pointer"
+                  aria-label="Send message"
                 >
-                  {chip}
+                  <span>{locale === 'id' ? 'Kirim' : 'Send'}</span>
+                  <Send className="w-3.5 h-3.5" />
                 </button>
-              ))}
-            </div>
+              </form>
+
+            </section>
           </div>
 
-          {/* Chat Form Area */}
-          <form
-            onSubmit={handleSubmit}
-            className="flex items-center gap-3 px-6 py-4 border-t border-zinc-150 bg-white flex-shrink-0"
-          >
-            <input
-              ref={inputRef}
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={t.placeholder}
-              maxLength={1000}
-              disabled={isLoading}
-              className="flex-1 h-11 px-4 rounded-xl border border-zinc-200 bg-zinc-50/50 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 disabled:opacity-50 transition-colors"
-            />
-            <button
-              type="submit"
-              disabled={!input.trim() || isLoading}
-              className="px-5 h-11 rounded-xl bg-gradient-to-r from-emerald-800 to-emerald-950 text-white font-semibold text-sm flex items-center justify-center gap-2 hover:from-emerald-900 hover:to-black disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-md shadow-emerald-900/10"
-              aria-label="Send message"
-            >
-              <span>{locale === 'id' ? 'Kirim' : 'Send'}</span>
-              <Send className="w-3.5 h-3.5" />
-            </button>
-          </form>
-
-        </section>
+        </div>
       </main>
 
       <Footer />

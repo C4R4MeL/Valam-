@@ -211,7 +211,8 @@ export function ResultPanel({
               </div>
             </div>
 
-            <div className="space-y-4 w-full pb-8">
+            {/* Supplier Rankings List with Vertical Scroll */}
+            <div className="space-y-4 w-full max-h-[640px] md:max-h-[680px] overflow-y-auto pr-1.5 sm:pr-2 pb-8 custom-scrollbar">
               {results.map((product, idx) => (
                 <MatchResultCard
                   key={product.id || String(idx)}

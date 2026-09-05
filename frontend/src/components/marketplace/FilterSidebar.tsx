@@ -156,7 +156,7 @@ export function FilterSidebar({
                     : 'text-zinc-650 hover:text-zinc-950 hover:bg-zinc-200/30'
                 }`}
               >
-                {isId ? 'Olahan Limbah' : 'Circular Economy'}
+                Eco Products
               </button>
             </div>
           </div>
@@ -476,7 +476,7 @@ export function FilterSidebar({
                 <div className="space-y-2">
                   <div className="flex items-center gap-1.5">
                     <Recycle className="w-3.5 h-3.5 text-[#1A4D2E]" />
-                    <h3 className="text-[10px] uppercase tracking-wider font-black text-zinc-800">{isId ? 'Kategori Circular' : 'Waste Category'}</h3>
+                    <h3 className="text-[10px] uppercase tracking-wider font-black text-zinc-800">{isId ? 'Kategori Eco Products' : 'Eco Products Category'}</h3>
                   </div>
                   <div className="space-y-1.5">
                     {[

@@ -34,9 +34,96 @@ export default function CheckoutPage() {
   const searchParams = useSearchParams()
   const isCircular = searchParams.get('type') === 'circular'
 
+  // Direct Buy Now mode
+  const isDirect = searchParams.get('direct') === 'true'
+  const directProductId = searchParams.get('productId') || ''
+  const directQty = parseInt(searchParams.get('qty') || '1')
+  const [directProduct, setDirectProduct] = useState<any>(null)
+  const [directLoading, setDirectLoading] = useState(isDirect)
+
+  // Fetch product for direct mode
+  useEffect(() => {
+    if (!isDirect || !directProductId) return
+    const fetchDirectProduct = async () => {
+      setDirectLoading(true)
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api'
+      try {
+        // Try patchouli product first
+        let res = await fetch(`${apiUrl}/products/${directProductId}`, { cache: 'no-store' })
+        if (res.ok) {
+          const data = await res.json()
+          setDirectProduct({
+            id: `direct-${data.id}`,
+            product_id: data.id,
+            quantity_kg: directQty,
+            subtotal: (data.price_per_kg || 0) * directQty,
+            price: data.price_per_kg,
+            is_circular: false,
+            product: {
+              ...data,
+              supplier_name: data.supplier_name || data.supplier?.profile?.company_name || 'Koperasi Nilam',
+              supplier_id: data.supplier_id || 'supplier-direct',
+            }
+          })
+          setDirectLoading(false)
+          return
+        }
+
+        // Try circular product
+        res = await fetch(`${apiUrl}/circular-products/${directProductId}`, { cache: 'no-store' })
+        if (res.ok) {
+          const data = await res.json()
+          setDirectProduct({
+            id: `direct-${data.id}`,
+            product_id: data.id,
+            quantity_kg: directQty,
+            subtotal: (data.price || 0) * directQty,
+            price: data.price,
+            is_circular: true,
+            product: {
+              id: data.id,
+              batch_code: data.name,
+              nama: data.name,
+              supplier_name: data.supplier?.profile?.company_name || data.supplier?.supplier_profile?.nama_koperasi || 'Mitra Sirkular',
+              supplier_id: data.supplier_id || 'mitra-direct',
+              mitra_pengolah_nama: data.supplier?.supplier_profile?.nama_koperasi || 'Mitra Sirkular',
+              mitra_pengolah_id: data.supplier_id,
+              status: data.status,
+              origin_district: data.supplier?.supplier_profile?.kabupaten || 'Aceh',
+              pa_percentage: 0,
+              moisture: 0,
+              available_volume_kg: data.stock,
+              stok_tersedia: data.stock,
+              price_per_kg: data.price,
+              harga_per_unit: data.price,
+              min_order: data.supplier?.supplier_profile?.minimum_order || 1,
+              category: data.category,
+              description: data.description,
+              unit: data.unit || 'Kg',
+            }
+          })
+          setDirectLoading(false)
+          return
+        }
+
+        throw new Error('Product not found')
+      } catch (err) {
+        console.error('Failed to fetch product for direct checkout:', err)
+        toast({ title: 'Gagal Memuat Produk', description: 'Produk tidak ditemukan.', variant: 'destructive' })
+        router.push('/marketplace')
+        setDirectLoading(false)
+      }
+    }
+    fetchDirectProduct()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDirect, directProductId])
+
   const itemsToCheckout = useMemo(() => {
+    if (isDirect && directProduct) {
+      return [directProduct]
+    }
     return isCircular ? circularItems : patchouliItems
-  }, [isCircular, circularItems, patchouliItems])
+  }, [isDirect, directProduct, isCircular, circularItems, patchouliItems])
 
   // Group items by supplier for review
   const groupedItems = useMemo(() => {
@@ -75,13 +162,14 @@ export default function CheckoutPage() {
     return Object.values(groupedItems).reduce((sum: number, grp: any) => sum + grp.totalSubtotal, 0)
   }, [groupedItems])
 
-  // Redirect if cart empty on load (only if not already submitted)
+  // Redirect if cart empty on load (only if not already submitted and not in direct mode)
   useEffect(() => {
+    if (isDirect) return // Don't redirect in direct mode
     if (!loading && (!itemsToCheckout || itemsToCheckout.length === 0) && step !== 3) {
       toast({ title: 'Keranjang Kosong', description: 'Silakan pilih produk terlebih dahulu.', variant: 'destructive' })
       router.push('/cart')
     }
-  }, [loading, itemsToCheckout, step, router, toast])
+  }, [loading, itemsToCheckout, step, router, toast, isDirect])
 
   const handleNextToReview = () => {
     if (!address.trim()) {
@@ -137,7 +225,13 @@ export default function CheckoutPage() {
               shipping_cost: 0,
               shipping_method: 'DOMESTIK',
               shipping_courier: 'cargo_truck',
-              payment_method: isCircular ? 'DIRECT_TRANSFER' : 'ESCROW'
+              payment_method: isCircular ? 'DIRECT_TRANSFER' : 'ESCROW',
+              ...(isDirect && directProduct ? {
+                direct: true,
+                product_id: directProduct.product_id,
+                quantity_kg: directProduct.quantity_kg,
+                price_per_kg: directProduct.price
+              } : {})
             })
           })
 
@@ -207,8 +301,10 @@ export default function CheckoutPage() {
 
       setOrderResults(newOrdersList)
 
-      // 4. Empty only the checked out cart items cleanly
-      if (backendSuccess) {
+      // 4. Empty only the checked out cart items cleanly (skip for direct mode)
+      if (isDirect) {
+        // Direct mode: nothing to clear from cart
+      } else if (backendSuccess) {
         // Backend checkout already cleared the database cart for this user!
         await clearCart(isCircular)
       } else {
@@ -237,7 +333,7 @@ export default function CheckoutPage() {
     }
   }
 
-  if (loading && step !== 3) {
+  if ((loading || directLoading) && step !== 3) {
     return (
       <div className="min-h-screen bg-zinc-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1A4D2E]" />
@@ -256,13 +352,26 @@ export default function CheckoutPage() {
                 <ArrowLeft className="w-5 h-5" />
               </button>
             ) : step === 1 ? (
-              <Link href="/cart" className="p-2 hover:bg-zinc-100 rounded-full transition-colors text-zinc-500">
-                <ArrowLeft className="w-5 h-5" />
-              </Link>
+              isDirect ? (
+                <button onClick={() => router.back()} className="p-2 hover:bg-zinc-100 rounded-full transition-colors text-zinc-500 cursor-pointer">
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+              ) : (
+                <Link href="/cart" className="p-2 hover:bg-zinc-100 rounded-full transition-colors text-zinc-500">
+                  <ArrowLeft className="w-5 h-5" />
+                </Link>
+              )
             ) : <div className="w-9 h-9" />}
-            <h1 className="font-serif font-bold text-xl text-[#1A4D2E]">
-              {isCircular ? (isId ? 'Checkout Circular Economy' : 'Circular Economy Checkout') : 'Checkout'}
-            </h1>
+            <div className="flex items-center gap-2">
+              {isDirect && (
+                <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-bold rounded-md">
+                  {isId ? '⚡ Beli Langsung' : '⚡ Buy Now'}
+                </span>
+              )}
+              <h1 className="font-serif font-bold text-xl text-[#1A4D2E]">
+                {isCircular ? (isId ? 'Checkout Eco Products' : 'Eco Products Checkout') : 'Checkout'}
+              </h1>
+            </div>
           </div>
 
           {/* Desktop Progress Indicator */}

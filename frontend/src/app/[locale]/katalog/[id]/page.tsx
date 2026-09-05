@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
-import { ArrowLeft, CheckCircle2, Factory, MapPin, FileText, ShoppingCart, Info, FlaskConical, ShieldCheck, Star, Download, Beaker, Leaf, Share2, Compass, Home, BarChart2, RefreshCw, User, Check, AlertTriangle, X, Crown, Flame, Lock, Calendar, Plus, Minus } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Factory, MapPin, FileText, ShoppingCart, Info, FlaskConical, ShieldCheck, Star, Download, Beaker, Leaf, Share2, Compass, Home, BarChart2, RefreshCw, User, Check, AlertTriangle, X, Crown, Flame, Lock, Calendar, Plus, Minus, Zap } from 'lucide-react'
 import { Link } from '@/i18n/routing'
 import { useLocale } from 'next-intl'
 import { Button } from '@/components/ui/button'
@@ -270,6 +270,22 @@ export default function BatchDetailPage() {
     }
   }
 
+  const handleDirectCheckout = async () => {
+    if (!batch) return
+    const validation = validateOrderQuantity(cartQuantity, batch.volume_min_order_kg, batch.volume_tersedia_kg)
+    if (!validation.valid) {
+      setCartError(validation.errorMsg)
+      return
+    }
+    setIsAdding(true)
+    const ok = await addToCart(batch.id, cartQuantity, batch.is_circular ? 'circular' : 'patchouli')
+    setIsAdding(false)
+    if (ok) {
+      setIsCartModalOpen(false)
+      router.push('/checkout')
+    }
+  }
+
   if (loadingProduct) {
     return (
       <div className="min-h-screen bg-zinc-50 flex items-center justify-center">
@@ -350,8 +366,8 @@ export default function BatchDetailPage() {
         {/* ─── 2. VERSI WEB (DESKTOP LAYOUT) ────────────────────────────── */}
         <div className="hidden lg:grid grid-cols-12 gap-6 items-start">
           
-          {/* Web Left Panel (~65%) */}
-          <div className="col-span-8 space-y-6">
+          {/* Web Left Panel (~65%) with Vertical Scroll */}
+          <div className="col-span-8 space-y-6 max-h-[calc(100vh-7rem)] overflow-y-auto pr-2 custom-scrollbar">
             
             {/* Card Hijau Tua Hero */}
             <div className="bg-[#1A4D2E] text-white rounded-3xl p-8 shadow-lg relative overflow-hidden space-y-6">
@@ -586,8 +602,8 @@ export default function BatchDetailPage() {
 
           </div>
 
-          {/* Web Right Panel (~35% - Sticky) */}
-          <div className="col-span-4 space-y-6 sticky top-24">
+          {/* Web Right Panel (~35% - Sticky with Vertical Scroll) */}
+          <div className="col-span-4 space-y-6 max-h-[calc(100vh-7rem)] overflow-y-auto pr-1.5 custom-scrollbar sticky top-24">
             
             {/* Card Supplier */}
             <div className="bg-white rounded-3xl p-5 border border-zinc-200 shadow-sm space-y-4">
@@ -688,7 +704,7 @@ export default function BatchDetailPage() {
             <div className="bg-[#5C3D1E]/5 rounded-3xl p-5 border border-[#5C3D1E]/10 space-y-4">
               <div className="flex items-center gap-2 text-[#5C3D1E]">
                 <RefreshCw className="w-4 h-4 animate-spin-slow" />
-                <h4 className="font-serif font-bold text-sm uppercase tracking-wider">{isId ? 'Circular Economy (Nol Limbah)' : 'Circular Economy (Zero Waste)'}</h4>
+                <h4 className="font-serif font-bold text-sm uppercase tracking-wider">{isId ? 'Eco Products (Nol Limbah)' : 'Eco Products (Zero Waste)'}</h4>
               </div>
               <p className="text-zinc-650 text-xs leading-relaxed">
                 {isId ? 'Setiap batch sulingan minyak nilam menghasilkan limbah ampas daun & air hidrosol yang diolah kembali secara produktif:' : 'Every batch of distilled patchouli oil yields organic residues that are productively repurposed:'}
@@ -1050,7 +1066,7 @@ export default function BatchDetailPage() {
               <div className="flex items-center gap-2 text-[#5C3D1E]">
                 <Leaf className="w-5 h-5 text-[#1A4D2E] fill-emerald-50" />
                 <h4 className="font-serif font-black text-sm uppercase tracking-wide">
-                  {isId ? 'Circular Economy — Ampas Batch Ini' : 'Circular Economy — Residue of this Batch'}
+                  {isId ? 'Eco Products — Ampas Batch Ini' : 'Eco Products — Residue of this Batch'}
                 </h4>
               </div>
               
@@ -1189,7 +1205,7 @@ export default function BatchDetailPage() {
             <div className="p-5 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
               <h3 className="font-bold text-[#1A4D2E] flex items-center gap-2">
                 <ShoppingCart className="w-5 h-5" />
-                {isId ? 'Tambah ke Keranjang' : 'Add to Cart'}
+                {isId ? 'Pilih Metode Pemesanan' : 'Choose Order Method'}
               </h3>
               <button onClick={() => setIsCartModalOpen(false)} className="text-zinc-400 hover:text-zinc-700 bg-white shadow-sm p-1.5 rounded-full border border-zinc-100 transition-colors">
                 <X className="w-4 h-4" />
@@ -1254,19 +1270,22 @@ export default function BatchDetailPage() {
               </div>
             </div>
 
-            <div className="p-4 border-t border-zinc-100 flex gap-3 bg-white">
-              <button 
-                onClick={() => setIsCartModalOpen(false)}
-                className="flex-1 py-3 text-xs font-bold rounded-xl border-2 border-zinc-200 text-zinc-600 hover:bg-zinc-50 transition-colors"
-              >
-                {isId ? 'Batal' : 'Cancel'}
-              </button>
+            <div className="p-4 border-t border-zinc-100 flex flex-col sm:flex-row gap-2 bg-white">
               <button 
                 onClick={handleConfirmAddToCart}
                 disabled={isAdding || cartError !== ''}
-                className="flex-1 py-3 text-xs font-bold rounded-xl bg-[#1A4D2E] text-white hover:bg-[#123320] disabled:opacity-70 disabled:cursor-not-allowed transition-colors shadow-md shadow-[#1A4D2E]/20"
+                className="flex-1 py-3 px-4 text-xs font-bold rounded-xl border-2 border-[#1A4D2E] text-[#1A4D2E] hover:bg-[#1A4D2E]/5 disabled:opacity-70 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1.5"
               >
-                {isAdding ? (isId ? 'Memproses...' : 'Processing...') : (isId ? 'Tambah ke Keranjang' : 'Add to Cart')}
+                <ShoppingCart className="w-4 h-4" />
+                {isAdding ? (isId ? 'Memproses...' : 'Processing...') : (isId ? '+ Keranjang' : '+ Cart')}
+              </button>
+              <button 
+                onClick={handleDirectCheckout}
+                disabled={isAdding || cartError !== ''}
+                className="flex-1 py-3 px-4 text-xs font-bold rounded-xl bg-[#1A4D2E] text-white hover:bg-[#123320] disabled:opacity-70 disabled:cursor-not-allowed transition-colors shadow-md shadow-[#1A4D2E]/20 flex items-center justify-center gap-1.5"
+              >
+                <Zap className="w-4 h-4 fill-current text-amber-300" />
+                {isAdding ? (isId ? 'Memproses...' : 'Processing...') : (isId ? 'Langsung Transaksi' : 'Direct Order')}
               </button>
             </div>
           </div>

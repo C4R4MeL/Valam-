@@ -50,10 +50,10 @@ export function CriteriaPanel({
   };
 
   return (
-    <div className="bg-white rounded-3xl border border-zinc-200 p-6 shadow-sm flex flex-col justify-between space-y-6">
+    <div className="bg-white rounded-3xl border border-zinc-200 p-6 shadow-sm flex flex-col max-h-[640px] md:max-h-[680px] overflow-hidden">
       
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-zinc-150 pb-4">
+      <div className="flex items-center justify-between border-b border-zinc-150 pb-4 shrink-0 mb-4">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-[#1A4D2E]/10 text-[#1A4D2E] flex items-center justify-center">
             <SlidersHorizontal className="w-4 h-4" />
@@ -81,8 +81,8 @@ export function CriteriaPanel({
         )}
       </div>
 
-      {/* Inputs list */}
-      <div className="space-y-5">
+      {/* Inputs list with vertical scroll */}
+      <div className="flex-1 overflow-y-auto pr-2 space-y-5 custom-scrollbar">
         
         {/* 1. Target Volume */}
         <div className="space-y-1.5">
@@ -259,7 +259,7 @@ export function CriteriaPanel({
       </div>
 
       {/* Submit Action */}
-      <div className="pt-2">
+      <div className="pt-4 border-t border-zinc-150 shrink-0 mt-3">
         <Button
           type="button"
           onClick={onSubmit}

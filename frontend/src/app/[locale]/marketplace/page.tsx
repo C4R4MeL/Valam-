@@ -420,7 +420,7 @@ function MarketplaceContent({ isFilterOpen, setIsFilterOpen }: { isFilterOpen: b
                   : 'text-zinc-650 hover:bg-zinc-200/40'
               }`}
             >
-              {isId ? 'Olahan Limbah' : 'Circular Economy'}
+              Eco Products
             </button>
           </div>
         </div>
@@ -498,11 +498,13 @@ function MarketplaceContent({ isFilterOpen, setIsFilterOpen }: { isFilterOpen: b
           </div>
         </div>
 
-        {/* Product Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-          {activeProducts.map(product => (
-            <ProductCard key={product.id} product={product} />
-          ))}
+        {/* Product Grid with Vertical Scroll */}
+        <div className="max-h-[760px] md:max-h-[820px] overflow-y-auto pr-1.5 sm:pr-2 custom-scrollbar">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 p-1">
+            {activeProducts.map(product => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
         </div>
         
         {/* Empty state */}
