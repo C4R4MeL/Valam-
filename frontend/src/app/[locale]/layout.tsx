@@ -11,6 +11,7 @@ import dynamic from 'next/dynamic';
 import { AuthProvider } from '@/components/providers/AuthProvider';
 import { CartProvider } from '@/components/providers/CartProvider';
 import { NavWarmup } from '@/components/layout/NavWarmup';
+import { RoleGuard } from '@/components/providers/RoleGuard';
 
 const CircularOrderModal = dynamic(
   () => import('@/components/marketplace/CircularOrderModal').then((m) => m.CircularOrderModal),
@@ -71,6 +72,7 @@ export default async function RootLayout({
           <AuthProvider>
             <CartProvider>
               <NavWarmup />
+              <RoleGuard />
               {children}
               <CircularOrderModal />
               <Toaster />

@@ -25,7 +25,7 @@ export function MobileHeader({
   const locale = useLocale()
   const isId = locale === 'id'
   const { totalItems } = useCart()
-  const { isAuthenticated } = useAuthContext()
+  const { isAuthenticated, role } = useAuthContext()
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#1B5E3A] text-white shadow-md md:hidden h-14 flex items-center justify-between px-4">
@@ -50,18 +50,20 @@ export function MobileHeader({
       </div>
 
       <div className="flex items-center gap-2">
-        <Link 
-          href={isAuthenticated ? "/cart" : "/login"}
-          prefetch={true}
-          className="relative w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 flex items-center justify-center transition-colors text-white shrink-0"
-        >
-          <ShoppingCart className="w-4 h-4" />
-          {totalItems > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-valam-gold text-[#1B5E3A] text-[9px] font-black flex items-center justify-center border border-[#1B5E3A] shadow-sm animate-scale-in">
-              {totalItems}
-            </span>
-          )}
-        </Link>
+        {role !== 'supplier' && (
+          <Link 
+            href={isAuthenticated ? "/cart" : "/login"}
+            prefetch={true}
+            className="relative w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 flex items-center justify-center transition-colors text-white shrink-0"
+          >
+            <ShoppingCart className="w-4 h-4" />
+            {totalItems > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-valam-gold text-[#1B5E3A] text-[9px] font-black flex items-center justify-center border border-[#1B5E3A] shadow-sm animate-scale-in">
+                {totalItems}
+              </span>
+            )}
+          </Link>
+        )}
 
         {showFilter && (
           <button

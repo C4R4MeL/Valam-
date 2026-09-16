@@ -64,7 +64,7 @@ export function Navbar() {
 
   const scrolled = isScrolled
 
-  const { role, email, logout, isAuthenticated } = useAuthContext()
+  const { role, email, name, logout, isAuthenticated } = useAuthContext()
   const { totalItems } = useCart()
 
   // Chat state sync listener
@@ -137,7 +137,7 @@ export function Navbar() {
   }
 
   // Build nav items array
-  const navItems: NavItem[] = [
+  const navItems: NavItem[] = role === 'supplier' ? [] : [
     ...(role !== 'buyer' ? [{
       label: t('Beranda'),
       href: '/',
@@ -229,7 +229,7 @@ export function Navbar() {
 
           {/* ── Navigation ── */}
           <nav className={`hidden lg:flex items-center gap-0.5 rounded-2xl border border-white/[0.06] transition-all duration-500 ${scrolled ? 'bg-white/[0.03] px-1 py-0.5 rounded-xl' : 'bg-white/[0.04] px-1.5 py-1'}`}>
-            {navItems.map((item) => {
+            {navItems.length > 0 ? navItems.map((item) => {
               const active = item.isActive !== undefined ? item.isActive : isNavActive(item.href, item.exact)
               return (
                 <Link
@@ -273,27 +273,44 @@ export function Navbar() {
                   </span>
                 </Link>
               )
-            })}
+            }) : (
+              role === 'supplier' && (
+                <div className={`flex items-center gap-2 px-4 ${scrolled ? 'py-1.5 text-xs' : 'py-2 text-[13px]'} font-medium`}>
+                  <div className="flex items-center justify-center w-5 h-5 rounded-md bg-valam-gold/20 text-valam-gold-300 mr-1 border border-valam-gold/30">
+                    <User className="w-3 h-3" />
+                  </div>
+                  <span className="text-white/80">{locale === 'en' ? 'Supplier Dashboard' : 'Dashboard Supplier'}</span>
+                  {name && (
+                    <>
+                      <span className="text-white/20 mx-1">/</span>
+                      <span className="text-valam-gold-300 font-bold">{name}</span>
+                    </>
+                  )}
+                </div>
+              )
+            )}
           </nav>
 
           {/* ── Right Section ── */}
           <div className={`flex items-center transition-all duration-500 ${scrolled ? 'gap-1' : 'gap-1.5'}`}>
 
             {/* Cart Icon */}
-            <Link
-              href={isAuthenticated ? "/cart" : "/login"}
-              prefetch={true}
-              onPointerDown={(e) => handleNavPointerDown(e, isAuthenticated ? '/cart' : '/login')}
-              onClick={(e) => handleNavClick(e, isAuthenticated ? '/cart' : '/login')}
-              className={`relative rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] hover:border-white/[0.15] text-white/50 hover:text-white transition-all duration-200 flex items-center justify-center ${scrolled ? 'h-8 w-8' : 'h-9 w-9'}`}
-            >
-              <ShoppingCart className="w-4 h-4" />
-              {totalItems > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-gradient-to-r from-valam-gold to-valam-gold-300 text-[#1B5E3A] text-[10px] font-black flex items-center justify-center shadow-[0_2px_8px_rgba(182,154,29,0.4)] animate-scale-in ring-2 ring-[#1B5E3A]">
-                  {totalItems}
-                </span>
-              )}
-            </Link>
+            {role !== 'supplier' && (
+              <Link
+                href={isAuthenticated ? "/cart" : "/login"}
+                prefetch={true}
+                onPointerDown={(e) => handleNavPointerDown(e, isAuthenticated ? '/cart' : '/login')}
+                onClick={(e) => handleNavClick(e, isAuthenticated ? '/cart' : '/login')}
+                className={`relative rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] hover:border-white/[0.15] text-white/50 hover:text-white transition-all duration-200 flex items-center justify-center ${scrolled ? 'h-8 w-8' : 'h-9 w-9'}`}
+              >
+                <ShoppingCart className="w-4 h-4" />
+                {totalItems > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-gradient-to-r from-valam-gold to-valam-gold-300 text-[#1B5E3A] text-[10px] font-black flex items-center justify-center shadow-[0_2px_8px_rgba(182,154,29,0.4)] animate-scale-in ring-2 ring-[#1B5E3A]">
+                    {totalItems}
+                  </span>
+                )}
+              </Link>
+            )}
 
             {/* Divider */}
             <div className={`w-px bg-white/10 transition-all duration-500 ${scrolled ? 'h-5 mx-0.5' : 'h-6 mx-1'}`} />
@@ -469,20 +486,22 @@ export function Navbar() {
           {/* Mobile Right Actions */}
           <div className="flex items-center gap-1.5">
             {/* Cart */}
-            <Link
-              href={isAuthenticated ? "/cart" : "/login"}
-              prefetch={true}
-              onPointerDown={(e) => handleNavPointerDown(e, isAuthenticated ? '/cart' : '/login')}
-              onClick={(e) => handleNavClick(e, isAuthenticated ? '/cart' : '/login')}
-              className="relative h-8 w-8 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] text-white/50 flex items-center justify-center transition-all"
-            >
-              <ShoppingCart className="w-4 h-4" />
-              {totalItems > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-0.5 rounded-full bg-gradient-to-r from-valam-gold to-valam-gold-300 text-[#1B5E3A] text-[9px] font-black flex items-center justify-center ring-2 ring-[#1B5E3A]">
-                  {totalItems}
-                </span>
-              )}
-            </Link>
+            {role !== 'supplier' && (
+              <Link
+                href={isAuthenticated ? "/cart" : "/login"}
+                prefetch={true}
+                onPointerDown={(e) => handleNavPointerDown(e, isAuthenticated ? '/cart' : '/login')}
+                onClick={(e) => handleNavClick(e, isAuthenticated ? '/cart' : '/login')}
+                className="relative h-8 w-8 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] text-white/50 flex items-center justify-center transition-all"
+              >
+                <ShoppingCart className="w-4 h-4" />
+                {totalItems > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-0.5 rounded-full bg-gradient-to-r from-valam-gold to-valam-gold-300 text-[#1B5E3A] text-[9px] font-black flex items-center justify-center ring-2 ring-[#1B5E3A]">
+                    {totalItems}
+                  </span>
+                )}
+              </Link>
+            )}
 
             {/* Hamburger */}
             <button
