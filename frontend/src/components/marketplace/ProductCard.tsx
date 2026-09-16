@@ -1,11 +1,13 @@
 'use client'
 
-import Link from 'next/link'
+import { Link, useRouter } from '@/i18n/routing'
 import Image from 'next/image'
-import { CheckCircle2, FlaskConical, MapPin, Star, Beaker, FileText, ArrowRight, Leaf, Calendar, ShieldCheck, Archive, ChevronDown, Droplets } from 'lucide-react'
+import { CheckCircle2, FlaskConical, MapPin, Star, Beaker, ArrowRight, Leaf, Calendar, ShieldCheck, Archive, ChevronDown, Droplets } from 'lucide-react'
 import { useLocale } from 'next-intl'
 import React, { useMemo, useState } from 'react'
 import { formatRupiah, getPatchouliTier, getTierColorClass, isGcmsVerified } from '@/lib/utils'
+import { useFastNav } from '@/components/layout/useFastNav'
+import { useAuthContext } from '@/components/providers/AuthProvider'
 
 interface ProductCardProps {
   product: {
@@ -98,6 +100,9 @@ const getProductImage = (product: any) => {
 }
 
 export function ProductCard({ product }: ProductCardProps) {
+  const router = useRouter()
+  const { onNavClick, onNavPointerDown } = useFastNav()
+  const { isAuthenticated } = useAuthContext()
   const locale = useLocale()
   const isId = locale === 'id'
   const isVerified = isGcmsVerified(product.status)
@@ -144,13 +149,13 @@ export function ProductCard({ product }: ProductCardProps) {
 
   return (
     <div className="group block h-full">
-      <div className="bg-white rounded-2xl border border-zinc-200 overflow-hidden hover:border-[#1A4D2E]/40 hover:shadow-2xl hover:shadow-[#1A4D2E]/10 transition-all duration-300 h-full flex flex-col relative">
+      <div className="bg-white rounded-2xl border border-zinc-200 overflow-hidden hover:border-[#1B5E3A]/40 hover:shadow-2xl hover:shadow-[#1B5E3A]/10 transition-all duration-300 h-full flex flex-col relative">
         
         {/* Floating Badges */}
         <div className="absolute top-3 left-3 z-10 flex flex-col gap-1.5 items-start">
           {product.is_circular ? (
-             <div className="flex items-center gap-1 bg-white/90 backdrop-blur text-[#1A4D2E] px-2.5 py-1 rounded-md text-[9px] font-bold uppercase tracking-wider shadow-sm border border-[#1A4D2E]/20">
-               <Leaf className="w-3 h-3 text-[#1A4D2E] animate-pulse" />
+             <div className="flex items-center gap-1 bg-white/90 backdrop-blur text-[#1B5E3A] px-2.5 py-1 rounded-md text-[9px] font-bold uppercase tracking-wider shadow-sm border border-[#1B5E3A]/20">
+               <Leaf className="w-3 h-3 text-[#1B5E3A] animate-pulse" />
                {product.category || 'Circular'}
              </div>
           ) : (
@@ -162,8 +167,8 @@ export function ProductCard({ product }: ProductCardProps) {
               {/* Featured Choice Badge with Mobile timestamp */}
               {isFeatured && (
                 <div className="flex flex-col gap-1 items-start">
-                  <div className="flex items-center gap-1 bg-valam-gold text-[#1A4D2E] px-2 py-0.5 rounded-md text-[9px] font-black tracking-wider uppercase shadow-sm">
-                    <Star className="w-3 h-3 fill-[#1A4D2E] text-[#1A4D2E]" />
+                  <div className="flex items-center gap-1 bg-valam-gold text-[#1B5E3A] px-2 py-0.5 rounded-md text-[9px] font-black tracking-wider uppercase shadow-sm">
+                    <Star className="w-3 h-3 fill-[#1B5E3A] text-[#1B5E3A]" />
                     <span>{isId ? "FEATURED CHOICE" : "FEATURED CHOICE"}</span>
                   </div>
                   <span className="md:hidden text-[8px] font-semibold text-white/95 bg-black/55 backdrop-blur-sm px-1.5 py-0.5 rounded">
@@ -175,7 +180,7 @@ export function ProductCard({ product }: ProductCardProps) {
           )}
           
           {isVerified && (
-            <div className="flex items-center gap-1 bg-[#1A4D2E]/90 backdrop-blur text-white px-2 py-0.5 rounded-md text-[9px] font-bold tracking-wider uppercase shadow-sm">
+            <div className="flex items-center gap-1 bg-[#1B5E3A]/90 backdrop-blur text-white px-2 py-0.5 rounded-md text-[9px] font-bold tracking-wider uppercase shadow-sm">
               <CheckCircle2 className="w-3 h-3 text-valam-gold-400" />
               {isId ? "Terverifikasi GC-MS" : "GC-MS Verified"}
             </div>
@@ -194,13 +199,19 @@ export function ProductCard({ product }: ProductCardProps) {
           </div>
         )}
 
-        {/* Image Section */}
-        <div className="relative h-44 w-full bg-zinc-100 overflow-hidden">
+        {/* Image Section - Wrapped in direct Link for 1-click instant navigation */}
+        <Link 
+          href={`/katalog/${product.id}`}
+          prefetch={true}
+          onPointerDown={(e) => onNavPointerDown(e, `/katalog/${product.id}`)}
+          onClick={(e) => onNavClick(e, `/katalog/${product.id}`)}
+          className="relative h-44 w-full bg-zinc-100 overflow-hidden block cursor-pointer"
+        >
           <Image 
             src={getProductImage(product)} 
             alt={product.batch_code}
             fill
-            className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+            className="object-cover group-hover:scale-105 transition-transform duration-300 ease-out"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
@@ -211,18 +222,15 @@ export function ProductCard({ product }: ProductCardProps) {
             </div>
           </div>
           
-          {/* Action Overlay */}
-          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20 flex items-center justify-center backdrop-blur-[2px]">
-            <Link 
-              href={`/${locale}/katalog/${product.id}`}
-              className="bg-white/95 text-[#1A4D2E] hover:bg-[#1A4D2E] hover:text-white px-5 py-2.5 rounded-full font-bold text-sm shadow-xl transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 border border-white/50"
-            >
+          {/* Action Overlay - pointer-events-none by default so it never swallows taps on mobile */}
+          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20 flex items-center justify-center backdrop-blur-[2px] pointer-events-none group-hover:pointer-events-auto">
+            <span className="bg-white/95 text-[#1B5E3A] px-5 py-2.5 rounded-full font-bold text-sm shadow-xl transform translate-y-2 group-hover:translate-y-0 transition-all duration-200 border border-white/50">
               {isId ? "Lihat Detail" : "View Detail"}
-            </Link>
+            </span>
           </div>
 
           {!product.is_circular && (
-            <div className="absolute top-0 right-3 bg-[#1A4D2E] text-white px-2 pt-2.5 pb-2 rounded-b-lg shadow-md flex flex-col items-center z-10 border border-t-0 border-white/20">
+            <div className="absolute top-0 right-3 bg-[#1B5E3A] text-white px-2 pt-2.5 pb-2 rounded-b-lg shadow-md flex flex-col items-center z-10 border border-t-0 border-white/20">
               <span className="text-[10px] uppercase font-bold tracking-widest text-valam-gold-300 opacity-90 mb-0.5">PA</span>
               <span className="font-serif font-bold text-sm leading-none flex items-baseline">
                 {product.pa_percentage}
@@ -230,24 +238,32 @@ export function ProductCard({ product }: ProductCardProps) {
               </span>
             </div>
           )}
-        </div>
+        </Link>
 
         {/* Content Section */}
         <div className="p-4 flex flex-col flex-1 relative z-30 bg-white">
           <div className="flex-1">
-            <h3 className="font-serif font-bold text-zinc-900 text-[15px] mb-1 line-clamp-2 leading-snug group-hover:text-[#1A4D2E] transition-colors">
-              {product.is_circular ? (product.nama || product.batch_code) : product.supplier_name}
+            <h3 className="font-serif font-bold text-zinc-900 text-[15px] mb-1 line-clamp-2 leading-snug group-hover:text-[#1B5E3A] transition-colors">
+              <Link 
+                href={`/katalog/${product.id}`} 
+                prefetch={true} 
+                onPointerDown={(e) => onNavPointerDown(e, `/katalog/${product.id}`)}
+                onClick={(e) => onNavClick(e, `/katalog/${product.id}`)}
+                className="hover:text-[#1B5E3A] transition-colors"
+              >
+                {product.is_circular ? (product.nama || product.batch_code) : product.supplier_name}
+              </Link>
             </h3>
             
             <p className="text-[11px] text-zinc-500 font-medium mb-3 flex items-center gap-1.5 line-clamp-1">
               {product.is_circular ? (
                 <>
-                  <Leaf className="w-3.5 h-3.5 text-[#1A4D2E] shrink-0" />
+                  <Leaf className="w-3.5 h-3.5 text-[#1B5E3A] shrink-0" />
                   <span>Mitra: {product.mitra_pengolah_nama || product.supplier_name || 'Mitra Sirkular'}</span>
                 </>
               ) : (
                 <>
-                  <MapPin className="w-3.5 h-3.5 text-[#1A4D2E] shrink-0" />
+                  <MapPin className="w-3.5 h-3.5 text-[#1B5E3A] shrink-0" />
                   <span>{product.origin_district} • {product.origin_village || 'Lokal'}</span>
                 </>
               )}
@@ -255,7 +271,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
             {product.is_circular ? (
               <div className="bg-zinc-50 rounded-lg p-2.5 mb-3 border border-zinc-100 flex items-center gap-2">
-                <Leaf className="w-4 h-4 text-[#1A4D2E] shrink-0" />
+                <Leaf className="w-4 h-4 text-[#1B5E3A] shrink-0" />
                 <p className="text-[10px] text-zinc-600 leading-snug line-clamp-2">
                   <span className="font-bold text-zinc-800">{isId ? 'Manfaat: ' : 'Benefit: '}</span> 
                   {product.benefit}
@@ -265,7 +281,7 @@ export function ProductCard({ product }: ProductCardProps) {
               <div className="space-y-1 mb-4">
                 <div className="relative h-2 w-full bg-zinc-100 rounded-full overflow-hidden">
                   <div 
-                    className="absolute top-0 left-0 h-full rounded-full bg-gradient-to-r from-red-500 via-valam-gold-400 to-[#1A4D2E]"
+                    className="absolute top-0 left-0 h-full rounded-full bg-gradient-to-r from-red-500 via-valam-gold-400 to-[#1B5E3A]"
                     style={{ width: `${Math.min(Math.max((product.pa_percentage / 35) * 100, 0), 100)}%` }}
                   />
                 </div>
@@ -276,7 +292,7 @@ export function ProductCard({ product }: ProductCardProps) {
             <div className="grid grid-cols-2 gap-2 mb-4">
               {product.is_circular ? (
                 <>
-                  <div className="bg-zinc-50/80 rounded-lg p-2 flex items-center gap-2 border border-zinc-100 group-hover:border-[#1A4D2E]/20 transition-colors">
+                  <div className="bg-zinc-50/80 rounded-lg p-2 flex items-center gap-2 border border-zinc-100 group-hover:border-[#1B5E3A]/20 transition-colors">
                     <div className="bg-white p-1 rounded shadow-sm border border-zinc-100 shrink-0">
                       <Droplets className="w-3.5 h-3.5 text-emerald-700" />
                     </div>
@@ -285,7 +301,7 @@ export function ProductCard({ product }: ProductCardProps) {
                       <p className="text-xs font-bold text-zinc-900">{(product.stok_tersedia ?? product.available_volume_kg ?? 0).toLocaleString()} {product.unit || 'Unit'}</p>
                     </div>
                   </div>
-                  <div className="bg-zinc-50/80 rounded-lg p-2 flex items-center gap-2 border border-zinc-100 group-hover:border-[#1A4D2E]/20 transition-colors">
+                  <div className="bg-zinc-50/80 rounded-lg p-2 flex items-center gap-2 border border-zinc-100 group-hover:border-[#1B5E3A]/20 transition-colors">
                     <div className="bg-white p-1 rounded shadow-sm border border-zinc-100 shrink-0">
                       <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
                     </div>
@@ -326,7 +342,7 @@ export function ProductCard({ product }: ProductCardProps) {
                   {product.is_circular ? `${isId ? "Harga" : "Price"} / ${product.unit || 'Unit'}` : `${isId ? "Harga / Kg" : "Price / Kg"}`}
                 </p>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-lg font-black text-[#1A4D2E] leading-none">
+                  <span className="text-lg font-black text-[#1B5E3A] leading-none">
                     {formatRupiah(product.is_circular ? (product.harga_per_unit ?? product.price_per_kg ?? 0) : product.price_per_kg)}
                   </span>
                   <span className="text-[10px] font-semibold text-zinc-400">
@@ -336,49 +352,36 @@ export function ProductCard({ product }: ProductCardProps) {
               </div>
             </div>
 
-            {product.is_circular ? (
-              <div className="grid grid-cols-2 gap-2 w-full">
-                <Link 
-                  href={`/${locale}/katalog/${product.id}`}
-                  className="flex items-center justify-center gap-1.5 bg-[#1A4D2E] text-white text-xs font-bold py-2.5 rounded-xl hover:bg-[#123320] transition-colors shadow-md shadow-[#1A4D2E]/10 text-center"
-                >
-                  {isId ? "View Detail" : "View Detail"}
-                </Link>
-                <button 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if ((window as any).openCircularOrderModal) {
-                      (window as any).openCircularOrderModal(product);
-                    }
-                  }}
-                  className="flex items-center justify-center gap-1 bg-white border border-[#B69A1D] text-[#B69A1D] hover:bg-valam-gold-50 text-xs font-bold py-2.5 rounded-xl transition-colors shadow-sm cursor-pointer text-center"
-                >
-                  {isId ? "Pesan Sekarang" : "Order Now"}
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-2">
-                <Link 
-                  href={`/${locale}/katalog/${product.id}`}
-                  className="flex items-center justify-center gap-1.5 bg-[#1A4D2E] text-white text-xs font-bold py-2.5 rounded-xl hover:bg-[#123320] transition-colors shadow-md shadow-[#1A4D2E]/10 text-center"
-                >
-                  {isId ? "View Detail" : "View Detail"}
-                </Link>
-                
-                <button 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    window.location.href = `/${locale}/buyer/rfq?product_id=${product.id}`;
-                  }}
-                  className="flex items-center justify-center gap-1 bg-white border border-[#B69A1D] text-[#B69A1D] hover:bg-valam-gold-50 text-xs font-bold py-2.5 rounded-xl transition-colors shadow-sm cursor-pointer"
-                >
-                  <FileText className="w-3.5 h-3.5" />
-                  <span>{isId ? "Create RFQ" : "Create RFQ"}</span>
-                </button>
-              </div>
-            )}
+            <div className="grid grid-cols-2 gap-2 w-full">
+              <Link 
+                href={`/katalog/${product.id}`}
+                prefetch={true}
+                onPointerDown={(e) => onNavPointerDown(e, `/katalog/${product.id}`)}
+                onClick={(e) => onNavClick(e, `/katalog/${product.id}`)}
+                className="flex items-center justify-center gap-1.5 bg-[#1B5E3A] text-white text-xs font-bold py-2.5 rounded-xl hover:bg-[#123320] active:scale-[0.98] transition-all shadow-md shadow-[#1B5E3A]/10 text-center"
+              >
+                {isId ? "Lihat Detail" : "View Detail"}
+              </Link>
+              <button 
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (!isAuthenticated) {
+                    router.push('/login');
+                    return;
+                  }
+                  if (typeof window !== 'undefined' && (window as any).openCircularOrderModal) {
+                    (window as any).openCircularOrderModal(product);
+                  } else {
+                    router.push(`/katalog/${product.id}?order=true`);
+                  }
+                }}
+                className="flex items-center justify-center gap-1 bg-white border border-[#C8922A] text-[#C8922A] hover:bg-valam-gold-50 active:scale-[0.98] text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm cursor-pointer text-center"
+              >
+                {isId ? "Pesan Sekarang" : "Order Now"}
+              </button>
+            </div>
 
           </div>
 

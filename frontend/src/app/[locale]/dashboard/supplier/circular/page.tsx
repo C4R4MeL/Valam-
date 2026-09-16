@@ -8,6 +8,7 @@ import { useLocale } from 'next-intl'
 import { useToast } from '@/hooks/use-toast'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import { TablePageSkeleton } from '@/components/skeletons'
 
 const PRESET_IMAGES = [
   { name: 'Organic Compost', url: 'https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=600&h=400&fit=crop' },
@@ -397,10 +398,7 @@ export default function CircularProductsPage() {
       {/* Products Table Grid */}
       <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
         {loading ? (
-          <div className="flex flex-col items-center justify-center p-16 space-y-3">
-            <div className="w-9 h-9 border-4 border-emerald-700 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-sm font-semibold text-zinc-500">Memuat data produk...</p>
-          </div>
+          <TablePageSkeleton rows={5} />
         ) : filteredProducts.length === 0 ? (
           <div className="p-16 text-center">
             <AlertCircle className="w-12 h-12 text-zinc-300 mx-auto mb-3" />

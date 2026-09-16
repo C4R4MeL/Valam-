@@ -11,6 +11,7 @@ import { MobileHeader } from '@/components/layout/MobileHeader'
 import { Footer } from '@/components/layout/Footer'
 import { useCart } from '@/components/providers/CartProvider'
 import { formatRupiah, getPatchouliTier, getTierColorClass, validateOrderQuantity } from '@/lib/utils'
+import { CartSkeleton } from '@/components/skeletons'
 
 const getItemImage = (item: any, activeTab: 'patchouli' | 'circular') => {
   if (activeTab === 'circular') {
@@ -108,19 +109,11 @@ export default function CartPage() {
   }, [filteredItems, activeTab])
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-zinc-50 flex flex-col">
-        <Navbar />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1A4D2E]" />
-        </div>
-        <Footer />
-      </div>
-    )
+    return <CartSkeleton />
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 flex flex-col selection:bg-[#1A4D2E]/10 selection:text-[#1A4D2E] font-sans pb-28 lg:pb-12">
+    <div className="min-h-screen bg-zinc-50 flex flex-col selection:bg-[#1B5E3A]/10 selection:text-[#1B5E3A] font-sans pb-28 lg:pb-12">
       <div className="hidden md:block">
         <Navbar />
       </div>
@@ -130,7 +123,7 @@ export default function CartPage() {
         
         {/* Breadcrumb */}
         <div className="text-xs font-semibold text-zinc-500 mb-6 flex items-center gap-1.5">
-          <Link href="/" className="hover:text-[#1A4D2E] transition-colors">Home</Link>
+          <Link href="/" className="hover:text-[#1B5E3A] transition-colors">Home</Link>
           <ChevronRight className="w-3.5 h-3.5" />
           <span className="text-zinc-800">{isId ? 'Keranjang' : 'Cart'}</span>
         </div>
@@ -141,13 +134,13 @@ export default function CartPage() {
             onClick={() => setActiveTab('patchouli')}
             className={`flex-1 py-2.5 px-3 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${
               activeTab === 'patchouli' 
-                ? 'bg-white text-[#1A4D2E] shadow-sm font-black' 
+                ? 'bg-white text-[#1B5E3A] shadow-sm font-black' 
                 : 'text-zinc-500 hover:text-zinc-800'
             }`}
           >
             <span>Minyak Nilam</span>
             <span className={`px-2 py-0.5 text-[10px] rounded-full font-bold transition-colors ${
-              activeTab === 'patchouli' ? 'bg-[#1A4D2E] text-white' : 'bg-zinc-200 text-zinc-600'
+              activeTab === 'patchouli' ? 'bg-[#1B5E3A] text-white' : 'bg-zinc-200 text-zinc-600'
             }`}>
               {patchouliItems.length}
             </span>
@@ -156,13 +149,13 @@ export default function CartPage() {
             onClick={() => setActiveTab('circular')}
             className={`flex-1 py-2.5 px-3 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${
               activeTab === 'circular' 
-                ? 'bg-white text-[#B69A1D] shadow-sm font-black' 
+                ? 'bg-white text-[#C8922A] shadow-sm font-black' 
                 : 'text-zinc-500 hover:text-zinc-800'
             }`}
           >
             <span>Eco Products</span>
             <span className={`px-2 py-0.5 text-[10px] rounded-full font-bold transition-colors ${
-              activeTab === 'circular' ? 'bg-[#B69A1D] text-white' : 'bg-zinc-200 text-zinc-600'
+              activeTab === 'circular' ? 'bg-[#C8922A] text-white' : 'bg-zinc-200 text-zinc-600'
             }`}>
               {circularItems.length}
             </span>
@@ -171,8 +164,8 @@ export default function CartPage() {
 
         {filteredItems.length === 0 ? (
           <div className="bg-white rounded-3xl border border-zinc-200 p-12 sm:p-16 text-center shadow-sm">
-            <div className="w-24 h-24 bg-[#1A4D2E]/5 rounded-full flex items-center justify-center mx-auto mb-6">
-              <ShoppingBag className="w-12 h-12 text-[#1A4D2E]" />
+            <div className="w-24 h-24 bg-[#1B5E3A]/5 rounded-full flex items-center justify-center mx-auto mb-6">
+              <ShoppingBag className="w-12 h-12 text-[#1B5E3A]" />
             </div>
             <h2 className="text-2xl font-bold text-zinc-800 mb-2">
               {activeTab === 'patchouli' 
@@ -185,7 +178,7 @@ export default function CartPage() {
                 : (isId ? 'Beli pupuk kompos, biochar teraktivasi, dan hidrosol dari mitra pengolah limbah kami.' : 'Purchase organic compost, activated biochar, and hydrosol from circular partners.')}
             </p>
             <div className="flex flex-wrap justify-center gap-3">
-              <Button asChild className="bg-[#1A4D2E] hover:bg-[#123320] text-white font-bold rounded-xl h-12 px-8 shadow-md">
+              <Button asChild className="bg-[#1B5E3A] hover:bg-[#123320] text-white font-bold rounded-xl h-12 px-8 shadow-md">
                 <Link href={activeTab === 'patchouli' ? "/katalog" : "/marketplace?tab=circular"}>
                   {activeTab === 'patchouli' 
                     ? (isId ? 'Jelajahi Katalog Nilam' : 'Explore Patchouli Catalog')
@@ -216,8 +209,8 @@ export default function CartPage() {
                     <div className="flex items-center gap-3">
                       <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border shadow-xs ${
                         activeTab === 'circular'
-                          ? 'bg-[#B69A1D]/10 text-[#B69A1D] border-[#B69A1D]/20'
-                          : 'bg-[#1A4D2E]/10 text-[#1A4D2E] border-[#1A4D2E]/20'
+                          ? 'bg-[#C8922A]/10 text-[#C8922A] border-[#C8922A]/20'
+                          : 'bg-[#1B5E3A]/10 text-[#1B5E3A] border-[#1B5E3A]/20'
                       }`}>
                         <Factory className="w-4 h-4" />
                       </div>
@@ -268,7 +261,7 @@ export default function CartPage() {
                               <div className="flex justify-between items-start gap-3">
                                 <div className="min-w-0 flex-1">
                                   <div className="flex items-center gap-2 flex-wrap mb-1">
-                                    <Link href={`/katalog/${item.product?.id || item.product_id}`} className="text-base sm:text-lg font-bold text-zinc-900 hover:text-[#1A4D2E] transition-colors truncate">
+                                    <Link href={`/katalog/${item.product?.id || item.product_id}`} className="text-base sm:text-lg font-bold text-zinc-900 hover:text-[#1B5E3A] transition-colors truncate">
                                       {activeTab === 'circular' ? (item.product?.nama || item.product?.name || item.product?.batch_code) : `Batch ${item.product?.batch_code || item.batch_code}`}
                                     </Link>
                                     {tier && (
@@ -277,7 +270,7 @@ export default function CartPage() {
                                       </span>
                                     )}
                                     {activeTab === 'circular' && (item.product?.category || item.product?.jenis) && (
-                                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider border border-[#B69A1D]/30 bg-amber-50 text-[#B69A1D]">
+                                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider border border-[#C8922A]/30 bg-amber-50 text-[#C8922A]">
                                         {item.product?.category || item.product?.jenis}
                                       </span>
                                     )}
@@ -287,7 +280,7 @@ export default function CartPage() {
                                       </span>
                                     )}
                                   </div>
-                                  <div className="flex items-center gap-1.5 text-sm font-bold text-[#1A4D2E]">
+                                  <div className="flex items-center gap-1.5 text-sm font-bold text-[#1B5E3A]">
                                     {formatRupiah(price)}<span className="text-zinc-500 font-normal text-xs">/{unit}</span>
                                   </div>
                                 </div>
@@ -337,7 +330,7 @@ export default function CartPage() {
 
                                 <div className="text-right">
                                   <span className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider block mb-0.5">Subtotal</span>
-                                  <span className="font-black text-[#1A4D2E] text-base">{formatRupiah(subtotal)}</span>
+                                  <span className="font-black text-[#1B5E3A] text-base">{formatRupiah(subtotal)}</span>
                                 </div>
                               </div>
                             </div>
@@ -350,13 +343,13 @@ export default function CartPage() {
                   {/* Group Subtotal */}
                   <div className={`px-5 py-4 border-t flex justify-between items-center ${
                     activeTab === 'circular'
-                      ? 'bg-[#B69A1D]/5 border-[#B69A1D]/10'
-                      : 'bg-[#1A4D2E]/5 border-[#1A4D2E]/10'
+                      ? 'bg-[#C8922A]/5 border-[#C8922A]/10'
+                      : 'bg-[#1B5E3A]/5 border-[#1B5E3A]/10'
                   }`}>
-                    <span className={`text-xs font-bold ${activeTab === 'circular' ? 'text-[#B69A1D]' : 'text-[#1A4D2E]'}`}>
+                    <span className={`text-xs font-bold ${activeTab === 'circular' ? 'text-[#C8922A]' : 'text-[#1B5E3A]'}`}>
                       {isId ? `Total ${group.supplierName}` : `${group.supplierName} Total`} ({group.totalKg} {activeTab === 'circular' ? group.items[0]?.product?.unit || 'Unit' : 'kg'})
                     </span>
-                    <span className={`text-sm font-black ${activeTab === 'circular' ? 'text-[#B69A1D]' : 'text-[#1A4D2E]'}`}>{formatRupiah(group.totalSubtotal)}</span>
+                    <span className={`text-sm font-black ${activeTab === 'circular' ? 'text-[#C8922A]' : 'text-[#1B5E3A]'}`}>{formatRupiah(group.totalSubtotal)}</span>
                   </div>
                 </div>
               ))}
@@ -389,7 +382,7 @@ export default function CartPage() {
 
                 <div className="pt-4 border-t border-zinc-100 flex justify-between items-end">
                   <span className="text-sm font-bold text-zinc-900">{isId ? 'Total Tagihan' : 'Total Price'}</span>
-                  <span className={`text-2xl font-black leading-none ${activeTab === 'circular' ? 'text-[#B69A1D]' : 'text-[#1A4D2E]'}`}>{formatRupiah(totalAmount)}</span>
+                  <span className={`text-2xl font-black leading-none ${activeTab === 'circular' ? 'text-[#C8922A]' : 'text-[#1B5E3A]'}`}>{formatRupiah(totalAmount)}</span>
                 </div>
 
                 <div className="pt-2 hidden lg:block">
@@ -398,8 +391,8 @@ export default function CartPage() {
                     disabled={hasValidationError || totalBatches === 0}
                     className={`w-full h-12 rounded-xl font-bold text-white text-sm transition-transform cursor-pointer disabled:bg-zinc-300 disabled:text-zinc-500 disabled:shadow-none ${
                       activeTab === 'circular'
-                        ? 'bg-[#B69A1D] hover:bg-[#A38618] shadow-md shadow-[#B69A1D]/20'
-                        : 'bg-[#1A4D2E] hover:bg-[#123320] shadow-md shadow-[#1A4D2E]/20'
+                        ? 'bg-[#C8922A] hover:bg-[#A38618] shadow-md shadow-[#C8922A]/20'
+                        : 'bg-[#1B5E3A] hover:bg-[#123320] shadow-md shadow-[#1B5E3A]/20'
                     }`}
                   >
                     {activeTab === 'circular' 
@@ -416,7 +409,7 @@ export default function CartPage() {
                 {/* Trust Info */}
                 <div className="bg-zinc-50 rounded-2xl p-4 border border-zinc-100 text-[11px] text-zinc-500 font-medium mt-6">
                   <div className="flex gap-2.5 items-start">
-                    <ShieldCheck className={`w-4 h-4 shrink-0 mt-0.5 ${activeTab === 'circular' ? 'text-[#B69A1D]' : 'text-[#1A4D2E]'}`} />
+                    <ShieldCheck className={`w-4 h-4 shrink-0 mt-0.5 ${activeTab === 'circular' ? 'text-[#C8922A]' : 'text-[#1B5E3A]'}`} />
                     <p className="leading-relaxed">
                       {activeTab === 'circular'
                         ? (isId ? 'Pembayaran langsung diteruskan ke rekening resmi Mitra Pengolah terkait.' : 'Payments are directly processed to the corresponding partner.')
@@ -437,15 +430,15 @@ export default function CartPage() {
         <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-zinc-200 p-4 pb-safe shadow-[0_-4px_15px_-3px_rgba(0,0,0,0.08)] z-40 flex items-center gap-4">
           <div className="flex-1 min-w-0">
             <span className="text-[10px] text-zinc-500 font-bold block mb-0.5">{isId ? 'Total Tagihan' : 'Total Amount'}</span>
-            <span className="text-lg font-black text-[#1A4D2E] truncate block">{formatRupiah(totalAmount)}</span>
+            <span className="text-lg font-black text-[#1B5E3A] truncate block">{formatRupiah(totalAmount)}</span>
           </div>
           <Button 
             onClick={() => router.push(activeTab === 'circular' ? '/checkout?type=circular' : '/checkout')}
             disabled={hasValidationError || totalBatches === 0}
             className={`flex-1 h-12 rounded-xl font-bold text-sm text-white disabled:bg-zinc-300 disabled:text-zinc-500 shrink-0 ${
               activeTab === 'circular'
-                ? 'bg-[#B69A1D] hover:bg-[#A38618]'
-                : 'bg-[#1A4D2E] hover:bg-[#123320]'
+                ? 'bg-[#C8922A] hover:bg-[#A38618]'
+                : 'bg-[#1B5E3A] hover:bg-[#123320]'
             }`}
           >
             {activeTab === 'circular' 

@@ -1,5 +1,7 @@
 'use client'
 
+import { TablePageSkeleton } from '@/components/skeletons'
+
 import { useState, useEffect } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { FileText, Clock, CheckCircle2, XCircle, Send, Inbox } from 'lucide-react'
@@ -91,7 +93,7 @@ export default function SupplierRfqListPage() {
     }
   }
 
-  if (loading) return <div className="p-8 text-center text-zinc-600">Loading RFQ Masuk...</div>
+  if (loading) return <TablePageSkeleton />
 
   return (
     <div className="w-full flex flex-col">

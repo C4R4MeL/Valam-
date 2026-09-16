@@ -75,8 +75,20 @@ export function CircularOrderModal() {
         }
       } else {
         // Single product mode (Catalog)
-        setSingleProduct(p)
-        setSingleQty(p.min_order || 1)
+        const isCirc = p.is_circular ?? false
+        const normalized = {
+          ...p,
+          id: p.id,
+          nama: p.is_circular ? (p.nama || p.batch_code) : (p.batch_code ? `Batch ${p.batch_code}` : (p.nama || 'Minyak Nilam')),
+          harga_per_unit: p.is_circular ? (p.harga_per_unit ?? p.price_per_kg ?? 0) : (p.price_per_kg ?? p.harga_per_unit ?? 0),
+          stok_tersedia: p.is_circular ? (p.stok_tersedia ?? p.available_volume_kg ?? 0) : (p.available_volume_kg ?? p.stok_tersedia ?? 0),
+          mitra_pengolah_nama: p.is_circular ? (p.mitra_pengolah_nama || p.supplier_name || 'Mitra Sirkular') : (p.supplier_name || p.mitra_pengolah_nama || 'Supplier Nilam'),
+          unit: p.unit || 'Kg',
+          min_order: p.min_order ?? p.moq_kg ?? 1,
+          is_circular: isCirc
+        }
+        setSingleProduct(normalized)
+        setSingleQty(normalized.min_order || 1)
         setSingleError('')
         setAvailableProducts([])
       }
@@ -150,7 +162,8 @@ export function CircularOrderModal() {
       return false
     } else if (singleProduct) {
       if (singleQty < (singleProduct.min_order || 1) || singleQty > (singleProduct.stok_tersedia || 9999)) return false
-      const success = await addToCart(singleProduct.id, singleQty, 'circular', null)
+      const itemType = singleProduct.is_circular ? 'circular' : 'patchouli'
+      const success = await addToCart(singleProduct.id, singleQty, itemType, null)
       if (success) {
         setIsOpen(false)
       }
@@ -197,11 +210,17 @@ export function CircularOrderModal() {
       >
         {/* Header */}
         <div className="p-5 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50 shrink-0">
-          <h3 className="font-bold text-[#1A4D2E] flex items-center gap-2">
-            <Leaf className="w-5 h-5" />
+          <h3 className="font-bold text-[#1B5E3A] flex items-center gap-2">
+            {singleProduct?.is_circular === false ? (
+              <ShoppingCart className="w-5 h-5 text-[#1B5E3A]" />
+            ) : (
+              <Leaf className="w-5 h-5 text-[#1B5E3A]" />
+            )}
             {sumberBatchId 
               ? (isId ? `Pesan Sampingan Batch ${sumberBatchId}` : `Order Side-Products Batch ${sumberBatchId}`)
-              : (isId ? 'Pesan Produk Turunan' : 'Order Derivative Product')
+              : (singleProduct?.is_circular === false
+                  ? (isId ? 'Pesan Minyak Nilam' : 'Order Patchouli Oil')
+                  : (isId ? 'Pesan Produk Sirkular' : 'Order Circular Product'))
             }
           </h3>
           <button onClick={() => setIsOpen(false)} className="text-zinc-400 hover:text-zinc-700 bg-white shadow-sm p-1.5 rounded-full border border-zinc-100 transition-colors">
@@ -229,7 +248,7 @@ export function CircularOrderModal() {
                       key={prod.id} 
                       className={`border rounded-2xl p-4 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${
                         state.checked 
-                          ? 'border-[#B69A1D] bg-valam-gold-50/20 shadow-xs' 
+                          ? 'border-[#C8922A] bg-valam-gold-50/20 shadow-xs' 
                           : 'border-zinc-200 hover:border-zinc-300'
                       }`}
                     >
@@ -239,7 +258,7 @@ export function CircularOrderModal() {
                           onClick={() => handleToggleItem(prod.id)}
                           className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
                             state.checked 
-                              ? 'bg-[#B69A1D] border-[#B69A1D] text-white' 
+                              ? 'bg-[#C8922A] border-[#C8922A] text-white' 
                               : 'border-zinc-350 hover:border-zinc-400 bg-white'
                           }`}
                         >
@@ -250,7 +269,7 @@ export function CircularOrderModal() {
                           <p className="font-bold text-zinc-950 text-sm leading-snug line-clamp-1">{prod.nama}</p>
                           <p className="text-[11px] text-zinc-500 font-medium mt-0.5">{prod.mitra_pengolah_nama}</p>
                           <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs font-black text-[#1A4D2E]">{formatRupiah(prod.harga_per_unit)}/{prod.unit}</span>
+                            <span className="text-xs font-black text-[#1B5E3A]">{formatRupiah(prod.harga_per_unit)}/{prod.unit}</span>
                             <span className="text-[10px] text-zinc-400 font-bold">(Stok: {prod.stok_tersedia} {prod.unit})</span>
                           </div>
                         </div>
@@ -298,7 +317,7 @@ export function CircularOrderModal() {
                 {/* Product Quick Info */}
                 <div className="flex gap-3 bg-zinc-50 border border-zinc-100 p-4 rounded-2xl items-center">
                   <div className="w-12 h-12 bg-white rounded-xl border border-zinc-200 flex items-center justify-center shrink-0">
-                    <Droplets className="w-6 h-6 text-[#1A4D2E]" />
+                    <Droplets className="w-6 h-6 text-[#1B5E3A]" />
                   </div>
                   <div>
                     <p className="font-bold text-zinc-900 leading-snug line-clamp-1">{singleProduct.nama}</p>
@@ -306,7 +325,7 @@ export function CircularOrderModal() {
                       <span className="text-[11px] text-zinc-500 font-bold">{singleProduct.mitra_pengolah_nama}</span>
                       <div className="flex text-amber-400">
                         {Array.from({ length: 5 }).map((_, i) => (
-                          <span key={i} className={i < singleProduct.sustainability_score ? 'text-[#B69A1D]' : 'text-zinc-200'}>★</span>
+                          <span key={i} className={i < (singleProduct.sustainability_score || 5) ? 'text-[#C8922A]' : 'text-zinc-200'}>★</span>
                         ))}
                       </div>
                     </div>
@@ -314,9 +333,9 @@ export function CircularOrderModal() {
                 </div>
 
                 {/* Input Qty */}
-                <div className="bg-[#B69A1D]/5 rounded-2xl p-4 border border-[#B69A1D]/15">
+                <div className="bg-[#C8922A]/5 rounded-2xl p-4 border border-[#C8922A]/15">
                   <div className="flex justify-between items-center mb-3">
-                    <label className="text-xs font-bold text-[#B69A1D] uppercase tracking-wider">
+                    <label className="text-xs font-bold text-[#C8922A] uppercase tracking-wider">
                       {isId ? 'Jumlah Pesanan' : 'Order Quantity'}
                     </label>
                     <span className="text-xs font-semibold text-zinc-500">
@@ -367,14 +386,14 @@ export function CircularOrderModal() {
           {/* Subtotal & Action buttons */}
           <div className="flex justify-between items-center py-2 border-t border-zinc-100 pt-4">
             <span className="text-zinc-500 font-medium text-sm">Subtotal</span>
-            <span className="text-2xl font-black text-[#1A4D2E]">{formatRupiah(totalAmount)}</span>
+            <span className="text-2xl font-black text-[#1B5E3A]">{formatRupiah(totalAmount)}</span>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-2 pt-2">
             <button 
               onClick={handleAddToCart}
               disabled={isSubmitDisabled}
-              className="flex-1 flex items-center justify-center gap-1.5 py-3 px-3 rounded-xl border-2 border-[#B69A1D] text-[#B69A1D] hover:bg-[#B69A1D]/10 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all text-xs"
+              className="flex-1 flex items-center justify-center gap-1.5 py-3 px-3 rounded-xl border-2 border-[#C8922A] text-[#C8922A] hover:bg-[#C8922A]/10 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all text-xs"
             >
               <ShoppingCart className="w-4 h-4" />
               {isId ? '+ Keranjang' : '+ Cart'}
@@ -382,7 +401,7 @@ export function CircularOrderModal() {
             <button 
               onClick={handleDirectCheckout}
               disabled={isSubmitDisabled}
-              className="flex-1 flex items-center justify-center gap-1.5 py-3 px-3 rounded-xl bg-[#B69A1D] hover:bg-[#A38618] disabled:bg-zinc-200 disabled:text-zinc-400 disabled:shadow-none text-white font-bold transition-all text-xs shadow-md shadow-[#B69A1D]/20"
+              className="flex-1 flex items-center justify-center gap-1.5 py-3 px-3 rounded-xl bg-[#C8922A] hover:bg-[#A38618] disabled:bg-zinc-200 disabled:text-zinc-400 disabled:shadow-none text-white font-bold transition-all text-xs shadow-md shadow-[#C8922A]/20"
             >
               <Zap className="w-4 h-4 fill-current text-amber-300" />
               {isId ? 'Langsung Transaksi' : 'Direct Order'}

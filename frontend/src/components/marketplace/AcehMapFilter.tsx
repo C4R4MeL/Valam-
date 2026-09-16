@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import React, { useState } from 'react'
 import { MapPin } from 'lucide-react'
@@ -60,11 +60,11 @@ export function AcehMapFilter({ selectedRegions, onToggleRegion, productCounts }
             let strokeColor = 'stroke-zinc-800'
             
             if (isSelected) {
-              fillColor = 'fill-[#1A4D2E]'
+              fillColor = 'fill-[#1B5E3A]'
               strokeColor = 'stroke-valam-gold-500'
             } else if (hasProducts) {
-              fillColor = hoveredDistrict === d.id ? 'fill-[#1A4D2E]/40' : 'fill-[#1A4D2E]/10'
-              strokeColor = hoveredDistrict === d.id ? 'stroke-valam-gold-500' : 'stroke-[#1A4D2E]/40'
+              fillColor = hoveredDistrict === d.id ? 'fill-[#1B5E3A]/40' : 'fill-[#1B5E3A]/10'
+              strokeColor = hoveredDistrict === d.id ? 'stroke-valam-gold-500' : 'stroke-[#1B5E3A]/40'
             } else {
               fillColor = hoveredDistrict === d.id ? 'fill-zinc-900/70' : 'fill-zinc-900/30'
               strokeColor = 'stroke-zinc-850'

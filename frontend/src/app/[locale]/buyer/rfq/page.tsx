@@ -1,5 +1,7 @@
 'use client'
 
+import { OrdersSkeleton } from '@/components/skeletons'
+
 import React, { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useLocale } from 'next-intl'
@@ -354,7 +356,7 @@ function BuyerRfqContent() {
         return <Badge className="bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-50/85 font-black uppercase text-[9px] tracking-wider"><MessageSquare className="w-3 h-3 mr-1"/> {isId ? 'Sedang Dinegosiasikan' : 'Negotiating'}</Badge>
       case 'DOCS_VERIFIED':
       case 'VERIFIED':
-        return <Badge className="bg-emerald-50 text-[#1A4D2E] border border-emerald-200 hover:bg-emerald-50/85 font-black uppercase text-[9px] tracking-wider"><UserCheck className="w-3 h-3 mr-1"/> {isId ? 'Dokumen Diverifikasi' : 'Docs Verified'}</Badge>
+        return <Badge className="bg-emerald-50 text-[#1B5E3A] border border-emerald-200 hover:bg-emerald-50/85 font-black uppercase text-[9px] tracking-wider"><UserCheck className="w-3 h-3 mr-1"/> {isId ? 'Dokumen Diverifikasi' : 'Docs Verified'}</Badge>
       case 'COMPLETED':
       case 'ACCEPTED':
         return <Badge className="bg-zinc-100 text-zinc-700 border border-zinc-200 hover:bg-zinc-150 font-black uppercase text-[9px] tracking-wider"><CheckCircle2 className="w-3 h-3 mr-1"/> {isId ? 'Selesai' : 'Completed'}</Badge>
@@ -449,7 +451,7 @@ function BuyerRfqContent() {
             onClick={() => setActiveTab('create')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
               activeTab === 'create'
-                ? 'bg-white text-[#1A4D2E] shadow-sm'
+                ? 'bg-white text-[#1B5E3A] shadow-sm'
                 : 'text-zinc-500 hover:text-zinc-800'
             }`}
           >
@@ -461,7 +463,7 @@ function BuyerRfqContent() {
             onClick={() => setActiveTab('history')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all relative ${
               activeTab === 'history'
-                ? 'bg-white text-[#1A4D2E] shadow-sm'
+                ? 'bg-white text-[#1B5E3A] shadow-sm'
                 : 'text-zinc-500 hover:text-zinc-800'
             }`}
           >
@@ -488,7 +490,7 @@ function BuyerRfqContent() {
                 <PartyPopper className="w-8 h-8 text-emerald-700" />
               </div>
               <div>
-                <h3 className="text-xl font-serif font-black text-[#1A4D2E]">
+                <h3 className="text-xl font-serif font-black text-[#1B5E3A]">
                   {isId ? 'RFQ Berhasil Diterbitkan!' : 'RFQ Successfully Submitted!'}
                 </h3>
                 <p className="text-xs text-zinc-500 mt-1 max-w-sm mx-auto">
@@ -501,7 +503,7 @@ function BuyerRfqContent() {
               <div className="bg-zinc-50 rounded-2xl border border-zinc-200 p-4.5 text-left text-xs space-y-2.5">
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-black text-zinc-400 uppercase tracking-wider">No. Referensi</span>
-                  <span className="font-mono font-black text-sm text-[#1A4D2E]">{submittedRfq.rfq_number}</span>
+                  <span className="font-mono font-black text-sm text-[#1B5E3A]">{submittedRfq.rfq_number}</span>
                 </div>
                 <div className="border-t border-zinc-200" />
                 <div className="flex justify-between items-center">
@@ -518,7 +520,7 @@ function BuyerRfqContent() {
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button
                   onClick={() => setActiveTab('history')}
-                  className="flex-1 bg-[#1A4D2E] hover:bg-[#123320] text-white font-bold h-11 rounded-xl text-xs flex items-center justify-center gap-1.5"
+                  className="flex-1 bg-[#1B5E3A] hover:bg-[#123320] text-white font-bold h-11 rounded-xl text-xs flex items-center justify-center gap-1.5"
                 >
                   <ClipboardCheck className="w-4 h-4" />
                   <span>{isId ? 'Lihat di Riwayat RFQ' : 'View in RFQ History'}</span>
@@ -547,7 +549,7 @@ function BuyerRfqContent() {
                   <div key={s.num} className="flex items-center gap-2">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
                       step === s.num 
-                        ? 'bg-[#1A4D2E] text-white shadow-md' 
+                        ? 'bg-[#1B5E3A] text-white shadow-md' 
                         : step > s.num 
                           ? 'bg-emerald-100 text-emerald-800' 
                           : 'bg-zinc-100 text-zinc-400'
@@ -631,7 +633,7 @@ function BuyerRfqContent() {
                   <div className="flex justify-end pt-4">
                     <Button
                       onClick={handleNextStep}
-                      className="bg-[#1A4D2E] hover:bg-[#123320] text-white font-bold h-11 px-6 rounded-xl text-xs flex items-center gap-2"
+                      className="bg-[#1B5E3A] hover:bg-[#123320] text-white font-bold h-11 px-6 rounded-xl text-xs flex items-center gap-2"
                     >
                       <span>{isId ? 'Lanjut: Volume & Anggaran' : 'Next: Volume & Budget'}</span>
                       <ArrowRight className="w-4 h-4" />
@@ -716,7 +718,7 @@ function BuyerRfqContent() {
                     </Button>
                     <Button
                       onClick={handleNextStep}
-                      className="bg-[#1A4D2E] hover:bg-[#123320] text-white font-bold h-11 px-6 rounded-xl text-xs flex items-center gap-2"
+                      className="bg-[#1B5E3A] hover:bg-[#123320] text-white font-bold h-11 px-6 rounded-xl text-xs flex items-center gap-2"
                     >
                       <span>{isId ? 'Lanjut: Dokumen Ekspor' : 'Next: Documentation'}</span>
                       <ArrowRight className="w-4 h-4" />
@@ -752,13 +754,13 @@ function BuyerRfqContent() {
                         onClick={() => toggleDocument(doc.name)}
                         className={`p-4 rounded-xl border text-left transition-all flex items-start gap-3 ${
                           formData.dokumen_diminta.includes(doc.name)
-                            ? 'bg-emerald-50 border-emerald-300 text-[#1A4D2E]'
+                            ? 'bg-emerald-50 border-emerald-300 text-[#1B5E3A]'
                             : 'bg-white border-zinc-200 text-zinc-700 hover:border-zinc-300'
                         }`}
                       >
                         <div className={`w-5 h-5 rounded-md border mt-0.5 flex items-center justify-center flex-shrink-0 ${
                           formData.dokumen_diminta.includes(doc.name)
-                            ? 'bg-[#1A4D2E] border-[#1A4D2E] text-white'
+                            ? 'bg-[#1B5E3A] border-[#1B5E3A] text-white'
                             : 'border-zinc-300 bg-white'
                         }`}>
                           {formData.dokumen_diminta.includes(doc.name) && <Check className="w-3.5 h-3.5" />}
@@ -782,7 +784,7 @@ function BuyerRfqContent() {
                     </Button>
                     <Button
                       onClick={handleNextStep}
-                      className="bg-[#1A4D2E] hover:bg-[#123320] text-white font-bold h-11 px-6 rounded-xl text-xs flex items-center gap-2"
+                      className="bg-[#1B5E3A] hover:bg-[#123320] text-white font-bold h-11 px-6 rounded-xl text-xs flex items-center gap-2"
                     >
                       <span>{isId ? 'Lanjut: Konfirmasi & Kirim' : 'Next: Review & Submit'}</span>
                       <ArrowRight className="w-4 h-4" />
@@ -844,7 +846,7 @@ function BuyerRfqContent() {
                     <Button
                       onClick={handleSubmitRfq}
                       disabled={isSubmitting || !confirmChecked}
-                      className="bg-[#1A4D2E] hover:bg-[#123320] text-white font-bold h-11 px-8 rounded-xl text-xs flex items-center gap-2 shadow-md disabled:opacity-50"
+                      className="bg-[#1B5E3A] hover:bg-[#123320] text-white font-bold h-11 px-8 rounded-xl text-xs flex items-center gap-2 shadow-md disabled:opacity-50"
                     >
                       <Send className="w-4 h-4" />
                       <span>{isSubmitting ? (isId ? 'Mengirimkan...' : 'Submitting...') : (isId ? 'Kirimkan RFQ Resmi' : 'Submit Official RFQ')}</span>
@@ -864,15 +866,13 @@ function BuyerRfqContent() {
       {activeTab === 'history' && (
         <div className="space-y-6">
           {loadingHistory ? (
-            <div className="py-16 text-center text-xs font-semibold text-zinc-400">
-              {isId ? 'Memuat daftar RFQ Anda...' : 'Loading your RFQs...'}
-            </div>
+            <OrdersSkeleton embedded />
           ) : rfqs.length === 0 ? (
             <div className="bg-white rounded-3xl border border-zinc-200 p-12 text-center flex flex-col items-center justify-center shadow-sm max-w-xl mx-auto my-8">
               <div className="bg-zinc-50 p-4.5 rounded-full mb-4 border border-zinc-200">
                 <Inbox className="w-8 h-8 text-zinc-400" />
               </div>
-              <h3 className="text-lg font-serif font-black text-[#1A4D2E] mb-2 uppercase tracking-wide">
+              <h3 className="text-lg font-serif font-black text-[#1B5E3A] mb-2 uppercase tracking-wide">
                 {isId ? 'Belum Ada RFQ yang Diajukan' : 'No Submitted RFQs'}
               </h3>
               <p className="text-zinc-500 text-xs max-w-md mb-6 leading-relaxed">
@@ -882,7 +882,7 @@ function BuyerRfqContent() {
               </p>
               <Button 
                 onClick={() => setActiveTab('create')}
-                className="bg-[#1A4D2E] hover:bg-[#123320] text-white font-bold rounded-xl shadow-md border-none px-6 py-2.5 text-xs flex items-center gap-2"
+                className="bg-[#1B5E3A] hover:bg-[#123320] text-white font-bold rounded-xl shadow-md border-none px-6 py-2.5 text-xs flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
                 <span>{isId ? 'Ajukan RFQ Sekarang' : 'Submit RFQ Now'}</span>
@@ -907,7 +907,7 @@ function BuyerRfqContent() {
                       {/* Card Header */}
                       <div className="flex items-start justify-between border-b border-zinc-150 pb-3 gap-2">
                         <div>
-                          <span className="font-mono font-bold text-xs text-[#1A4D2E] block">{rfq.rfq_number}</span>
+                          <span className="font-mono font-bold text-xs text-[#1B5E3A] block">{rfq.rfq_number}</span>
                           <span className="text-[10px] text-zinc-400 block mt-0.5">{formattedDate}</span>
                         </div>
                         {getStatusBadge(rfq.status)}
@@ -963,7 +963,7 @@ function BuyerRfqContent() {
             <div className="flex items-center justify-between border-b border-zinc-200 pb-4">
               <div>
                 <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block">Detail Dokumen & Negosiasi</span>
-                <h3 className="font-serif font-black text-lg text-[#1A4D2E]">{selectedRfq.rfq_number}</h3>
+                <h3 className="font-serif font-black text-lg text-[#1B5E3A]">{selectedRfq.rfq_number}</h3>
               </div>
               <button 
                 onClick={() => setSelectedRfq(null)}
@@ -1028,11 +1028,7 @@ function BuyerRfqContent() {
 
 export default function UnifiedBuyerRfqPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-[50vh] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-800" />
-      </div>
-    }>
+    <Suspense fallback={<OrdersSkeleton />}>
       <BuyerRfqContent />
     </Suspense>
   )

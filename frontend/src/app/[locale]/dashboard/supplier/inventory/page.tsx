@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { CoAViewer } from '@/components/qc/CoAViewer'
+import { TablePageSkeleton } from '@/components/skeletons'
 
 const contentMap = {
   id: {
@@ -348,11 +349,8 @@ export default function InventoryPage() {
             <tbody className="divide-y divide-zinc-100">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-zinc-500">
-                    <div className="flex justify-center items-center gap-2">
-                      <span className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></span>
-                      {locale === 'id' ? 'Memuat data...' : 'Loading data...'}
-                    </div>
+                  <td colSpan={6} className="p-0">
+                    <TablePageSkeleton rows={5} />
                   </td>
                 </tr>
               ) : filteredProducts.map((product) => (

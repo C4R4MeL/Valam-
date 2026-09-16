@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
-import { SlidersHorizontal, Search, Layers, X, ShieldCheck, Beaker, Leaf } from 'lucide-react'
+import { useState, useEffect, Suspense, useRef } from 'react'
+import { Search, Layers, X, ShieldCheck, Beaker, Leaf } from 'lucide-react'
 import { FilterSidebar } from '@/components/marketplace/FilterSidebar'
 import { ProductCard } from '@/components/marketplace/ProductCard'
 import { Button } from '@/components/ui/button'
@@ -12,6 +12,7 @@ import { BottomNavigation } from '@/components/layout/BottomNavigation'
 import { useLocale } from 'next-intl'
 import { useSearchParams } from 'next/navigation'
 import { getLatestMarketPrices } from '@/lib/valam-insights/insights-api'
+import { MarketplaceSkeleton, ProductGridSkeleton } from '@/components/skeletons'
 
 const contentMap = {
   id: {
@@ -50,6 +51,23 @@ const contentMap = {
     verifiedStats: "Verified Batches",
     priceLabel: "Live Market Price",
   }
+}
+
+/* ── Animated Product Card Wrapper (Snappy & Zero-Delay) ── */
+function AnimatedCard({ children, index }: { children: React.ReactNode, index: number }) {
+  const delay = Math.min(index * 25, 100)
+
+  return (
+    <div
+      style={{
+        animationDelay: `${delay}ms`,
+        animationFillMode: 'both',
+      }}
+      className="animate-card-in pointer-events-auto"
+    >
+      {children}
+    </div>
+  )
 }
 
 function MarketplaceContent({ isFilterOpen, setIsFilterOpen }: { isFilterOpen: boolean, setIsFilterOpen: React.Dispatch<React.SetStateAction<boolean>> }) {
@@ -104,6 +122,7 @@ function MarketplaceContent({ isFilterOpen, setIsFilterOpen }: { isFilterOpen: b
   const t = contentMap[locale] || contentMap.id
   
   const [products, setProducts] = useState<any[]>([])
+  const [catalogLoading, setCatalogLoading] = useState(true)
   const [, setMarketPrices] = useState<any[]>([])
 
   useEffect(() => {
@@ -123,6 +142,7 @@ function MarketplaceContent({ isFilterOpen, setIsFilterOpen }: { isFilterOpen: b
 
   useEffect(() => {
     const fetchCatalog = async () => {
+      setCatalogLoading(true)
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api'
       if (activeTab === 'oil') {
         try {
@@ -148,6 +168,8 @@ function MarketplaceContent({ isFilterOpen, setIsFilterOpen }: { isFilterOpen: b
         } catch (err) {
           console.error("Error fetching oil products:", err)
           setProducts([])
+        } finally {
+          setCatalogLoading(false)
         }
       } else {
         try {
@@ -192,6 +214,8 @@ function MarketplaceContent({ isFilterOpen, setIsFilterOpen }: { isFilterOpen: b
         } catch (err) {
           console.error("Error fetching circular products:", err)
           setProducts([])
+        } finally {
+          setCatalogLoading(false)
         }
       }
     }
@@ -365,6 +389,12 @@ function MarketplaceContent({ isFilterOpen, setIsFilterOpen }: { isFilterOpen: b
     activeProducts.sort((a, b) => a.price_per_kg - b.price_per_kg)
   }
 
+  const [headerVisible, setHeaderVisible] = useState(false)
+  useEffect(() => {
+    const timer = setTimeout(() => setHeaderVisible(true), 60)
+    return () => clearTimeout(timer)
+  }, [])
+
   return (
     <div className="flex-1 flex w-full max-w-7xl mx-auto md:px-6 pt-2 pb-20 md:pt-4 md:pb-6 mt-16 md:mt-14">
       <FilterSidebar 
@@ -381,22 +411,43 @@ function MarketplaceContent({ isFilterOpen, setIsFilterOpen }: { isFilterOpen: b
 
       <div className="flex-1 px-4 md:px-0 md:pl-8 min-w-0">
         
-        {/* Compact Header */}
-        <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {/* Compact Header — slides in from top on mount */}
+        <div
+          className="mb-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4"
+          style={{
+            opacity: headerVisible ? 1 : 0,
+            transform: headerVisible ? 'translateY(0)' : 'translateY(-18px)',
+            transition: 'opacity 0.55s cubic-bezier(0.22,1,0.36,1), transform 0.55s cubic-bezier(0.22,1,0.36,1)',
+          }}
+        >
           <div>
-            <h1 className="text-2xl font-serif font-bold text-[#1A4D2E]">
+            <h1 className="text-2xl font-serif font-bold text-[#1B5E3A]">
               {t.title}
             </h1>
             <p className="text-sm text-zinc-500 mt-1">{t.subtitle}</p>
           </div>
-          <Button 
-            onClick={() => setIsFilterOpen(true)}
-            variant="outline"
-            className="hidden md:flex bg-white hover:bg-zinc-50 text-[#1A4D2E] border-zinc-200 rounded-xl px-4 h-10 text-xs font-bold items-center gap-2 shadow-sm"
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-            {t.filterBtn}
-          </Button>
+
+          {/* Search Bar */}
+          <div className="relative w-full lg:w-80 shrink-0">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none">
+              <Search className="w-4 h-4" />
+            </div>
+            <input
+              type="text"
+              placeholder={t.searchPlaceholder}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full h-11 pl-10 pr-10 bg-white border border-zinc-200 rounded-xl text-sm text-zinc-800 placeholder:text-zinc-400 focus:outline-none focus:border-[#1B5E3A] focus:ring-1 focus:ring-[#1B5E3A] transition-all shadow-sm"
+            />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 p-1 rounded-md hover:bg-zinc-100 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Mobile Tab Switcher */}
@@ -406,7 +457,7 @@ function MarketplaceContent({ isFilterOpen, setIsFilterOpen }: { isFilterOpen: b
               onClick={() => setActiveTab('oil')}
               className={`py-2 px-2 text-xs font-black rounded-lg transition-all text-center ${
                 activeTab === 'oil'
-                  ? 'bg-[#1A4D2E] text-white shadow-sm'
+                  ? 'bg-[#1B5E3A] text-white shadow-sm'
                   : 'text-zinc-650 hover:bg-zinc-200/40'
               }`}
             >
@@ -416,7 +467,7 @@ function MarketplaceContent({ isFilterOpen, setIsFilterOpen }: { isFilterOpen: b
               onClick={() => setActiveTab('circular')}
               className={`py-2 px-2 text-xs font-black rounded-lg transition-all text-center ${
                 activeTab === 'circular'
-                  ? 'bg-[#1A4D2E] text-white shadow-sm'
+                  ? 'bg-[#1B5E3A] text-white shadow-sm'
                   : 'text-zinc-650 hover:bg-zinc-200/40'
               }`}
             >
@@ -431,7 +482,7 @@ function MarketplaceContent({ isFilterOpen, setIsFilterOpen }: { isFilterOpen: b
             onClick={() => handleQuickFilter('all')}
             className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border ${
               isQuickActive('all') 
-                ? 'bg-[#1A4D2E] border-[#1A4D2E] text-white shadow-sm' 
+                ? 'bg-[#1B5E3A] border-[#1B5E3A] text-white shadow-sm' 
                 : 'bg-white border-zinc-200 text-zinc-600'
             }`}
           >
@@ -441,7 +492,7 @@ function MarketplaceContent({ isFilterOpen, setIsFilterOpen }: { isFilterOpen: b
             onClick={() => handleQuickFilter('premium')}
             className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border flex items-center gap-1 ${
               isQuickActive('premium') 
-                ? 'bg-[#1A4D2E] border-[#1A4D2E] text-white shadow-sm' 
+                ? 'bg-[#1B5E3A] border-[#1B5E3A] text-white shadow-sm' 
                 : 'bg-white border-zinc-200 text-zinc-600'
             }`}
           >
@@ -452,7 +503,7 @@ function MarketplaceContent({ isFilterOpen, setIsFilterOpen }: { isFilterOpen: b
             onClick={() => handleQuickFilter('standard')}
             className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border flex items-center gap-1 ${
               isQuickActive('standard') 
-                ? 'bg-[#1A4D2E] border-[#1A4D2E] text-white shadow-sm' 
+                ? 'bg-[#1B5E3A] border-[#1B5E3A] text-white shadow-sm' 
                 : 'bg-white border-zinc-200 text-zinc-600'
             }`}
           >
@@ -463,7 +514,7 @@ function MarketplaceContent({ isFilterOpen, setIsFilterOpen }: { isFilterOpen: b
             onClick={() => handleQuickFilter('eudr')}
             className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border flex items-center gap-1 ${
               isQuickActive('eudr') 
-                ? 'bg-[#1A4D2E] border-[#1A4D2E] text-white shadow-sm' 
+                ? 'bg-[#1B5E3A] border-[#1B5E3A] text-white shadow-sm' 
                 : 'bg-white border-zinc-200 text-zinc-600'
             }`}
           >
@@ -488,7 +539,7 @@ function MarketplaceContent({ isFilterOpen, setIsFilterOpen }: { isFilterOpen: b
               <select 
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="bg-transparent font-black text-[#1A4D2E] outline-none cursor-pointer text-[11px]"
+                className="bg-transparent font-black text-[#1B5E3A] outline-none cursor-pointer text-[11px]"
               >
                 <option value="newest">⏰ {isId ? 'Terbaru' : 'Newest'}</option>
                 {activeTab === 'oil' && <option value="pa">🧪 {isId ? 'PA% Tinggi' : 'Highest PA%'}</option>}
@@ -499,27 +550,35 @@ function MarketplaceContent({ isFilterOpen, setIsFilterOpen }: { isFilterOpen: b
         </div>
 
         {/* Product Grid with Vertical Scroll */}
-        <div className="max-h-[760px] md:max-h-[820px] overflow-y-auto pr-1.5 sm:pr-2 custom-scrollbar">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 p-1">
-            {activeProducts.map(product => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        </div>
-        
-        {/* Empty state */}
-        {activeProducts.length === 0 && (
-          <div className="text-center py-24 bg-white rounded-3xl border border-zinc-200 shadow-sm max-w-md mx-auto mt-8">
-            <Layers className="w-12 h-12 text-zinc-300 mx-auto mb-4" />
-            <p className="text-zinc-500 font-medium px-6">{t.empty}</p>
-            <Button 
-              variant="outline" 
-              onClick={handleResetFilters}
-              className="mt-6 border-[#1A4D2E]/20 text-[#1A4D2E] hover:bg-[#1A4D2E]/5 rounded-xl px-6 font-bold"
-            >
-              {t.reset}
-            </Button>
-          </div>
+        {catalogLoading ? (
+          <ProductGridSkeleton count={6} />
+        ) : (
+          <>
+            <div className="max-h-[760px] md:max-h-[820px] overflow-y-auto pr-1.5 sm:pr-2 custom-scrollbar">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 p-1">
+                {activeProducts.map((product, idx) => (
+                  <AnimatedCard key={product.id} index={idx}>
+                    <ProductCard product={product} />
+                  </AnimatedCard>
+                ))}
+              </div>
+            </div>
+            
+            {/* Empty state */}
+            {activeProducts.length === 0 && (
+              <div className="text-center py-24 bg-white rounded-3xl border border-zinc-200 shadow-sm max-w-md mx-auto mt-8">
+                <Layers className="w-12 h-12 text-zinc-300 mx-auto mb-4" />
+                <p className="text-zinc-500 font-medium px-6">{t.empty}</p>
+                <Button 
+                  variant="outline" 
+                  onClick={handleResetFilters}
+                  className="mt-6 border-[#1B5E3A]/20 text-[#1B5E3A] hover:bg-[#1B5E3A]/5 rounded-xl px-6 font-bold"
+                >
+                  {t.reset}
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -530,13 +589,13 @@ export default function MarketplacePage() {
   const [isFilterOpen, setIsFilterOpen] = useState(false)
 
   return (
-    <div className="min-h-screen bg-zinc-50 flex flex-col relative selection:bg-[#1A4D2E]/10 selection:text-[#1A4D2E]">
+    <div className="min-h-screen bg-zinc-50 flex flex-col relative selection:bg-[#1B5E3A]/10 selection:text-[#1B5E3A]">
       <div className="relative z-10 flex flex-col min-h-screen">
         <MobileHeader onFilterClick={() => setIsFilterOpen(true)} showFilter={true} />
         <Navbar />
         
         <main className="flex-1 flex flex-col">
-          <Suspense fallback={<div className="flex-1 flex items-center justify-center min-h-[50vh]"><div className="w-8 h-8 rounded-full border-4 border-valam-gold border-t-[#1A4D2E] animate-spin" /></div>}>
+          <Suspense fallback={<MarketplaceSkeleton />}>
             <MarketplaceContent isFilterOpen={isFilterOpen} setIsFilterOpen={setIsFilterOpen} />
           </Suspense>
         </main>

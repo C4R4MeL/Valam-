@@ -7,9 +7,15 @@ import {getMessages} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 import {routing} from '@/i18n/routing';
 import Script from 'next/script';
+import dynamic from 'next/dynamic';
 import { AuthProvider } from '@/components/providers/AuthProvider';
 import { CartProvider } from '@/components/providers/CartProvider';
-import { CircularOrderModal } from '@/components/marketplace/CircularOrderModal';
+import { NavWarmup } from '@/components/layout/NavWarmup';
+
+const CircularOrderModal = dynamic(
+  () => import('@/components/marketplace/CircularOrderModal').then((m) => m.CircularOrderModal),
+  { ssr: false }
+);
 
 const inter = Inter({
   subsets: ["latin"],
@@ -38,6 +44,8 @@ export const metadata: Metadata = {
   ],
 };
 
+const PREFETCH_PATHS = ['marketplace', 'matching', 'chat', 'insights', 'cart', 'login'] as const;
+
 export default async function RootLayout({
   children,
   params: {locale}
@@ -53,10 +61,16 @@ export default async function RootLayout({
 
   return (
     <html lang={locale}>
+      <head>
+        {PREFETCH_PATHS.map((path) => (
+          <link key={path} rel="prefetch" href={`/${locale}/${path}`} />
+        ))}
+      </head>
       <body className={`${inter.variable} ${playfair.variable} font-sans antialiased`}>
         <NextIntlClientProvider messages={messages}>
           <AuthProvider>
             <CartProvider>
+              <NavWarmup />
               {children}
               <CircularOrderModal />
               <Toaster />
@@ -66,7 +80,7 @@ export default async function RootLayout({
         <Script 
           src="https://app.sandbox.midtrans.com/snap/snap.js" 
           data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || 'SB-Mid-client-x'} 
-          strategy="beforeInteractive"
+          strategy="lazyOnload"
         />
       </body>
     </html>

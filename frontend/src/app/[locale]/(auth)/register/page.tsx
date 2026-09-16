@@ -1,5 +1,7 @@
 'use client'
 
+import { AuthSkeleton } from '@/components/skeletons'
+
 import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Link } from '@/i18n/routing'
@@ -89,7 +91,7 @@ const contentMap = {
 
 export default function RegisterPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-zinc-50">Loading...</div>}>
+    <Suspense fallback={<AuthSkeleton />}>
       <RegisterForm />
     </Suspense>
   )

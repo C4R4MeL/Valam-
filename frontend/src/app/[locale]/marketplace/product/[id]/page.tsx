@@ -1,5 +1,7 @@
   'use client'
 
+import { ProductDetailSkeleton } from '@/components/skeletons'
+
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { Link } from '@/i18n/routing'
@@ -210,6 +212,7 @@ export default function ProductDetailPage() {
   const t = contentMap[locale] || contentMap.id
   const { toast } = useToast()
   const router = useRouter()
+  const { addToCart } = useCart()
   const [isAdding, setIsAdding] = useState(false)
   const [orderQty, setOrderQty] = useState(1)
   const [qtyInitialized, setQtyInitialized] = useState(false)
@@ -360,22 +363,10 @@ export default function ProductDetailPage() {
     fetchProduct()
   }, [productId, locale])
 
-  if (loadingProduct) {
-    return (
-      <div className="min-h-screen bg-zinc-50 flex items-center justify-center">
-        <span className="w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></span>
-      </div>
-    )
-  }
-
-
-
-  const { addToCart } = useCart()
-
   // Initialize orderQty from product min order once product is loaded
   if (product && !qtyInitialized) {
-    const minOrder = product.is_circular ? (product.min_order || 1) : (product.moq_kg || 5)
-    setOrderQty(minOrder)
+    const initMin = product.is_circular ? (product.min_order || 1) : (product.moq_kg || 5)
+    setOrderQty(initMin)
     setQtyInitialized(true)
   }
 
@@ -508,7 +499,11 @@ export default function ProductDetailPage() {
       window.open(url, '_blank')
     }, 800)
   }
-  
+
+  if (loadingProduct) {
+    return <ProductDetailSkeleton />
+  }
+
   if (!product) {
     return (
     <div className="min-h-screen flex flex-col bg-zinc-50/80 relative selection:bg-emerald-100 selection:text-emerald-900">

@@ -1,5 +1,7 @@
 'use client'
 
+import { DashboardSkeleton } from '@/components/skeletons'
+
 import { useState, useEffect } from 'react'
 import { 
   Activity, Clock, FileCheck, Wallet, AlertCircle, 
@@ -372,12 +374,7 @@ export default function SupplierDashboardPage() {
   }
 
   if (loadingProfile) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] bg-zinc-50 space-y-4">
-        <div className="w-10 h-10 border-4 border-emerald-800 border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-sm font-semibold text-zinc-500">Memuat dashboard...</p>
-      </div>
-    )
+    return <DashboardSkeleton />
   }
 
   const isVerified = profile?.status === 'TERVERIFIKASI' || profile?.status === 'LEGACY_VERIFIED'

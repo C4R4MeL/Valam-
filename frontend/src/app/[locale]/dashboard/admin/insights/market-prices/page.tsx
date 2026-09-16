@@ -9,6 +9,7 @@ import {
   updateMarketPrice,
 } from '@/lib/valam-insights/insights-api';
 import { formatPrice, formatDate } from '@/lib/valam-insights/utils';
+import { TablePageSkeleton } from '@/components/skeletons';
 import type { InsightMarketPrice, InsightMarketPriceHistory } from '@/lib/valam-insights/types';
 
 const gradeInfo: Record<string, { label: string; description: string; color: string }> = {
@@ -78,11 +79,7 @@ export default function MarketPricesPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="w-10 h-10 border-4 border-emerald-200 border-t-emerald-700 rounded-full animate-spin" />
-      </div>
-    );
+    return <TablePageSkeleton />
   }
 
   return (

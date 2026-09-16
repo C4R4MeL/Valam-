@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useTransition } from 'react';
 import { Link, usePathname, useRouter } from '@/i18n/routing';
@@ -165,19 +165,19 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl relative z-10 pt-16 pb-10">
         
-        {/* ═══════════════════════════════════════════════════════════════════ */}
-        {/* ─── MAIN FOOTER GRID ─── */}
-        {/* ═══════════════════════════════════════════════════════════════════ */}
+        {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+        {/* â”€â”€â”€ MAIN FOOTER GRID â”€â”€â”€ */}
+        {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 lg:gap-8 mb-12">
           
-          {/* Column 1 — Brand Identity (4 cols) */}
+          {/* Column 1 â€” Brand Identity (4 cols) */}
           <div className="lg:col-span-4 space-y-4">
             <Link className="flex items-center gap-2.5 group w-fit" href="/">
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center shadow-lg shadow-emerald-900/30 border border-emerald-400/20 group-hover:scale-105 transition-transform">
                 <Leaf className="w-5 h-5 text-white" />
               </div>
               <span className="font-serif font-bold text-2xl text-white tracking-wide">
-                Valam<span className="text-[#B69A1D]">.</span>
+                Valam<span className="text-[#C8922A]">.</span>
               </span>
             </Link>
             
@@ -248,13 +248,13 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
             </div>
           </div>
 
-          {/* Column 2 — Produk & Ekosistem (2 cols) */}
+          {/* Column 2 â€” Produk & Ekosistem (2 cols) */}
           <div className="lg:col-span-2 space-y-3">
             <button 
               onClick={() => toggleAccordion('produk')}
               className="w-full flex items-center justify-between lg:block text-left focus:outline-none cursor-pointer py-1"
             >
-              <h4 className="font-serif font-bold text-xs uppercase tracking-widest text-[#B69A1D]">
+              <h4 className="font-serif font-bold text-xs uppercase tracking-widest text-[#C8922A]">
                 {isId ? 'Produk & Ekosistem' : 'Ecosystem'}
               </h4>
               <span className="lg:hidden text-zinc-500">
@@ -296,13 +296,13 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
             </ul>
           </div>
 
-          {/* Column 3 — Layanan & Standar (2 cols) */}
+          {/* Column 3 â€” Layanan & Standar (2 cols) */}
           <div className="lg:col-span-2 space-y-3">
             <button 
               onClick={() => toggleAccordion('layanan')}
               className="w-full flex items-center justify-between lg:block text-left focus:outline-none cursor-pointer py-1"
             >
-              <h4 className="font-serif font-bold text-xs uppercase tracking-widest text-[#B69A1D]">
+              <h4 className="font-serif font-bold text-xs uppercase tracking-widest text-[#C8922A]">
                 {isId ? 'Layanan & Mutu' : 'Services & Quality'}
               </h4>
               <span className="lg:hidden text-zinc-500">
@@ -338,13 +338,13 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
             </ul>
           </div>
 
-          {/* Column 4 — Kontak & Dukungan (2 cols) */}
+          {/* Column 4 â€” Kontak & Dukungan (2 cols) */}
           <div className="lg:col-span-2 space-y-3">
             <button 
               onClick={() => toggleAccordion('kontak')}
               className="w-full flex items-center justify-between lg:block text-left focus:outline-none cursor-pointer py-1"
             >
-              <h4 className="font-serif font-bold text-xs uppercase tracking-widest text-[#B69A1D]">
+              <h4 className="font-serif font-bold text-xs uppercase tracking-widest text-[#C8922A]">
                 {isId ? 'Hubungi Kami' : 'Contact Us'}
               </h4>
               <span className="lg:hidden text-zinc-500">
@@ -372,7 +372,7 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
                   href="/chat"
                   className="w-full text-left inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400 hover:text-emerald-300 bg-emerald-950/40 border border-emerald-800/40 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer group"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-[#B69A1D] group-hover:scale-110 transition-transform" />
+                  <Sparkles className="w-3.5 h-3.5 text-[#C8922A] group-hover:scale-110 transition-transform" />
                   <span>{isId ? 'Tanya Nila (AI Assistant)' : 'Ask Nila AI'}</span>
                   <ArrowRight className="w-3 h-3 ml-auto text-emerald-400 group-hover:translate-x-0.5 transition-transform" />
                 </Link>
@@ -380,9 +380,9 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
             </ul>
           </div>
 
-          {/* Column 5 — Newsletter (2 cols) */}
+          {/* Column 5 â€” Newsletter (2 cols) */}
           <div className="lg:col-span-2 space-y-3">
-            <h4 className="font-serif font-bold text-xs uppercase tracking-widest text-[#B69A1D]">
+            <h4 className="font-serif font-bold text-xs uppercase tracking-widest text-[#C8922A]">
               {isId ? 'Warta Pasar' : 'Market Digest'}
             </h4>
             <p className="text-xs text-zinc-400 leading-relaxed">
@@ -435,9 +435,9 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
 
         </div>
 
-        {/* ═══════════════════════════════════════════════════════════════════ */}
-        {/* ─── LIVE MARKET PRICE TICKER STRIP ─── */}
-        {/* ═══════════════════════════════════════════════════════════════════ */}
+        {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+        {/* â”€â”€â”€ LIVE MARKET PRICE TICKER STRIP â”€â”€â”€ */}
+        {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
         <div className="border border-emerald-900/40 bg-emerald-950/20 backdrop-blur-md rounded-2xl p-4 sm:px-6 mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-inner">
           <div className="flex items-center gap-2.5 shrink-0">
             <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
@@ -471,14 +471,14 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
         {/* Hairline Divider */}
         <div className="w-full h-px bg-gradient-to-r from-transparent via-emerald-900/40 to-transparent mb-6" />
 
-        {/* ═══════════════════════════════════════════════════════════════════ */}
-        {/* ─── BOTTOM LEGAL & LANGUAGE BAR ─── */}
-        {/* ═══════════════════════════════════════════════════════════════════ */}
+        {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+        {/* â”€â”€â”€ BOTTOM LEGAL & LANGUAGE BAR â”€â”€â”€ */}
+        {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-400">
           
           {/* Copyrights */}
           <div className="text-center sm:text-left">
-            © {new Date().getFullYear()} <strong className="text-zinc-300 font-semibold">VALAM Indonesia</strong>. {isId ? 'Seluruh hak cipta dilindungi.' : 'All rights reserved.'}
+            Â© {new Date().getFullYear()} <strong className="text-zinc-300 font-semibold">VALAM Indonesia</strong>. {isId ? 'Seluruh hak cipta dilindungi.' : 'All rights reserved.'}
           </div>
 
           {/* Legal Links */}
@@ -486,11 +486,11 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
             <Link href="/insights" className="hover:text-zinc-200 transition-colors">
               {isId ? 'Syarat & Ketentuan' : 'Terms & Conditions'}
             </Link>
-            <span className="text-zinc-700">•</span>
+            <span className="text-zinc-700">â€¢</span>
             <Link href="/insights" className="hover:text-zinc-200 transition-colors">
               {isId ? 'Kebijakan Privasi' : 'Privacy Policy'}
             </Link>
-            <span className="text-zinc-700">•</span>
+            <span className="text-zinc-700">â€¢</span>
             <Link href="/insights" className="hover:text-zinc-200 transition-colors">
               {isId ? 'Sertifikasi & Kepatuhan' : 'Certifications'}
             </Link>
@@ -503,7 +503,7 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
               onClick={() => handleLocaleChange('id')}
               className={`px-2 py-0.5 rounded-full text-[11px] transition-all cursor-pointer ${
                 isId 
-                  ? 'bg-emerald-950 text-[#B69A1D] font-bold border border-emerald-800/40 shadow-2xs' 
+                  ? 'bg-emerald-950 text-[#C8922A] font-bold border border-emerald-800/40 shadow-2xs' 
                   : 'text-zinc-400 hover:text-zinc-200'
               }`}
               disabled={isPending}
@@ -514,7 +514,7 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
               onClick={() => handleLocaleChange('en')}
               className={`px-2 py-0.5 rounded-full text-[11px] transition-all cursor-pointer ${
                 !isId 
-                  ? 'bg-emerald-950 text-[#B69A1D] font-bold border border-emerald-800/40 shadow-2xs' 
+                  ? 'bg-emerald-950 text-[#C8922A] font-bold border border-emerald-800/40 shadow-2xs' 
                   : 'text-zinc-400 hover:text-zinc-200'
               }`}
               disabled={isPending}

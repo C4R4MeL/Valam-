@@ -10,6 +10,7 @@ import { useLocale } from 'next-intl'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { OrdersSkeleton } from '@/components/skeletons'
 
 const contentMap = {
   id: {
@@ -519,7 +520,7 @@ export default function BuyerOrdersPage() {
         </div>
 
         {loading ? (
-          <div className="py-12 text-center text-zinc-500">Loading...</div>
+          <OrdersSkeleton embedded />
         ) : filteredOrders.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-20 h-20 bg-zinc-50 rounded-full flex items-center justify-center mx-auto mb-4">

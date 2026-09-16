@@ -10,11 +10,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { User, LogOut, Settings, ShoppingBag, Globe, ShoppingCart, Search, X, Menu, ChevronRight, Sparkles, BarChart3, Home, MessageCircle } from "lucide-react"
+import { User, LogOut, Settings, ShoppingBag, ShoppingCart, Search, X, Menu, ChevronRight, Sparkles, BarChart3, Home, MessageCircle, Globe } from "lucide-react"
 import { Link, usePathname, useRouter } from "@/i18n/routing"
 import { useTranslations, useLocale } from "next-intl"
 import { useAuthContext } from '@/components/providers/AuthProvider'
 import { useCart } from '@/components/providers/CartProvider'
+import { useFastNav } from '@/components/layout/useFastNav'
 
 /* ── Leaf Logo Icon ── */
 function IconLeaf({ className }: { className?: string }) {
@@ -37,31 +38,34 @@ interface NavItem {
   isActive?: boolean
 }
 
+const NAV_PREFETCH_ROUTES = [
+  '/',
+  '/marketplace',
+  '/matching',
+  '/chat',
+  '/insights',
+  '/cart',
+  '/login',
+  '/profile',
+  '/buyer/orders',
+] as const
+
 export function Navbar() {
   const t = useTranslations('Navbar')
   const locale = useLocale()
   const pathname = usePathname()
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
-  const [isClient, setIsClient] = useState(false)
-  const [searchOpen, setSearchOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
   const [isScrolled, setIsScrolled] = useState(false)
-  const [isNavigating, setIsNavigating] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isChatOpen, setIsChatOpen] = useState(false)
-  const searchRef = useRef<HTMLInputElement>(null)
   const navRef = useRef<HTMLElement>(null)
+  const { onNavClick, onNavPointerDown } = useFastNav(NAV_PREFETCH_ROUTES)
 
-  // Derived state: if we are navigating away, force navbar back to normal mode
-  const scrolled = isScrolled && !isNavigating
+  const scrolled = isScrolled
 
-  const { role, email, logout, isAuthenticated } = useAuthContext()
+  const { role, email, logout } = useAuthContext()
   const { totalItems } = useCart()
-
-  useEffect(() => {
-    setIsClient(true)
-  }, [])
 
   // Chat state sync listener
   useEffect(() => {
@@ -81,47 +85,16 @@ export function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // Navigation interceptor to allow closing animation before route changes
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    if (pathname === href) {
-      setMobileMenuOpen(false)
-      return
-    }
-
-    if (scrolled) {
-      e.preventDefault()
-      setIsNavigating(true)
-      setTimeout(() => {
-        router.push(href)
-        setIsNavigating(false)
-        setMobileMenuOpen(false)
-      }, 700) // Match the duration-700 of the visual bar transition
-    } else {
-      setMobileMenuOpen(false)
-    }
+    setMobileMenuOpen(false)
+    onNavClick(e, href)
   }
 
-  // Keyboard shortcut ⌘K / Ctrl+K to open search
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault()
-        setSearchOpen(prev => !prev)
-      }
-      if (e.key === 'Escape') {
-        setSearchOpen(false)
-        setMobileMenuOpen(false)
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [])
+  const handleNavPointerDown = (e: React.PointerEvent<HTMLAnchorElement>, href: string) => {
+    onNavPointerDown(e, href)
+  }
 
-  useEffect(() => {
-    if (searchOpen && searchRef.current) {
-      searchRef.current.focus()
-    }
-  }, [searchOpen])
+
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -161,15 +134,6 @@ export function Navbar() {
   const getInitial = () => {
     if (email) return email.charAt(0).toUpperCase()
     return 'U'
-  }
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (searchQuery.trim()) {
-      router.push(`/marketplace?q=${encodeURIComponent(searchQuery.trim())}`)
-      setSearchOpen(false)
-      setSearchQuery('')
-    }
   }
 
   // Build nav items array
@@ -218,23 +182,23 @@ export function Navbar() {
       >
         {/* Outer spacing wrapper — adds padding when floating */}
         <div
-          className={`transition-all duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${
+          className={`transition-all duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${
             scrolled ? 'pt-3 px-4' : 'pt-0 px-0'
           }`}
         >
           {/* Visual bar — transitions max-width for symmetric shrink */}
           <div
-            className={`relative mx-auto transition-all duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] overflow-hidden ${
+            className={`relative mx-auto transition-all duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] overflow-hidden ${
               scrolled
-                ? 'max-w-[1050px] bg-[#0f2e1b]/90 backdrop-blur-2xl rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.4)] border border-emerald-800/40'
-                : 'max-w-[2400px] bg-[#1A4D2E] rounded-b-3xl border border-transparent'
+                ? 'max-w-[1050px] bg-[#122B1E]/90 backdrop-blur-2xl rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.4)] border border-emerald-800/40'
+                : 'max-w-[2400px] bg-[#1B5E3A] rounded-b-3xl border border-transparent'
             }`}
           >
             {/* Subtle top accent line */}
-            <div className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-valam-gold/60 to-transparent transition-opacity duration-500 ${scrolled ? 'opacity-0' : 'opacity-100'}`} />
+            <div className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-valam-gold/60 to-transparent transition-opacity duration-300 ${scrolled ? 'opacity-0' : 'opacity-100'}`} />
 
             {/* Content flex container */}
-            <div className={`flex items-center justify-between transition-all duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${
+            <div className={`flex items-center justify-between transition-all duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] ${
               scrolled ? 'h-14 px-5 gap-3' : 'h-16 px-6 lg:px-8 gap-4'
             }`}>
 
@@ -242,7 +206,9 @@ export function Navbar() {
           <Link 
             className="flex items-center gap-2 group shrink-0" 
             href="/"
+            onPointerDown={(e) => handleNavPointerDown(e, '/')}
             onClick={(e) => handleNavClick(e, '/')}
+            prefetch={true}
           >
             <div className={`relative rounded-xl bg-gradient-to-br from-valam-gold/20 to-white/5 backdrop-blur-sm flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:from-valam-gold/30 border border-white/10 group-hover:border-valam-gold/30 group-hover:shadow-[0_0_20px_rgba(182,154,29,0.15)] ${scrolled ? 'w-7 h-7 rounded-lg' : 'w-9 h-9'}`}>
               <IconLeaf className={`text-valam-gold-300 transition-all duration-500 group-hover:rotate-[-8deg] ${scrolled ? 'w-4 h-4' : 'w-5 h-5'}`} />
@@ -265,25 +231,29 @@ export function Navbar() {
           <nav className={`hidden lg:flex items-center gap-0.5 rounded-2xl border border-white/[0.06] transition-all duration-500 ${scrolled ? 'bg-white/[0.03] px-1 py-0.5 rounded-xl' : 'bg-white/[0.04] px-1.5 py-1'}`}>
             {navItems.map((item) => {
               const active = item.isActive !== undefined ? item.isActive : isNavActive(item.href, item.exact)
-              const clickHandler = (e: React.MouseEvent<HTMLAnchorElement>) => {
-                if (item.onClick) {
-                  item.onClick(e)
-                } else {
-                  handleNavClick(e, item.href)
-                }
-              }
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  onClick={clickHandler}
-                  className={`relative flex items-center gap-1.5 font-medium rounded-xl transition-all duration-300 group overflow-hidden whitespace-nowrap ${
+                  onPointerDown={(e) => {
+                    if (item.onClick) return
+                    handleNavPointerDown(e, item.href)
+                  }}
+                  onClick={(e) => {
+                    if (item.onClick) {
+                      item.onClick(e)
+                      return
+                    }
+                    handleNavClick(e, item.href)
+                  }}
+                  prefetch={true}
+                  className={`relative flex items-center gap-1.5 font-medium rounded-xl transition-all duration-200 group overflow-hidden whitespace-nowrap ${
                     scrolled ? 'text-[12px] px-3 py-1.5' : 'text-[13px] px-4 py-2'
                   } ${
                     active
-                      ? 'text-[#1A4D2E] font-semibold'
+                      ? 'text-[#1B5E3A] font-semibold'
                       : 'text-white/70 hover:text-white'
-                  }`}
+                  } ${isPending ? 'opacity-80' : ''}`}
                 >
                   {/* Active background pill */}
                   {active && (
@@ -295,7 +265,7 @@ export function Navbar() {
                     <span className="absolute inset-0 rounded-xl bg-white/10 opacity-0 group-hover:opacity-100 transition-all duration-400 ease-[cubic-bezier(0.23,1,0.32,1)] scale-50 group-hover:scale-100" />
                   )}
 
-                  <span className={`relative z-10 transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-110 group-hover:-rotate-6 ${active ? 'text-[#1A4D2E]' : 'group-hover:text-valam-gold-300'}`}>
+                  <span className={`relative z-10 transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-110 group-hover:-rotate-6 ${active ? 'text-[#1B5E3A]' : 'group-hover:text-valam-gold-300'}`}>
                     {item.icon}
                   </span>
                   <span className="relative z-10 transition-all duration-300 group-hover:tracking-wide">
@@ -309,29 +279,17 @@ export function Navbar() {
           {/* ── Right Section ── */}
           <div className={`flex items-center transition-all duration-500 ${scrolled ? 'gap-1' : 'gap-1.5'}`}>
 
-            {/* Search Trigger */}
-            {!isLandingPage && (
-              <button
-                onClick={() => setSearchOpen(true)}
-                className={`flex items-center gap-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] hover:border-white/[0.15] text-white/40 hover:text-white/70 transition-all duration-300 text-xs ${scrolled ? 'h-8 px-2.5' : 'h-9 px-3'}`}
-              >
-                <Search className="w-3.5 h-3.5" />
-                <span className="hidden xl:inline text-white/30">{locale === 'id' ? 'Cari...' : 'Search...'}</span>
-                <kbd className="hidden xl:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-white/[0.08] border border-white/[0.1] text-[10px] text-white/25 font-mono">
-                  ⌘K
-                </kbd>
-              </button>
-            )}
-
-
             {/* Cart Icon */}
             <Link
               href="/cart"
-              className={`relative rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] hover:border-white/[0.15] text-white/50 hover:text-white transition-all duration-300 flex items-center justify-center ${scrolled ? 'h-8 w-8' : 'h-9 w-9'}`}
+              prefetch={true}
+              onPointerDown={(e) => handleNavPointerDown(e, '/cart')}
+              onClick={(e) => handleNavClick(e, '/cart')}
+              className={`relative rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] hover:border-white/[0.15] text-white/50 hover:text-white transition-all duration-200 flex items-center justify-center ${scrolled ? 'h-8 w-8' : 'h-9 w-9'}`}
             >
               <ShoppingCart className="w-4 h-4" />
               {totalItems > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-gradient-to-r from-valam-gold to-valam-gold-300 text-[#1A4D2E] text-[10px] font-black flex items-center justify-center shadow-[0_2px_8px_rgba(182,154,29,0.4)] animate-scale-in ring-2 ring-[#1A4D2E]">
+                <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-gradient-to-r from-valam-gold to-valam-gold-300 text-[#1B5E3A] text-[10px] font-black flex items-center justify-center shadow-[0_2px_8px_rgba(182,154,29,0.4)] animate-scale-in ring-2 ring-[#1B5E3A]">
                   {totalItems}
                 </span>
               )}
@@ -340,23 +298,48 @@ export function Navbar() {
             {/* Divider */}
             <div className={`w-px bg-white/10 transition-all duration-500 ${scrolled ? 'h-5 mx-0.5' : 'h-6 mx-1'}`} />
 
+            {/* Language Switcher */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className={`relative rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] hover:border-white/[0.15] text-white/70 hover:text-white transition-all duration-200 flex items-center justify-center font-bold tracking-wide text-[11px] ${scrolled ? 'h-8 px-2.5 gap-1.5' : 'h-9 px-3 gap-1.5'}`}>
+                  <Globe className="w-3.5 h-3.5" />
+                  {locale === 'en' ? 'EN' : 'ID'}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-32 mt-2 rounded-xl bg-white/95 backdrop-blur-xl shadow-[0_20px_60px_-12px_rgba(0,0,0,0.25)] border border-white/40">
+                <DropdownMenuItem 
+                  onClick={() => switchLocale('id')} 
+                  className={`cursor-pointer px-3 py-2 text-sm font-medium rounded-lg m-1 transition-colors ${locale === 'id' ? 'bg-[#1B5E3A]/10 text-[#1B5E3A]' : 'text-zinc-600 hover:bg-zinc-100'}`}
+                >
+                  <span className="flex-1">Indonesia</span>
+                  {locale === 'id' && <div className="w-1.5 h-1.5 rounded-full bg-valam-gold ml-2" />}
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => switchLocale('en')} 
+                  className={`cursor-pointer px-3 py-2 text-sm font-medium rounded-lg m-1 transition-colors ${locale === 'en' ? 'bg-[#1B5E3A]/10 text-[#1B5E3A]' : 'text-zinc-600 hover:bg-zinc-100'}`}
+                >
+                  <span className="flex-1">English</span>
+                  {locale === 'en' && <div className="w-1.5 h-1.5 rounded-full bg-valam-gold ml-2" />}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             {/* Profile / Login */}
-            {isClient ? (
-              role ? (
-                <DropdownMenu>
+            {role ? (
+              <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className={`p-0 rounded-xl bg-gradient-to-br from-valam-gold to-valam-gold-300 hover:from-valam-gold-300 hover:to-valam-gold text-[#1A4D2E] font-bold text-sm shadow-[0_2px_12px_rgba(182,154,29,0.3)] ring-2 ring-white/10 hover:ring-white/20 transition-all duration-300 hover:scale-105 ${scrolled ? 'h-8 w-8' : 'h-9 w-9'}`}>
+                    <Button variant="ghost" className={`p-0 rounded-xl bg-gradient-to-br from-valam-gold to-valam-gold-300 hover:from-valam-gold-300 hover:to-valam-gold text-[#1B5E3A] font-bold text-sm shadow-[0_2px_12px_rgba(182,154,29,0.3)] ring-2 ring-white/10 hover:ring-white/20 transition-all duration-300 hover:scale-105 ${scrolled ? 'h-8 w-8' : 'h-9 w-9'}`}>
                       {getInitial()}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-60 mt-2 rounded-xl bg-white/95 backdrop-blur-xl shadow-[0_20px_60px_-12px_rgba(0,0,0,0.25)] border border-white/40">
                     <DropdownMenuLabel className="font-normal px-3 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1A4D2E] to-[#2E8B57] flex items-center justify-center text-white font-bold text-sm shadow-md">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1B5E3A] to-[#2E8B57] flex items-center justify-center text-white font-bold text-sm shadow-md">
                           {getInitial()}
                         </div>
                         <div className="flex flex-col gap-0.5">
-                          <p className="text-sm font-semibold leading-none truncate text-[#1A4D2E]">{email}</p>
+                          <p className="text-sm font-semibold leading-none truncate text-[#1B5E3A]">{email}</p>
                           <p className="text-[11px] leading-none text-muted-foreground uppercase tracking-wider font-medium bg-valam-gold/10 text-valam-gold-600 px-2 py-0.5 rounded-full w-fit">{role}</p>
                         </div>
                       </div>
@@ -366,26 +349,26 @@ export function Navbar() {
                       <div className="p-1 space-y-0.5">
                         {/* BUYER LINKS */}
                         <DropdownMenuItem asChild>
-                          <Link href="/profile" className="cursor-pointer flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[#1A4D2E]/5 outline-none transition-colors group">
-                            <div className="w-8 h-8 rounded-lg bg-[#1A4D2E]/10 flex items-center justify-center text-[#1A4D2E] group-hover:bg-[#1A4D2E]/20 transition-colors">
+                          <Link href="/profile" className="cursor-pointer flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[#1B5E3A]/5 outline-none transition-colors group">
+                            <div className="w-8 h-8 rounded-lg bg-[#1B5E3A]/10 flex items-center justify-center text-[#1B5E3A] group-hover:bg-[#1B5E3A]/20 transition-colors">
                               <User className="h-4 w-4" />
                             </div>
-                            <span className="text-sm font-medium text-zinc-700 group-hover:text-[#1A4D2E] transition-colors">
+                            <span className="text-sm font-medium text-zinc-700 group-hover:text-[#1B5E3A] transition-colors">
                               {locale === 'id' ? 'Profil' : 'Profile'}
                             </span>
-                            <ChevronRight className="ml-auto h-3.5 w-3.5 text-zinc-400 group-hover:text-[#1A4D2E] transition-colors" />
+                            <ChevronRight className="ml-auto h-3.5 w-3.5 text-zinc-400 group-hover:text-[#1B5E3A] transition-colors" />
                           </Link>
                         </DropdownMenuItem>
 
                         <DropdownMenuItem asChild>
-                          <Link href="/buyer/orders" className="cursor-pointer flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[#1A4D2E]/5 outline-none transition-colors group">
-                            <div className="w-8 h-8 rounded-lg bg-[#1A4D2E]/10 flex items-center justify-center text-[#1A4D2E] group-hover:bg-[#1A4D2E]/20 transition-colors">
+                          <Link href="/buyer/orders" className="cursor-pointer flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[#1B5E3A]/5 outline-none transition-colors group">
+                            <div className="w-8 h-8 rounded-lg bg-[#1B5E3A]/10 flex items-center justify-center text-[#1B5E3A] group-hover:bg-[#1B5E3A]/20 transition-colors">
                               <ShoppingBag className="h-4 w-4" />
                             </div>
-                            <span className="text-sm font-medium text-zinc-700 group-hover:text-[#1A4D2E] transition-colors">
+                            <span className="text-sm font-medium text-zinc-700 group-hover:text-[#1B5E3A] transition-colors">
                               {locale === 'id' ? 'Pesanan Saya' : 'My Order'}
                             </span>
-                            <ChevronRight className="ml-auto h-3.5 w-3.5 text-zinc-400 group-hover:text-[#1A4D2E] transition-colors" />
+                            <ChevronRight className="ml-auto h-3.5 w-3.5 text-zinc-400 group-hover:text-[#1B5E3A] transition-colors" />
                           </Link>
                         </DropdownMenuItem>
 
@@ -404,26 +387,26 @@ export function Navbar() {
                       <div className="p-1 space-y-0.5">
                         {/* SUPPLIER & ADMIN LINKS */}
                         <DropdownMenuItem asChild>
-                          <Link href={`/dashboard/${role}`} className="cursor-pointer flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[#1A4D2E]/5 outline-none transition-colors group">
-                            <div className="w-8 h-8 rounded-lg bg-[#1A4D2E]/10 flex items-center justify-center text-[#1A4D2E] group-hover:bg-[#1A4D2E]/20 transition-colors">
+                          <Link href={`/dashboard/${role}`} className="cursor-pointer flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[#1B5E3A]/5 outline-none transition-colors group">
+                            <div className="w-8 h-8 rounded-lg bg-[#1B5E3A]/10 flex items-center justify-center text-[#1B5E3A] group-hover:bg-[#1B5E3A]/20 transition-colors">
                               <User className="h-4 w-4" />
                             </div>
-                            <span className="text-sm font-medium text-zinc-700 group-hover:text-[#1A4D2E] transition-colors">
+                            <span className="text-sm font-medium text-zinc-700 group-hover:text-[#1B5E3A] transition-colors">
                               {role === 'supplier' ? t('SupplierDashboard') : t('AdminDashboard')}
                             </span>
-                            <ChevronRight className="ml-auto h-3.5 w-3.5 text-zinc-400 group-hover:text-[#1A4D2E] transition-colors" />
+                            <ChevronRight className="ml-auto h-3.5 w-3.5 text-zinc-400 group-hover:text-[#1B5E3A] transition-colors" />
                           </Link>
                         </DropdownMenuItem>
 
                         <DropdownMenuItem asChild>
-                          <Link href="/profile" className="cursor-pointer flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[#1A4D2E]/5 outline-none transition-colors group">
-                            <div className="w-8 h-8 rounded-lg bg-[#1A4D2E]/10 flex items-center justify-center text-[#1A4D2E] group-hover:bg-[#1A4D2E]/20 transition-colors">
+                          <Link href="/profile" className="cursor-pointer flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[#1B5E3A]/5 outline-none transition-colors group">
+                            <div className="w-8 h-8 rounded-lg bg-[#1B5E3A]/10 flex items-center justify-center text-[#1B5E3A] group-hover:bg-[#1B5E3A]/20 transition-colors">
                               <Settings className="h-4 w-4" />
                             </div>
-                            <span className="text-sm font-medium text-zinc-700 group-hover:text-[#1A4D2E] transition-colors">
+                            <span className="text-sm font-medium text-zinc-700 group-hover:text-[#1B5E3A] transition-colors">
                               {t('PengaturanProfil')}
                             </span>
-                            <ChevronRight className="ml-auto h-3.5 w-3.5 text-zinc-400 group-hover:text-[#1A4D2E] transition-colors" />
+                            <ChevronRight className="ml-auto h-3.5 w-3.5 text-zinc-400 group-hover:text-[#1B5E3A] transition-colors" />
                           </Link>
                         </DropdownMenuItem>
 
@@ -442,15 +425,17 @@ export function Navbar() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <Link href="/login">
-                  <Button className={`rounded-xl text-xs font-semibold bg-gradient-to-r from-valam-gold to-valam-gold-300 hover:from-valam-gold-300 hover:to-valam-gold text-[#1A4D2E] shadow-[0_2px_12px_rgba(182,154,29,0.3)] hover:shadow-[0_4px_20px_rgba(182,154,29,0.4)] transition-all duration-300 hover:scale-[1.03] border border-valam-gold-300/30 ${scrolled ? 'h-8 px-4' : 'h-9 px-5'}`}>
+                <Link
+                  href="/login"
+                  prefetch={true}
+                  onPointerDown={(e) => handleNavPointerDown(e, '/login')}
+                  onClick={(e) => handleNavClick(e, '/login')}
+                >
+                  <Button className={`rounded-xl text-xs font-semibold bg-gradient-to-r from-valam-gold to-valam-gold-300 hover:from-valam-gold-300 hover:to-valam-gold text-[#1B5E3A] shadow-[0_2px_12px_rgba(182,154,29,0.3)] hover:shadow-[0_4px_20px_rgba(182,154,29,0.4)] transition-all duration-200 hover:scale-[1.03] border border-valam-gold-300/30 ${scrolled ? 'h-8 px-4' : 'h-9 px-5'}`}>
                     {t('Masuk')}
                   </Button>
                 </Link>
-              )
-            ) : (
-              <div className="h-9 w-9 rounded-xl bg-white/[0.04] animate-pulse" />
-            )}
+              )}
           </div>
             </div>
           </div>
@@ -463,8 +448,8 @@ export function Navbar() {
       <header
         className={`fixed top-0 left-0 right-0 z-50 md:hidden transition-all duration-500 ${
           scrolled
-            ? 'bg-[#0f2e1b]/95 backdrop-blur-xl shadow-[0_4px_20px_rgba(0,0,0,0.2)] rounded-b-2xl'
-            : 'bg-gradient-to-r from-[#1A4D2E] via-[#1d5533] to-[#1A4D2E] rounded-b-3xl'
+            ? 'bg-[#122B1E]/95 backdrop-blur-xl shadow-[0_4px_20px_rgba(0,0,0,0.2)] rounded-b-2xl'
+            : 'bg-gradient-to-r from-[#1B5E3A] via-[#1E5A3C] to-[#1B5E3A] rounded-b-3xl'
         }`}
       >
         {/* Subtle top accent line */}
@@ -483,24 +468,17 @@ export function Navbar() {
 
           {/* Mobile Right Actions */}
           <div className="flex items-center gap-1.5">
-            {/* Search */}
-            {!isLandingPage && (
-              <button
-                onClick={() => setSearchOpen(true)}
-                className="h-8 w-8 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] text-white/50 flex items-center justify-center transition-all"
-              >
-                <Search className="w-4 h-4" />
-              </button>
-            )}
-
             {/* Cart */}
             <Link
               href="/cart"
+              prefetch={true}
+              onPointerDown={(e) => handleNavPointerDown(e, '/cart')}
+              onClick={(e) => handleNavClick(e, '/cart')}
               className="relative h-8 w-8 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] text-white/50 flex items-center justify-center transition-all"
             >
               <ShoppingCart className="w-4 h-4" />
               {totalItems > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-0.5 rounded-full bg-gradient-to-r from-valam-gold to-valam-gold-300 text-[#1A4D2E] text-[9px] font-black flex items-center justify-center ring-2 ring-[#1A4D2E]">
+                <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-0.5 rounded-full bg-gradient-to-r from-valam-gold to-valam-gold-300 text-[#1B5E3A] text-[9px] font-black flex items-center justify-center ring-2 ring-[#1B5E3A]">
                   {totalItems}
                 </span>
               )}
@@ -520,18 +498,20 @@ export function Navbar() {
       {/* ── Mobile Slide-Over Menu ── */}
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 z-[55] bg-black/50 backdrop-blur-sm md:hidden transition-opacity duration-300 ${
+        className={`fixed inset-0 z-[55] bg-black/50 backdrop-blur-sm md:hidden transition-opacity duration-200 ${
           mobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
         onClick={() => setMobileMenuOpen(false)}
+        aria-hidden={!mobileMenuOpen}
       />
 
       {/* Drawer */}
       <div
-        className={`fixed top-0 right-0 bottom-0 z-[60] w-[280px] bg-gradient-to-b from-[#122e1d] to-[#0c1f14] md:hidden shadow-[-10px_0_40px_rgba(0,0,0,0.4)] ${
-          mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+        className={`fixed top-0 right-0 bottom-0 z-[60] w-[280px] bg-gradient-to-b from-[#132E1F] to-[#0D2016] md:hidden shadow-[-10px_0_40px_rgba(0,0,0,0.4)] ${
+          mobileMenuOpen ? 'translate-x-0 pointer-events-auto' : 'translate-x-full pointer-events-none'
         }`}
-        style={{ transition: 'transform 500ms cubic-bezier(0.32, 0.72, 0, 1)' }}
+        style={{ transition: 'transform 220ms cubic-bezier(0.32, 0.72, 0, 1)' }}
+        aria-hidden={!mobileMenuOpen}
       >
         {/* Drawer Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-white/[0.06]">
@@ -548,25 +528,29 @@ export function Navbar() {
         <nav className="flex flex-col gap-1 px-3 py-4">
           {navItems.map((item, idx) => {
             const active = item.isActive !== undefined ? item.isActive : isNavActive(item.href, item.exact)
-            const clickHandler = (e: React.MouseEvent<HTMLAnchorElement>) => {
-              if (item.onClick) {
-                item.onClick(e)
-                setMobileMenuOpen(false)
-              } else {
-                handleNavClick(e, item.href)
-              }
-            }
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={clickHandler}
-                className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+                onPointerDown={(e) => {
+                  if (item.onClick) return
+                  handleNavPointerDown(e, item.href)
+                }}
+                onClick={(e) => {
+                  if (item.onClick) {
+                    item.onClick(e)
+                    setMobileMenuOpen(false)
+                    return
+                  }
+                  handleNavClick(e, item.href)
+                }}
+                prefetch={true}
+                className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-150 ${
                   active
                     ? 'bg-gradient-to-r from-valam-gold/20 to-valam-gold/5 text-valam-gold border border-valam-gold/20'
                     : 'text-white/60 hover:text-white hover:bg-white/[0.04] border border-transparent'
                 }`}
-                style={{ animationDelay: `${idx * 50}ms` }}
+                style={{ animationDelay: `${idx * 30}ms` }}
               >
                 <span className={`w-8 h-8 rounded-lg flex items-center justify-center ${
                   active ? 'bg-valam-gold/20 text-valam-gold' : 'bg-white/[0.04] text-white/40'
@@ -583,10 +567,10 @@ export function Navbar() {
 
         {/* User Auth in Drawer */}
         <div className="px-3 py-4">
-          {isClient && role ? (
+          {role ? (
             <div className="space-y-2">
               <div className="flex items-center gap-3 px-3 py-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-valam-gold to-valam-gold-300 flex items-center justify-center text-[#1A4D2E] font-bold text-sm">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-valam-gold to-valam-gold-300 flex items-center justify-center text-[#1B5E3A] font-bold text-sm">
                   {getInitial()}
                 </div>
                 <div className="flex flex-col">
@@ -605,8 +589,14 @@ export function Navbar() {
               </button>
             </div>
           ) : (
-            <Link href="/login" className="block">
-              <Button className="w-full h-10 rounded-xl text-sm font-semibold bg-gradient-to-r from-valam-gold to-valam-gold-300 text-[#1A4D2E] shadow-[0_2px_12px_rgba(182,154,29,0.25)] hover:shadow-[0_4px_20px_rgba(182,154,29,0.35)] transition-all">
+            <Link
+              href="/login"
+              prefetch={true}
+              onPointerDown={(e) => handleNavPointerDown(e, '/login')}
+              onClick={(e) => handleNavClick(e, '/login')}
+              className="block"
+            >
+              <Button className="w-full h-10 rounded-xl text-sm font-semibold bg-gradient-to-r from-valam-gold to-valam-gold-300 text-[#1B5E3A] shadow-[0_2px_12px_rgba(182,154,29,0.25)] hover:shadow-[0_4px_20px_rgba(182,154,29,0.35)] transition-all">
                 {t('Masuk')}
               </Button>
             </Link>
@@ -614,78 +604,6 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════════ */}
-      {/* ─── COMMAND PALETTE SEARCH OVERLAY ─── */}
-      {/* ═══════════════════════════════════════════════════ */}
-      {!isLandingPage && searchOpen && (
-        <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh]">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
-            onClick={() => setSearchOpen(false)}
-            style={{ animation: 'fadeIn 200ms ease-out' }}
-          />
-
-          {/* Search Modal */}
-          <div
-            className="relative w-full max-w-lg mx-4 bg-white/95 backdrop-blur-xl rounded-2xl shadow-[0_25px_60px_-12px_rgba(0,0,0,0.4)] border border-white/50 overflow-hidden"
-            style={{ animation: 'searchSlideIn 300ms cubic-bezier(0.32, 0.72, 0, 1)' }}
-          >
-            <form onSubmit={handleSearchSubmit} className="flex items-center">
-              <Search className="w-5 h-5 text-[#1A4D2E]/40 ml-4 shrink-0" />
-              <input
-                ref={searchRef}
-                type="text"
-                placeholder={locale === 'id' ? 'Cari produk, supplier...' : 'Search products, suppliers...'}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 h-14 px-3 bg-transparent text-[#1A4D2E] placeholder:text-[#1A4D2E]/30 text-sm outline-none"
-              />
-              <div className="flex items-center gap-2 pr-3">
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery('')}
-                    className="p-1 rounded-md hover:bg-[#1A4D2E]/5 text-[#1A4D2E]/30 hover:text-[#1A4D2E]/60 transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-                <kbd className="px-2 py-1 rounded-lg bg-[#1A4D2E]/5 border border-[#1A4D2E]/10 text-[11px] text-[#1A4D2E]/30 font-mono">
-                  Esc
-                </kbd>
-              </div>
-            </form>
-
-            {/* Quick Suggestions */}
-            {!searchQuery && (
-              <div className="border-t border-[#1A4D2E]/5 px-4 py-3">
-                <p className="text-[10px] text-[#1A4D2E]/30 uppercase tracking-wider font-semibold mb-2">
-                  {locale === 'id' ? 'Saran Pencarian' : 'Quick Actions'}
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {['Rempah', 'Kopi', 'Kelapa', 'Kakao', 'Vanilla'].map((tag) => (
-                    <button
-                      key={tag}
-                      type="button"
-                      onClick={() => {
-                        setSearchQuery(tag)
-                        handleSearchSubmit({ preventDefault: () => {} } as React.FormEvent)
-                        router.push(`/marketplace?q=${encodeURIComponent(tag)}`)
-                        setSearchOpen(false)
-                        setSearchQuery('')
-                      }}
-                      className="px-3 py-1.5 rounded-lg bg-[#1A4D2E]/5 hover:bg-[#1A4D2E]/10 text-[#1A4D2E]/60 hover:text-[#1A4D2E] text-xs font-medium transition-all hover:scale-105"
-                    >
-                      {tag}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* ── Inline Keyframe Styles ── */}
       <style jsx global>{`

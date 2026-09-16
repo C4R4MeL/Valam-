@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Label } from '@/components/ui/label'
+import { TablePageSkeleton } from '@/components/skeletons'
 
 const contentMap = {
   id: {
@@ -465,7 +466,7 @@ export default function SupplierOrdersPage() {
         </div>
 
         {loading ? (
-          <div className="py-12 text-center text-zinc-500">Loading...</div>
+          <TablePageSkeleton rows={5} />
         ) : filteredOrders.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-20 h-20 bg-zinc-50 rounded-full flex items-center justify-center mx-auto mb-4">

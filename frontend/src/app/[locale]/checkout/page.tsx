@@ -10,6 +10,7 @@ import { useLocale } from 'next-intl'
 import { useSearchParams } from 'next/navigation'
 import { useCart } from '@/components/providers/CartProvider'
 import { formatRupiah, validateOrderQuantity } from '@/lib/utils'
+import { CheckoutSkeleton } from '@/components/skeletons'
 
 export default function CheckoutPage() {
   const { patchouliItems, circularItems, loading, removeItem, clearCart, fetchCart } = useCart()
@@ -334,11 +335,7 @@ export default function CheckoutPage() {
   }
 
   if ((loading || directLoading) && step !== 3) {
-    return (
-      <div className="min-h-screen bg-zinc-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1A4D2E]" />
-      </div>
-    )
+    return <CheckoutSkeleton />
   }
 
   return (
@@ -368,7 +365,7 @@ export default function CheckoutPage() {
                   {isId ? '⚡ Beli Langsung' : '⚡ Buy Now'}
                 </span>
               )}
-              <h1 className="font-serif font-bold text-xl text-[#1A4D2E]">
+              <h1 className="font-serif font-bold text-xl text-[#1B5E3A]">
                 {isCircular ? (isId ? 'Checkout Eco Products' : 'Eco Products Checkout') : 'Checkout'}
               </h1>
             </div>
@@ -376,16 +373,16 @@ export default function CheckoutPage() {
 
           {/* Desktop Progress Indicator */}
           <div className="hidden md:flex items-center gap-2 text-xs font-bold">
-            <span className={step === 1 ? 'text-[#1A4D2E] font-black' : 'text-zinc-400'}>1. {isId ? 'Pengiriman' : 'Shipping'}</span>
+            <span className={step === 1 ? 'text-[#1B5E3A] font-black' : 'text-zinc-400'}>1. {isId ? 'Pengiriman' : 'Shipping'}</span>
             <span className="w-4 h-px bg-zinc-300" />
-            <span className={step === 2 ? 'text-[#1A4D2E] font-black' : 'text-zinc-400'}>2. {isId ? 'Review & Bayar' : 'Review & Pay'}</span>
+            <span className={step === 2 ? 'text-[#1B5E3A] font-black' : 'text-zinc-400'}>2. {isId ? 'Review & Bayar' : 'Review & Pay'}</span>
             <span className="w-4 h-px bg-zinc-300" />
-            <span className={step === 3 ? 'text-[#1A4D2E] font-black' : 'text-zinc-400'}>3. {isId ? 'Selesai' : 'Completed'}</span>
+            <span className={step === 3 ? 'text-[#1B5E3A] font-black' : 'text-zinc-400'}>3. {isId ? 'Selesai' : 'Completed'}</span>
           </div>
 
           {/* Mobile Progress Indicator */}
-          <div className="md:hidden flex items-center px-3 py-1 rounded-full bg-[#1A4D2E]/5 border border-[#1A4D2E]/10">
-            <span className="text-[10px] font-bold text-[#1A4D2E]">
+          <div className="md:hidden flex items-center px-3 py-1 rounded-full bg-[#1B5E3A]/5 border border-[#1B5E3A]/10">
+            <span className="text-[10px] font-bold text-[#1B5E3A]">
               {isId ? `Langkah ${step} dari 3` : `Step ${step} of 3`}
             </span>
           </div>
@@ -406,7 +403,7 @@ export default function CheckoutPage() {
             
             {/* Form Alamat */}
             <div className="bg-white p-6 rounded-3xl border border-zinc-200 shadow-sm space-y-4">
-              <div className="flex items-center gap-2 text-[#1A4D2E] font-bold">
+              <div className="flex items-center gap-2 text-[#1B5E3A] font-bold">
                 <MapPin className="w-5 h-5" />
                 <h3>{isId ? 'Alamat Tujuan' : 'Destination Address'}</h3>
               </div>
@@ -414,7 +411,7 @@ export default function CheckoutPage() {
                 value={address}
                 onChange={e => setAddress(e.target.value)}
                 placeholder={isId ? 'Masukkan alamat lengkap penerima/gudang (Nama jalan, nomor, RT/RW, kecamatan, kota/kabupaten, provinsi, kode pos)...' : 'Enter complete recipient/warehouse address (Street name, district, city, province, postal code)...'}
-                className="min-h-[120px] rounded-xl border-zinc-200 focus:border-[#1A4D2E] focus:ring-[#1A4D2E]/20 resize-none text-sm"
+                className="min-h-[120px] rounded-xl border-zinc-200 focus:border-[#1B5E3A] focus:ring-[#1B5E3A]/20 resize-none text-sm"
               />
               <p className="text-[11px] text-zinc-500 flex items-center gap-1.5">
                 <AlertCircle className="w-3.5 h-3.5 text-blue-600 shrink-0" />
@@ -424,7 +421,7 @@ export default function CheckoutPage() {
 
             {/* Catatan Per Pemasok */}
             <div className="bg-white p-6 rounded-3xl border border-zinc-200 shadow-sm space-y-5">
-              <div className="flex items-center gap-2 text-[#1A4D2E] font-bold border-b border-zinc-100 pb-3">
+              <div className="flex items-center gap-2 text-[#1B5E3A] font-bold border-b border-zinc-100 pb-3">
                 <Factory className="w-5 h-5" />
                 <h3>{isId ? 'Catatan Pengiriman (Opsional)' : 'Delivery Notes (Optional)'}</h3>
               </div>
@@ -438,7 +435,7 @@ export default function CheckoutPage() {
                     value={supplierNotes[supplierId] || ''}
                     onChange={e => setSupplierNotes({...supplierNotes, [supplierId]: e.target.value})}
                     placeholder={isId ? `Instruksi khusus pengemasan atau waktu penerimaan untuk ${group.supplierName}...` : `Specific packaging or delivery time instructions for ${group.supplierName}...`}
-                    className="min-h-[75px] rounded-xl text-sm border-zinc-200 focus:border-[#1A4D2E] focus:ring-[#1A4D2E]/20 resize-none"
+                    className="min-h-[75px] rounded-xl text-sm border-zinc-200 focus:border-[#1B5E3A] focus:ring-[#1B5E3A]/20 resize-none"
                   />
                 </div>
               ))}
@@ -446,7 +443,7 @@ export default function CheckoutPage() {
 
             <Button 
               onClick={handleNextToReview}
-              className="w-full h-14 rounded-2xl bg-[#1A4D2E] hover:bg-[#123320] text-white font-bold text-base shadow-md shadow-[#1A4D2E]/20 transition-transform hover:scale-[1.01] cursor-pointer"
+              className="w-full h-14 rounded-2xl bg-[#1B5E3A] hover:bg-[#123320] text-white font-bold text-base shadow-md shadow-[#1B5E3A]/20 transition-transform hover:scale-[1.01] cursor-pointer"
             >
               {isId ? 'Lanjut ke Review & Pembayaran' : 'Proceed to Review & Payment'}
             </Button>
@@ -468,9 +465,9 @@ export default function CheckoutPage() {
               <div className="bg-white rounded-2xl border border-zinc-200 p-4 space-y-1.5 shadow-xs">
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-[#1A4D2E]" /> {isId ? 'Alamat Pengiriman' : 'Shipping Address'}
+                    <MapPin className="w-3.5 h-3.5 text-[#1B5E3A]" /> {isId ? 'Alamat Pengiriman' : 'Shipping Address'}
                   </span>
-                  <button onClick={() => setStep(1)} className="text-xs font-bold text-[#1A4D2E] hover:underline cursor-pointer">
+                  <button onClick={() => setStep(1)} className="text-xs font-bold text-[#1B5E3A] hover:underline cursor-pointer">
                     {isId ? 'Ubah' : 'Change'}
                   </button>
                 </div>
@@ -483,12 +480,12 @@ export default function CheckoutPage() {
                   <div key={supplierId} className="bg-white rounded-2xl border border-zinc-200 p-5 space-y-3 shadow-xs">
                     <div className="flex items-center gap-2 pb-3 border-b border-zinc-100 justify-between">
                       <div className="flex items-center gap-2">
-                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${isCircular ? 'bg-[#B69A1D]/10 text-[#B69A1D]' : 'bg-[#1A4D2E]/10 text-[#1A4D2E]'}`}>
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${isCircular ? 'bg-[#C8922A]/10 text-[#C8922A]' : 'bg-[#1B5E3A]/10 text-[#1B5E3A]'}`}>
                           <Factory className="w-4 h-4" />
                         </div>
                         <h4 className="font-bold text-sm text-zinc-900">{group.supplierName}</h4>
                       </div>
-                      <span className={`text-xs font-bold px-2 py-1 rounded-md ${isCircular ? 'bg-[#B69A1D]/10 text-[#B69A1D]' : 'bg-[#1A4D2E]/10 text-[#1A4D2E]'}`}>
+                      <span className={`text-xs font-bold px-2 py-1 rounded-md ${isCircular ? 'bg-[#C8922A]/10 text-[#C8922A]' : 'bg-[#1B5E3A]/10 text-[#1B5E3A]'}`}>
                         {group.totalKg} {isCircular ? 'Unit' : 'kg'}
                       </span>
                     </div>
@@ -516,7 +513,7 @@ export default function CheckoutPage() {
 
                     <div className="pt-3 border-t border-zinc-100 flex justify-between items-center text-xs">
                       <span className="font-bold text-zinc-500">{isId ? `Subtotal ${group.supplierName}` : `${group.supplierName} Subtotal`}</span> 
-                      <span className={`font-black ${isCircular ? 'text-[#B69A1D]' : 'text-[#1A4D2E]'}`}>{formatRupiah(group.totalSubtotal)}</span>
+                      <span className={`font-black ${isCircular ? 'text-[#C8922A]' : 'text-[#1B5E3A]'}`}>{formatRupiah(group.totalSubtotal)}</span>
                     </div>
                   </div>
                 ))}
@@ -530,12 +527,12 @@ export default function CheckoutPage() {
                 
                 <div className="flex justify-between items-end">
                   <span className="text-sm font-bold text-zinc-500">{isId ? 'Total Tagihan' : 'Grand Total'}</span>
-                  <span className={`text-3xl font-black ${isCircular ? 'text-[#B69A1D]' : 'text-[#1A4D2E]'}`}>{formatRupiah(grandTotal)}</span>
+                  <span className={`text-3xl font-black ${isCircular ? 'text-[#C8922A]' : 'text-[#1B5E3A]'}`}>{formatRupiah(grandTotal)}</span>
                 </div>
 
                 {/* Info Escrow / Proteksi */}
                 <div className="bg-zinc-50 p-4 rounded-2xl border border-zinc-200 space-y-2.5">
-                  <div className={`flex items-center gap-2 font-bold ${isCircular ? 'text-[#B69A1D]' : 'text-[#1A4D2E]'}`}>
+                  <div className={`flex items-center gap-2 font-bold ${isCircular ? 'text-[#C8922A]' : 'text-[#1B5E3A]'}`}>
                     <ShieldCheck className="w-5 h-5 shrink-0" />
                     <h4>{isCircular 
                       ? (isId ? 'Proteksi Transaksi VALAM' : 'VALAM Transaction Protection')
@@ -554,12 +551,12 @@ export default function CheckoutPage() {
                 </div>
 
                 {/* Syarat & Ketentuan Checkbox */}
-                <label className={`flex items-start gap-3 p-3 bg-white border-2 border-zinc-100 rounded-xl cursor-pointer transition-colors group ${isCircular ? 'hover:border-[#B69A1D]/30' : 'hover:border-[#1A4D2E]/30'}`}>
+                <label className={`flex items-start gap-3 p-3 bg-white border-2 border-zinc-100 rounded-xl cursor-pointer transition-colors group ${isCircular ? 'hover:border-[#C8922A]/30' : 'hover:border-[#1B5E3A]/30'}`}>
                   <input 
                     type="checkbox" 
                     checked={agreedToEscrow}
                     onChange={(e) => setAgreedToEscrow(e.target.checked)}
-                    className={`mt-0.5 w-4 h-4 rounded border-zinc-300 ${isCircular ? 'text-[#B69A1D] focus:ring-[#B69A1D]' : 'text-[#1A4D2E] focus:ring-[#1A4D2E]'}`}
+                    className={`mt-0.5 w-4 h-4 rounded border-zinc-300 ${isCircular ? 'text-[#C8922A] focus:ring-[#C8922A]' : 'text-[#1B5E3A] focus:ring-[#1B5E3A]'}`}
                   />
                   <span className="text-xs font-semibold text-zinc-600 group-hover:text-zinc-900 transition-colors leading-relaxed">
                     {isCircular 
@@ -573,8 +570,8 @@ export default function CheckoutPage() {
                   disabled={!agreedToEscrow || isSubmitting}
                   className={`w-full h-14 rounded-2xl font-bold text-base transition-all cursor-pointer disabled:bg-zinc-200 disabled:text-zinc-400 disabled:shadow-none ${
                     isCircular
-                      ? 'bg-[#B69A1D] hover:bg-[#A38618] text-white shadow-lg shadow-[#B69A1D]/20'
-                      : 'bg-[#1A4D2E] hover:bg-[#123320] text-white shadow-lg shadow-[#1A4D2E]/20'
+                      ? 'bg-[#C8922A] hover:bg-[#A38618] text-white shadow-lg shadow-[#C8922A]/20'
+                      : 'bg-[#1B5E3A] hover:bg-[#123320] text-white shadow-lg shadow-[#1B5E3A]/20'
                   }`}
                 >
                   {isSubmitting ? (isId ? 'Memproses Pesanan...' : 'Processing Order...') : (isId ? 'Bayar Sekarang' : 'Pay Now')}
@@ -620,7 +617,7 @@ export default function CheckoutPage() {
               </div>
 
               <div className="space-y-3">
-                <Button asChild className="w-full h-14 rounded-2xl bg-[#1A4D2E] hover:bg-[#123320] text-white font-bold text-base shadow-md cursor-pointer">
+                <Button asChild className="w-full h-14 rounded-2xl bg-[#1B5E3A] hover:bg-[#123320] text-white font-bold text-base shadow-md cursor-pointer">
                   <Link href="/buyer/orders">
                     {isId ? 'Lihat di Pesanan Saya' : 'View in My Orders'}
                   </Link>

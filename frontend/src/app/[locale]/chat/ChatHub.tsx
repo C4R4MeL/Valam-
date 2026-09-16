@@ -256,7 +256,7 @@ export function ChatHub() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#FAF9F6] text-zinc-900 font-sans selection:bg-[#1A4D2E]/10 selection:text-[#1A4D2E]">
+    <div className="min-h-screen flex flex-col bg-[#FAF9F6] text-zinc-900 font-sans selection:bg-[#1B5E3A]/10 selection:text-[#1B5E3A]">
       <Navbar />
 
       <main className="flex-1 pt-24 sm:pt-28 md:pt-32 pb-16">
@@ -294,7 +294,7 @@ export function ChatHub() {
               {/* 4. Nila Profile Card */}
               <div className="bg-white rounded-2xl border border-zinc-200/80 shadow-xs p-5 md:p-6 transition-all hover:shadow-sm">
                 <div className="flex items-center gap-3.5">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#1A4D2E] to-[#123320] flex items-center justify-center shadow-xs text-white shrink-0">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#1B5E3A] to-[#123320] flex items-center justify-center shadow-xs text-white shrink-0">
                     <Leaf className="w-6 h-6 text-amber-300" />
                   </div>
                   <div>
@@ -302,7 +302,7 @@ export function ChatHub() {
                     <p className="text-zinc-500 text-xs font-medium">{t.subtitle}</p>
                     <div className="flex items-center gap-1.5 mt-1">
                       <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      <span className="text-[10px] text-[#1A4D2E] font-bold uppercase tracking-wider">Online</span>
+                      <span className="text-[10px] text-[#1B5E3A] font-bold uppercase tracking-wider">Online</span>
                     </div>
                   </div>
                 </div>
@@ -311,7 +311,7 @@ export function ChatHub() {
 
                 <div>
                   <h4 className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-1.5 mb-2">
-                    <Info className="w-3.5 h-3.5 text-[#1A4D2E]" />
+                    <Info className="w-3.5 h-3.5 text-[#1B5E3A]" />
                     <span>{t.infoTitle}</span>
                   </h4>
                   <p className="text-zinc-600 text-xs leading-relaxed">{t.infoDesc}</p>
@@ -319,7 +319,7 @@ export function ChatHub() {
               </div>
 
               {/* 5. Sample Queries Card */}
-              <div className="bg-[#1A4D2E] text-white rounded-2xl p-5 md:p-6 shadow-sm border border-[#143D24]">
+              <div className="bg-[#1B5E3A] text-white rounded-2xl p-5 md:p-6 shadow-sm border border-[#143D24]">
                 <h4 className="text-amber-300 text-xs font-bold uppercase tracking-wider mb-1.5">
                   {t.guideTitle}
                 </h4>
@@ -361,7 +361,7 @@ export function ChatHub() {
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs shrink-0 font-bold shadow-xs ${
                           isUser 
                             ? 'bg-zinc-200 text-zinc-700' 
-                            : 'bg-[#1A4D2E] text-white'
+                            : 'bg-[#1B5E3A] text-white'
                         }`}>
                           {isUser ? <User className="w-4 h-4" /> : <Leaf className="w-4 h-4 text-amber-300" />}
                         </div>
@@ -370,7 +370,7 @@ export function ChatHub() {
                         <div
                           className={`rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-xs ${
                             isUser
-                              ? 'bg-[#1A4D2E] text-white rounded-tr-none'
+                              ? 'bg-[#1B5E3A] text-white rounded-tr-none'
                               : 'bg-white text-zinc-800 border border-zinc-200/70 rounded-tl-none'
                           }`}
                         >
@@ -396,15 +396,15 @@ export function ChatHub() {
                 {isLoading && (
                   <div className="flex justify-start">
                     <div className="flex gap-3 items-start max-w-[80%]">
-                      <div className="w-8 h-8 rounded-full bg-[#1A4D2E] text-white flex items-center justify-center shrink-0 shadow-xs">
+                      <div className="w-8 h-8 rounded-full bg-[#1B5E3A] text-white flex items-center justify-center shrink-0 shadow-xs">
                         <Leaf className="w-4 h-4 text-amber-300" />
                       </div>
                       <div className="bg-white border border-zinc-200/70 shadow-xs rounded-2xl rounded-tl-none px-4 py-3">
                         <div className="flex items-center gap-3">
                           <div className="flex gap-1">
-                            <span className="w-1.5 h-1.5 bg-[#1A4D2E] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                            <span className="w-1.5 h-1.5 bg-[#1A4D2E] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                            <span className="w-1.5 h-1.5 bg-[#1A4D2E] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                            <span className="w-1.5 h-1.5 bg-[#1B5E3A] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                            <span className="w-1.5 h-1.5 bg-[#1B5E3A] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                            <span className="w-1.5 h-1.5 bg-[#1B5E3A] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                           </div>
                           <span className="text-xs text-zinc-400 font-medium">{t.typing}</span>
                         </div>
@@ -434,7 +434,7 @@ export function ChatHub() {
                       key={chip}
                       onClick={() => handleChipClick(chip)}
                       disabled={isLoading}
-                      className="px-3.5 py-1.5 text-xs font-semibold rounded-full border border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-[#1A4D2E]/5 hover:border-[#1A4D2E]/30 hover:text-[#1A4D2E] transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95"
+                      className="px-3.5 py-1.5 text-xs font-semibold rounded-full border border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-[#1B5E3A]/5 hover:border-[#1B5E3A]/30 hover:text-[#1B5E3A] transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95"
                     >
                       {chip}
                     </button>
@@ -456,12 +456,12 @@ export function ChatHub() {
                   placeholder={t.placeholder}
                   maxLength={1000}
                   disabled={isLoading}
-                  className="flex-1 h-11 px-4 rounded-xl border border-zinc-200 bg-zinc-50 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#1A4D2E]/15 focus:border-[#1A4D2E] focus:bg-white disabled:opacity-50 transition-all"
+                  className="flex-1 h-11 px-4 rounded-xl border border-zinc-200 bg-zinc-50 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#1B5E3A]/15 focus:border-[#1B5E3A] focus:bg-white disabled:opacity-50 transition-all"
                 />
                 <button
                   type="submit"
                   disabled={!input.trim() || isLoading}
-                  className="h-11 px-5 rounded-xl bg-[#1A4D2E] hover:bg-[#123320] text-white font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm shadow-[#1A4D2E]/20 active:scale-[0.98] cursor-pointer"
+                  className="h-11 px-5 rounded-xl bg-[#1B5E3A] hover:bg-[#123320] text-white font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm shadow-[#1B5E3A]/20 active:scale-[0.98] cursor-pointer"
                   aria-label="Send message"
                 >
                   <span>{locale === 'id' ? 'Kirim' : 'Send'}</span>

@@ -327,7 +327,7 @@ export default function SmartMatchingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 flex flex-col selection:bg-[#1A4D2E]/10 selection:text-[#1A4D2E] font-sans">
+    <div className="min-h-screen bg-zinc-50 flex flex-col selection:bg-[#1B5E3A]/10 selection:text-[#1B5E3A] font-sans">
       <Navbar />
 
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16 space-y-6">
@@ -335,7 +335,7 @@ export default function SmartMatchingPage() {
         {/* ─── DIRECT PAGE HEADER ──────────────────────────────────────── */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-200 pb-5">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-[#1A4D2E] text-xs font-bold border border-emerald-200 mb-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-[#1B5E3A] text-xs font-bold border border-emerald-200 mb-2">
               <Sparkles className="w-3.5 h-3.5" />
               <span>{t.badge}</span>
             </div>
@@ -369,7 +369,7 @@ export default function SmartMatchingPage() {
                   onClick={() => applyPreset(preset)}
                   className={`p-4 rounded-2xl border text-left transition-all relative flex flex-col justify-between cursor-pointer ${
                     isSelected
-                      ? 'bg-emerald-50/70 border-[#1A4D2E] ring-2 ring-[#1A4D2E]/20 shadow-sm'
+                      ? 'bg-emerald-50/70 border-[#1B5E3A] ring-2 ring-[#1B5E3A]/20 shadow-sm'
                       : 'bg-white border-zinc-200 hover:border-zinc-300 hover:shadow-xs'
                   }`}
                 >
@@ -377,7 +377,7 @@ export default function SmartMatchingPage() {
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <span className="text-2xl">{preset.icon}</span>
                       {isSelected && (
-                        <span className="flex items-center gap-1 text-[10px] font-black bg-[#1A4D2E] text-white px-2 py-0.5 rounded-full">
+                        <span className="flex items-center gap-1 text-[10px] font-black bg-[#1B5E3A] text-white px-2 py-0.5 rounded-full">
                           <Check className="w-3 h-3" />
                           <span>{isId ? 'Aktif' : 'Active'}</span>
                         </span>

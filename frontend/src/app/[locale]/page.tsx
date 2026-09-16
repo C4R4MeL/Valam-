@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/i18n/routing";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
@@ -152,7 +152,7 @@ export default function Home() {
 
               {/* CTA Buttons - Full width on small screens for easy tapping */}
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 pt-2 w-full sm:w-auto px-4 sm:px-0 animate-fade-up" style={{ animationDelay: "0.3s" }}>
-                <Link href={`/${locale}/marketplace`} className="w-full sm:w-auto">
+                <Link href="/marketplace" prefetch={true} className="w-full sm:w-auto">
                   <Button
                     size="lg"
                     className="w-full sm:w-auto h-12 px-7 text-sm sm:text-base bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-950/40 rounded-xl transition-all duration-300 hover:translate-y-[-1px] font-semibold border-0"
@@ -161,7 +161,7 @@ export default function Home() {
                     <ArrowRight className="ml-2 w-4 h-4" />
                   </Button>
                 </Link>
-                <Link href={`/${locale}/register`} className="w-full sm:w-auto">
+                <Link href="/register" prefetch={true} className="w-full sm:w-auto">
                   <Button
                     size="lg"
                     variant="outline"
@@ -468,10 +468,10 @@ export default function Home() {
               className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 px-4 sm:px-0"
             >
               <Button asChild size="lg" className="w-full sm:w-auto h-12 sm:h-13 px-8 text-sm sm:text-base bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl shadow-lg shadow-emerald-950/20 border-0 font-medium">
-                <Link href={`/${locale}/register`}>{content.cta.supplierButton}</Link>
+                <Link href="/register" prefetch={true}>{content.cta.supplierButton}</Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="w-full sm:w-auto h-12 sm:h-13 px-8 text-sm sm:text-base rounded-xl bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50 font-medium">
-                <Link href={`/${locale}/register`}>{content.cta.buyerButton}</Link>
+                <Link href="/register" prefetch={true}>{content.cta.buyerButton}</Link>
               </Button>
             </motion.div>
           </div>

@@ -1,5 +1,7 @@
 'use client'
 
+import { FormPageSkeleton } from '@/components/skeletons'
+
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { CheckCircle2, ChevronRight, UploadCloud, MapPin, PackageOpen, AlertCircle, ShieldAlert, X, FlaskConical } from 'lucide-react'
@@ -327,12 +329,7 @@ export default function AddBatchPage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <div className="w-10 h-10 border-4 border-emerald-800 border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-sm font-semibold text-zinc-500">Memuat status verifikasi...</p>
-      </div>
-    )
+    return <FormPageSkeleton />
   }
 
   return (

@@ -1,5 +1,7 @@
 'use client'
 
+import { TraceabilitySkeleton } from '@/components/skeletons'
+
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { Link } from '@/i18n/routing'
@@ -64,7 +66,7 @@ export default function TraceabilityPage() {
       })
   }, [batchId])
 
-  if (loading) return <div className="p-20 text-center">Loading Traceability Data...</div>
+  if (loading) return <TraceabilitySkeleton />
   if (!product || product.error) return <div className="p-20 text-center">Product not found.</div>
 
   return (

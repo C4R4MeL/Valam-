@@ -11,6 +11,7 @@ import { DashboardHeader } from '@/components/layout/DashboardHeader'
 import { useLocale } from 'next-intl'
 import { useToast } from '@/hooks/use-toast'
 import { Label } from '@/components/ui/label'
+import { TablePageSkeleton } from '@/components/skeletons'
 
 const contentMap = {
   id: {
@@ -321,10 +322,7 @@ export default function AdminSuppliersPage() {
 
         {/* Data Table */}
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-zinc-200">
-            <div className="w-8 h-8 border-4 border-emerald-800 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-xs text-zinc-500 mt-3 font-semibold">Mengambil data antrian...</p>
-          </div>
+          <TablePageSkeleton rows={6} />
         ) : (
           <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">

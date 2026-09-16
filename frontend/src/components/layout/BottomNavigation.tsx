@@ -1,15 +1,18 @@
 'use client'
 
 import { Home, Compass, User, BarChart2, ShoppingCart } from "lucide-react"
-import { Link, usePathname } from "@/i18n/routing"
+import { Link } from "@/i18n/routing"
 import { useLocale } from "next-intl"
 import { useAuthContext } from '@/components/providers/AuthProvider'
+import { useFastNav } from '@/components/layout/useFastNav'
+
+const BOTTOM_PREFETCH = ['/', '/marketplace', '/matching', '/cart', '/login', '/buyer/orders'] as const
 
 export function BottomNavigation() {
-  const pathname = usePathname()
   const locale = useLocale()
   const isId = locale === 'id'
   const { role } = useAuthContext()
+  const { onNavClick, onNavPointerDown, pathname } = useFastNav(BOTTOM_PREFETCH)
 
   const navItems = [
     ...(role !== 'buyer' ? [{
@@ -54,17 +57,20 @@ export function BottomNavigation() {
               <Link 
                 key={index}
                 href={item.href}
+                prefetch={true}
+                onPointerDown={(e) => onNavPointerDown(e, item.href)}
+                onClick={(e) => onNavClick(e, item.href)}
                 className="relative -top-5 flex flex-col items-center justify-center group"
               >
                 <div className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-transform group-hover:scale-105 group-active:scale-95 ${
                   item.isActive 
-                    ? 'bg-gradient-to-br from-valam-gold-300 to-valam-gold-500 text-[#1A4D2E] shadow-valam-gold-400/40' 
-                    : 'bg-gradient-to-br from-[#1A4D2E] to-forest-900 text-white shadow-forest-900/30'
+                    ? 'bg-gradient-to-br from-valam-gold-300 to-valam-gold-500 text-[#1B5E3A] shadow-valam-gold-400/40' 
+                    : 'bg-gradient-to-br from-[#1B5E3A] to-forest-900 text-white shadow-forest-900/30'
                 }`}>
                   {item.icon}
                 </div>
                 <span className={`text-[10px] font-bold mt-1 tracking-tight ${
-                  item.isActive ? 'text-valam-gold-600' : 'text-[#1A4D2E]'
+                  item.isActive ? 'text-valam-gold-600' : 'text-[#1B5E3A]'
                 }`}>
                   {item.label}
                 </span>
@@ -76,9 +82,12 @@ export function BottomNavigation() {
             <Link
               key={index}
               href={item.href}
+              prefetch={true}
+              onPointerDown={(e) => onNavPointerDown(e, item.href)}
+              onClick={(e) => onNavClick(e, item.href)}
               className={`flex flex-col items-center justify-center w-16 h-full gap-1 transition-colors ${
                 item.isActive 
-                  ? 'text-[#1A4D2E]' 
+                  ? 'text-[#1B5E3A]' 
                   : 'text-zinc-400 hover:text-zinc-600'
               }`}
             >

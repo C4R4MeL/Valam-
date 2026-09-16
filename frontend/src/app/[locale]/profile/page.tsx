@@ -1,5 +1,7 @@
 'use client'
 
+import { ProfileSkeleton } from '@/components/skeletons'
+
 import { useState, useEffect } from 'react'
 import { useRouter } from '@/i18n/routing'
 import { Navbar } from '@/components/layout/Navbar'
@@ -208,15 +210,7 @@ export default function ProfilePage() {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex flex-col bg-zinc-55 font-sans selection:bg-emerald-100 selection:text-emerald-950">
-        <Navbar />
-        <div className="flex-1 flex items-center justify-center pt-32 pb-20">
-          <span className="text-emerald-850 font-bold text-sm">Loading professional profile...</span>
-        </div>
-        <Footer />
-      </div>
-    )
+    return <ProfileSkeleton />
   }
 
   // Display information details

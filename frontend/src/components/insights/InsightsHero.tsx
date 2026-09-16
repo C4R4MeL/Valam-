@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
@@ -214,7 +214,7 @@ export function InsightsHero({
 
             {[
               { label: isEn ? 'Articles' : 'Artikel', val: stats.articles, icon: BookOpen, color: 'text-emerald-400', bg: 'bg-emerald-500/20' },
-              { label: isEn ? 'Guides' : 'Panduan', val: stats.guides, icon: TrendingUp, color: 'text-[#B69A1D]', bg: 'bg-[#B69A1D]/20' },
+              { label: isEn ? 'Guides' : 'Panduan', val: stats.guides, icon: TrendingUp, color: 'text-[#C8922A]', bg: 'bg-[#C8922A]/20' },
               { label: isEn ? 'Stories' : 'Cerita Koperasi', val: stats.stories, icon: Users, color: 'text-amber-400', bg: 'bg-amber-500/20' },
               { label: isEn ? 'Active Weeks' : 'Minggu Aktif', val: stats.weeks, icon: Calendar, color: 'text-emerald-300', bg: 'bg-emerald-400/20' },
               { label: isEn ? 'Read Regions' : 'Negara Pembaca', val: stats.countries, icon: Globe, color: 'text-teal-300', bg: 'bg-teal-500/20' },

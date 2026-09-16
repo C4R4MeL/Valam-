@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { AdminSidebar } from '@/components/layout/AdminSidebar'
+import { TablePageSkeleton } from '@/components/skeletons'
 
 export default function AdminCircularProductsPage() {
   const locale = useLocale() as 'id' | 'en'
@@ -248,10 +249,7 @@ export default function AdminCircularProductsPage() {
         {/* Table */}
         <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
           {loading ? (
-            <div className="flex flex-col items-center justify-center p-16 space-y-3">
-              <div className="w-9 h-9 border-4 border-emerald-700 border-t-transparent rounded-full animate-spin"></div>
-              <p className="text-sm font-semibold text-zinc-500">Memuat data verifikasi...</p>
-            </div>
+            <TablePageSkeleton rows={5} />
           ) : filteredProducts.length === 0 ? (
             <div className="p-16 text-center">
               <AlertCircle className="w-12 h-12 text-zinc-300 mx-auto mb-3" />

@@ -1,5 +1,7 @@
 'use client'
 
+import { DashboardSkeleton } from '@/components/skeletons'
+
 import { useState, useEffect } from 'react'
 import { DashboardHeader } from '@/components/layout/DashboardHeader'
 import { Wallet, ArrowUpRight, ArrowDownRight, Building2, Calendar, AlertCircle, CreditCard, Plus, PhoneCall, Building } from 'lucide-react'
@@ -253,7 +255,7 @@ export default function SupplierWalletPage() {
     ?.reduce((sum: number, t: any) => sum + t.amount, 0) || 0
 
   if (loading) {
-    return <div className="py-12 text-center text-zinc-500 min-h-[70vh]">Loading...</div>
+    return <DashboardSkeleton />
   }
 
   return (
@@ -280,7 +282,7 @@ export default function SupplierWalletPage() {
 
             <div className="mt-4 pt-2">
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogTrigger className="bg-[#B69A1D] hover:bg-[#a68c19] text-emerald-950 font-bold h-11 w-full rounded-xl transition-all shadow-md shadow-[#B69A1D]/10 inline-flex items-center justify-center cursor-pointer">
+                <DialogTrigger className="bg-[#C8922A] hover:bg-[#a68c19] text-emerald-950 font-bold h-11 w-full rounded-xl transition-all shadow-md shadow-[#C8922A]/10 inline-flex items-center justify-center cursor-pointer">
                     <ArrowUpRight className="w-4 h-4 mr-1.5" />
                     {t.btnWithdraw}
                 </DialogTrigger>

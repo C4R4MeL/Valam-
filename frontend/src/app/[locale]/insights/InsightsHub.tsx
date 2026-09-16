@@ -16,6 +16,7 @@ import { FeaturedArticle } from '@/components/insights/FeaturedArticle';
 import { ArticleGrid } from '@/components/insights/ArticleGrid';
 import { InsightsSidebar } from '@/components/insights/InsightsSidebar';
 import { ArticleSkeleton } from '@/components/insights/ArticleSkeleton';
+import { FAQSection } from '@/components/landing/FAQSection';
 
 export function InsightsHub() {
   const locale = useLocale();
@@ -328,6 +329,8 @@ export function InsightsHub() {
 
           </div>
         </section>
+
+        <FAQSection />
       </main>
 
       <Footer />

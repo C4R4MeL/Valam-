@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React from 'react';
 import { SlidersHorizontal, Search, RotateCcw, HelpCircle, Sparkles } from 'lucide-react';
@@ -55,7 +55,7 @@ export function CriteriaPanel({
       {/* Header */}
       <div className="flex items-center justify-between border-b border-zinc-150 pb-4 shrink-0 mb-4">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-[#1A4D2E]/10 text-[#1A4D2E] flex items-center justify-center">
+          <div className="w-8 h-8 rounded-xl bg-[#1B5E3A]/10 text-[#1B5E3A] flex items-center justify-center">
             <SlidersHorizontal className="w-4 h-4" />
           </div>
           <div>
@@ -72,7 +72,7 @@ export function CriteriaPanel({
           <button
             type="button"
             onClick={onReset}
-            className="text-[11px] font-semibold text-zinc-400 hover:text-[#1A4D2E] transition-colors flex items-center gap-1 cursor-pointer"
+            className="text-[11px] font-semibold text-zinc-400 hover:text-[#1B5E3A] transition-colors flex items-center gap-1 cursor-pointer"
             title={isEn ? 'Reset to default' : 'Kembalikan ke standar'}
           >
             <RotateCcw className="w-3 h-3" />
@@ -88,7 +88,7 @@ export function CriteriaPanel({
         <div className="space-y-1.5">
           <div className="flex justify-between items-center text-xs">
             <span className="font-bold text-zinc-700">{translations.volume}</span>
-            <span className="font-mono font-bold text-[#1A4D2E] bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
+            <span className="font-mono font-bold text-[#1B5E3A] bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
               {criteria.volume_kg} Kg
             </span>
           </div>
@@ -105,7 +105,7 @@ export function CriteriaPanel({
                 onClick={() => updateField('volume_kg', vol)}
                 className={`flex-1 py-1 rounded-lg text-[10px] font-bold transition-all border ${
                   criteria.volume_kg === vol
-                    ? 'bg-[#1A4D2E] text-white border-[#1A4D2E]'
+                    ? 'bg-[#1B5E3A] text-white border-[#1B5E3A]'
                     : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-600 border-zinc-200'
                 }`}
               >
@@ -149,7 +149,7 @@ export function CriteriaPanel({
                 onClick={() => updateField('max_budget', b.val)}
                 className={`flex-1 py-1 rounded-lg text-[10px] font-bold transition-all border ${
                   criteria.max_budget === b.val
-                    ? 'bg-[#1A4D2E] text-white border-[#1A4D2E]'
+                    ? 'bg-[#1B5E3A] text-white border-[#1B5E3A]'
                     : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-600 border-zinc-200'
                 }`}
               >
@@ -172,8 +172,8 @@ export function CriteriaPanel({
         <div className="space-y-1.5">
           <div className="flex justify-between items-center text-xs">
             <span className="font-bold text-zinc-700">{translations.minPa}</span>
-            <span className="font-mono font-bold text-[#1A4D2E] bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
-              ≥ {criteria.min_pa}%
+            <span className="font-mono font-bold text-[#1B5E3A] bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
+              â‰¥ {criteria.min_pa}%
             </span>
           </div>
           <p className="text-[11px] text-zinc-400">
@@ -193,7 +193,7 @@ export function CriteriaPanel({
                 onClick={() => updateField('min_pa', pa.val)}
                 className={`flex-1 py-1 rounded-lg text-[10px] font-bold transition-all border ${
                   criteria.min_pa === pa.val
-                    ? 'bg-[#1A4D2E] text-white border-[#1A4D2E]'
+                    ? 'bg-[#1B5E3A] text-white border-[#1B5E3A]'
                     : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-600 border-zinc-200'
                 }`}
               >
@@ -216,20 +216,20 @@ export function CriteriaPanel({
         <div className="space-y-1.5">
           <div className="flex justify-between items-center text-xs">
             <span className="font-bold text-zinc-700">{translations.maxMoisture}</span>
-            <span className="font-mono font-bold text-[#1A4D2E] bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
-              ≤ {criteria.max_moisture}%
+            <span className="font-mono font-bold text-[#1B5E3A] bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
+              â‰¤ {criteria.max_moisture}%
             </span>
           </div>
           <p className="text-[11px] text-zinc-400">
-            {isEn ? 'Purity level (Lower is better, ISO standard ≤ 3%)' : 'Tingkat kemurnian minyak (Standar mutu ≤ 3%)'}
+            {isEn ? 'Purity level (Lower is better, ISO standard â‰¤ 3%)' : 'Tingkat kemurnian minyak (Standar mutu â‰¤ 3%)'}
           </p>
 
           {/* Quick moisture buttons */}
           <div className="flex gap-1.5 pt-0.5">
             {[
-              { label: '≤ 2% (Murni)', val: 2 },
-              { label: '≤ 3% (Standar)', val: 3 },
-              { label: '≤ 5% (Umum)', val: 5 }
+              { label: 'â‰¤ 2% (Murni)', val: 2 },
+              { label: 'â‰¤ 3% (Standar)', val: 3 },
+              { label: 'â‰¤ 5% (Umum)', val: 5 }
             ].map((m) => (
               <button
                 key={m.val}
@@ -237,7 +237,7 @@ export function CriteriaPanel({
                 onClick={() => updateField('max_moisture', m.val)}
                 className={`flex-1 py-1 rounded-lg text-[10px] font-bold transition-all border ${
                   criteria.max_moisture === m.val
-                    ? 'bg-[#1A4D2E] text-white border-[#1A4D2E]'
+                    ? 'bg-[#1B5E3A] text-white border-[#1B5E3A]'
                     : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-600 border-zinc-200'
                 }`}
               >
@@ -264,7 +264,7 @@ export function CriteriaPanel({
           type="button"
           onClick={onSubmit}
           disabled={loading}
-          className="w-full bg-[#1A4D2E] hover:bg-[#123320] text-white font-bold h-11 rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
+          className="w-full bg-[#1B5E3A] hover:bg-[#123320] text-white font-bold h-11 rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
         >
           {loading ? (
             <>

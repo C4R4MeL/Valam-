@@ -17,6 +17,7 @@ import { Footer } from '@/components/layout/Footer';
 import { LikeButton } from '@/components/insights/article/LikeButton';
 import { AuthorCard } from '@/components/insights/article/AuthorCard';
 import { RelatedArticles } from '@/components/insights/article/RelatedArticles';
+import { ArticleDetailSkeleton } from '@/components/skeletons';
 import {
   getContentBySlug,
   getRelatedContent,
@@ -184,19 +185,7 @@ export function ArticleDetail({ slug }: ArticleDetailProps) {
   const excerpt = article ? getLocalizedField(article, 'excerpt', locale) || '' : '';
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex flex-col bg-[#0a1a0f]">
-        <Navbar />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-10 h-10 border-4 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin" />
-            <p className="text-xs text-white/50 uppercase tracking-widest font-bold">
-              {isEn ? 'Loading Article...' : 'Memuat Artikel...'}
-            </p>
-          </div>
-        </div>
-      </div>
-    );
+    return <ArticleDetailSkeleton />;
   }
 
   if (!article) {

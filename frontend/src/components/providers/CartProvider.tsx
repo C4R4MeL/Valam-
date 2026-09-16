@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { useToast } from '@/hooks/use-toast'
 import { useAuthContext } from './AuthProvider'
+import { useRouter } from '@/i18n/routing'
 
 interface CartContextType {
   patchouliItems: any[]
@@ -27,6 +28,7 @@ export function useCart(): CartContextType {
 }
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter()
   const [patchouliItems, setPatchouliItems] = useState<any[]>([])
   const [circularItems, setCircularItems] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
@@ -122,8 +124,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                   Lanjut Belanja
                 </button>
                 <button 
-                  onClick={() => window.location.href = `/${locale}/cart`} 
-                  className="bg-[#B69A1D] hover:bg-[#A38618] text-white px-3 py-1 rounded-md text-xs font-semibold"
+                  onClick={() => router.push('/cart')} 
+                  className="bg-[#C8922A] hover:bg-[#A38618] text-white px-3 py-1 rounded-md text-xs font-semibold"
                 >
                   Lihat Keranjang
                 </button>

@@ -1,10 +1,12 @@
 'use client'
 
+import { ProductDetailSkeleton } from '@/components/skeletons'
+
 import React, { useState, useEffect, useMemo } from 'react'
-import { useParams, useRouter, useSearchParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { ArrowLeft, CheckCircle2, Factory, MapPin, FileText, ShoppingCart, Info, FlaskConical, ShieldCheck, Star, Download, Beaker, Leaf, Share2, Compass, Home, BarChart2, RefreshCw, User, Check, AlertTriangle, X, Crown, Flame, Lock, Calendar, Plus, Minus, Zap } from 'lucide-react'
-import { Link } from '@/i18n/routing'
+import { Link, useRouter } from '@/i18n/routing'
 import { useLocale } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { formatRupiah, getPatchouliTier, isGcmsVerified, validateOrderQuantity } from '@/lib/utils'
@@ -15,6 +17,7 @@ import { Footer } from '@/components/layout/Footer'
 import { BottomNavigation } from '@/components/layout/BottomNavigation'
 import { useCart } from '@/components/providers/CartProvider'
 import { useToast } from '@/hooks/use-toast'
+import { useAuthContext } from '@/components/providers/AuthProvider'
 
 const TRUST_INFO_ITEMS = {
   id: [
@@ -56,6 +59,7 @@ export default function BatchDetailPage() {
   const batchId = params.id as string
   const [isModalOpen, setIsModalOpen] = useState(false)
   const { addToCart } = useCart()
+  const { isAuthenticated } = useAuthContext()
   const [isAdding, setIsAdding] = useState(false)
   const { toast } = useToast()
   const [isCartModalOpen, setIsCartModalOpen] = useState(false)
@@ -224,11 +228,21 @@ export default function BatchDetailPage() {
   }
 
   const handleOpenCartModal = () => {
+    if (!isAuthenticated) {
+      router.push('/login')
+      return
+    }
     if (!batch) return
     setCartQuantity(batch.volume_min_order_kg)
     setCartError('')
     setIsCartModalOpen(true)
   }
+
+  useEffect(() => {
+    if (batch && searchParams?.get('order') === 'true') {
+      handleOpenCartModal()
+    }
+  }, [batch, searchParams])
 
   const handleCartQuantityChange = (val: number) => {
     if (!batch) return
@@ -260,7 +274,7 @@ export default function BatchDetailPage() {
           <div className="flex gap-2 items-center mt-2">
             <button 
               onClick={() => router.push('/cart')}
-              className="bg-[#1A4D2E] text-white px-3 py-2 rounded-md text-xs font-bold hover:bg-[#123320]"
+              className="bg-[#1B5E3A] text-white px-3 py-2 rounded-md text-xs font-bold hover:bg-[#123320]"
             >
               {isId ? "Lihat Keranjang" : "View Cart"}
             </button>
@@ -287,11 +301,7 @@ export default function BatchDetailPage() {
   }
 
   if (loadingProduct) {
-    return (
-      <div className="min-h-screen bg-zinc-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1A4D2E]" />
-      </div>
-    )
+    return <ProductDetailSkeleton />
   }
 
   if (!batch) {
@@ -310,7 +320,7 @@ export default function BatchDetailPage() {
               ? 'Batch produk ini tidak terdaftar di database atau belum diverifikasi oleh tim QC Laboratorium Admin.' 
               : 'This product batch is not registered in the database or has not been verified by Admin QC.'}
           </p>
-          <Button asChild className="bg-[#1A4D2E] hover:bg-[#123320] text-white rounded-xl">
+          <Button asChild className="bg-[#1B5E3A] hover:bg-[#123320] text-white rounded-xl">
             <Link href="/marketplace">
               {isId ? 'Kembali ke Katalog' : 'Back to Catalog'}
             </Link>
@@ -322,7 +332,7 @@ export default function BatchDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 flex flex-col selection:bg-[#1A4D2E]/10 selection:text-[#1A4D2E]">
+    <div className="min-h-screen bg-zinc-50 flex flex-col selection:bg-[#1B5E3A]/10 selection:text-[#1B5E3A]">
       
       {/* ─── DESKTOP HEADER NAVBAR ──────────────────────────────────────── */}
       <div className="hidden md:block">
@@ -348,14 +358,14 @@ export default function BatchDetailPage() {
         
         {/* Breadcrumb - Desktop & Mobile */}
         <div className="mb-6 text-xs text-zinc-500 font-medium flex items-center gap-2">
-          <Link href="/" className="hover:text-[#1A4D2E] transition-colors">{isId ? 'Beranda' : 'Home'}</Link>
+          <Link href="/" className="hover:text-[#1B5E3A] transition-colors">{isId ? 'Beranda' : 'Home'}</Link>
           <span>&gt;</span>
           <button 
             onClick={(e) => {
               e.preventDefault();
               router.back();
             }} 
-            className="hover:text-[#1A4D2E] hover:underline transition-colors text-zinc-500 font-medium"
+            className="hover:text-[#1B5E3A] hover:underline transition-colors text-zinc-500 font-medium"
           >
             {isId ? 'Katalog Batch' : 'Batch Catalog'}
           </button>
@@ -370,7 +380,7 @@ export default function BatchDetailPage() {
           <div className="col-span-8 space-y-6 max-h-[calc(100vh-7rem)] overflow-y-auto pr-2 custom-scrollbar">
             
             {/* Card Hijau Tua Hero */}
-            <div className="bg-[#1A4D2E] text-white rounded-3xl p-8 shadow-lg relative overflow-hidden space-y-6">
+            <div className="bg-[#1B5E3A] text-white rounded-3xl p-8 shadow-lg relative overflow-hidden space-y-6">
               <div className="absolute inset-0 bg-[radial-gradient(#15803d_0.8px,transparent_0.8px)] [background-size:16px_16px] opacity-10 pointer-events-none" />
               
               {/* Share Icon in Top-Right */}
@@ -421,7 +431,7 @@ export default function BatchDetailPage() {
 
                   {/* Match Score badge */}
                   {batch.match_score !== null && (
-                    <span className="inline-flex items-center gap-1 bg-[#5C3D1E]/30 text-orange-300 border border-orange-500/30 text-xs font-bold px-3 py-1 rounded-lg">
+                    <span className="inline-flex items-center gap-1 bg-[#6B4423]/30 text-orange-300 border border-orange-500/30 text-xs font-bold px-3 py-1 rounded-lg">
                       <Flame className="w-3.5 h-3.5 text-orange-400 fill-orange-400" />
                       <span>Match Score: {batch.match_score}%</span>
                     </span>
@@ -468,7 +478,7 @@ export default function BatchDetailPage() {
                           ? 'bg-[#FDF6E2] text-[#855F0D] border-[#F5E6C4]'
                           : batch.badge_tier === 'Standard'
                           ? 'bg-zinc-100 text-zinc-800 border-zinc-200'
-                          : 'bg-[#FAF6F0] text-[#5C3D1E] border-[#F0E5D8]'
+                          : 'bg-[#FAF6F0] text-[#6B4423] border-[#F0E5D8]'
                       }`}>
                         {batch.badge_tier === 'Premium' ? 'PREMIUM — DI ATAS STANDAR INDUSTRI' :
                          batch.badge_tier === 'Standard' ? 'STANDARD — SESUAI STANDAR INDUSTRI' :
@@ -513,7 +523,7 @@ export default function BatchDetailPage() {
             {!batch.is_circular && (
               <div className="bg-white rounded-3xl p-6 border border-zinc-200 shadow-sm space-y-4">
                 <div className="border-b border-zinc-150 pb-3">
-                  <h3 className="text-base font-serif font-bold text-[#1A4D2E] uppercase tracking-wide">
+                  <h3 className="text-base font-serif font-bold text-[#1B5E3A] uppercase tracking-wide">
                     {isId ? 'Profil Kualitas & Skor Parameter' : 'Quality Profile & Parameter Scores'}
                   </h3>
                 </div>
@@ -528,11 +538,11 @@ export default function BatchDetailPage() {
                       <div key={idx} className="space-y-1">
                         <div className="flex justify-between text-xs font-bold text-zinc-700">
                           <span>{score.label}</span>
-                          <span className="text-[#1A4D2E]">{Math.round(score.skor_0_100)}/100</span>
+                          <span className="text-[#1B5E3A]">{Math.round(score.skor_0_100)}/100</span>
                         </div>
                         <div className="h-1.5 w-full bg-zinc-100 rounded-full overflow-hidden">
                           <div 
-                            className="h-full rounded-full bg-gradient-to-r from-valam-gold-500 to-[#1A4D2E]"
+                            className="h-full rounded-full bg-gradient-to-r from-valam-gold-500 to-[#1B5E3A]"
                             style={{ width: `${score.skor_0_100}%` }}
                           />
                         </div>
@@ -546,12 +556,12 @@ export default function BatchDetailPage() {
             {/* Tabel Parameter Kimia Lengkap */}
             <div className="bg-white rounded-3xl p-6 border border-zinc-200 shadow-sm space-y-4">
               <div className="flex items-center justify-between border-b border-zinc-150 pb-3">
-                <h3 className="text-base font-serif font-bold text-[#1A4D2E] uppercase tracking-wide">
+                <h3 className="text-base font-serif font-bold text-[#1B5E3A] uppercase tracking-wide">
                   {isId ? 'Parameter Kimia Lengkap (SNI)' : 'Full Chemical Parameters (SNI Reference)'}
                 </h3>
                 <button
                   onClick={() => setIsModalOpen(true)}
-                  className="px-4 py-1.5 border border-[#1A4D2E] text-[#1A4D2E] text-xs font-bold rounded-xl hover:bg-[#1A4D2E]/5 transition-colors"
+                  className="px-4 py-1.5 border border-[#1B5E3A] text-[#1B5E3A] text-xs font-bold rounded-xl hover:bg-[#1B5E3A]/5 transition-colors"
                 >
                   {isId ? 'Lihat Metode Uji' : 'View Test Methods'}
                 </button>
@@ -608,7 +618,7 @@ export default function BatchDetailPage() {
             {/* Card Supplier */}
             <div className="bg-white rounded-3xl p-5 border border-zinc-200 shadow-sm space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-[#1A4D2E]/10 flex items-center justify-center text-[#1A4D2E] border border-[#1A4D2E]/20">
+                <div className="w-12 h-12 rounded-full bg-[#1B5E3A]/10 flex items-center justify-center text-[#1B5E3A] border border-[#1B5E3A]/20">
                   <Factory className="w-5 h-5" />
                 </div>
                 <div>
@@ -639,7 +649,7 @@ export default function BatchDetailPage() {
                   {batch.is_circular ? `${isId ? "Harga" : "Price"} / ${batch.unit}` : `${isId ? "Harga B2B / Kg" : "B2B Price / Kg"}`}
                 </span>
                 <div className="flex items-baseline gap-1">
-                  <span className="font-black text-2xl text-[#1A4D2E]">
+                  <span className="font-black text-2xl text-[#1B5E3A]">
                     {formatRupiah(batch.harga_per_kg)}
                   </span>
                   <span className="text-xs text-zinc-500 font-medium">
@@ -656,7 +666,7 @@ export default function BatchDetailPage() {
                 </div>
                 <div className="h-2 w-full bg-zinc-100 rounded-full overflow-hidden">
                   <div 
-                    className="h-full rounded-full bg-gradient-to-r from-valam-gold to-[#1A4D2E]"
+                    className="h-full rounded-full bg-gradient-to-r from-valam-gold to-[#1B5E3A]"
                     style={{ width: `${batch.stok_persen}%` }}
                   />
                 </div>
@@ -667,7 +677,7 @@ export default function BatchDetailPage() {
                 <button 
                   onClick={handleOpenCartModal}
                   disabled={isAdding}
-                  className="w-full flex items-center justify-center gap-1.5 bg-[#1A4D2E] disabled:opacity-75 text-white text-xs font-bold py-3 rounded-xl hover:bg-[#123320] transition-colors shadow-md shadow-[#1A4D2E]/20"
+                  className="w-full flex items-center justify-center gap-1.5 bg-[#1B5E3A] disabled:opacity-75 text-white text-xs font-bold py-3 rounded-xl hover:bg-[#123320] transition-colors shadow-md shadow-[#1B5E3A]/20"
                 >
                   <ShoppingCart className="w-4 h-4" />
                   {isAdding 
@@ -678,14 +688,14 @@ export default function BatchDetailPage() {
                 {/* 3. Ajukan RFQ Global (Desktop) */}
                 <Link 
                   href={`/buyer/rfq?product_id=${batch.id}&qty=${batch.volume_min_order_kg}&type=global`}
-                  className="w-full flex items-center justify-center gap-1.5 bg-[#B69A1D] text-[#1A4D2E] text-xs font-black py-3 rounded-xl hover:bg-[#A38618] transition-colors shadow-md shadow-[#B69A1D]/10 text-center"
+                  className="w-full flex items-center justify-center gap-1.5 bg-[#C8922A] text-[#1B5E3A] text-xs font-black py-3 rounded-xl hover:bg-[#A38618] transition-colors shadow-md shadow-[#C8922A]/10 text-center"
                 >
                   <Compass className="w-4 h-4" />
                   {isId ? "Ajukan RFQ Global" : "Request Global RFQ"}
                 </Link>
                 <button 
                   onClick={() => alert('Mengunduh sertifikat analisis...')}
-                  className="w-full flex items-center justify-center gap-1.5 bg-white border border-[#1A4D2E] text-[#1A4D2E] text-xs font-bold py-3 rounded-xl hover:bg-[#1A4D2E]/5 transition-colors"
+                  className="w-full flex items-center justify-center gap-1.5 bg-white border border-[#1B5E3A] text-[#1B5E3A] text-xs font-bold py-3 rounded-xl hover:bg-[#1B5E3A]/5 transition-colors"
                 >
                   <Download className="w-4 h-4" />
                   {isId ? "Unduh Sertifikat CoA" : "Download CoA Document"}
@@ -701,8 +711,8 @@ export default function BatchDetailPage() {
             </div>
 
             {/* Card Circular Economy */}
-            <div className="bg-[#5C3D1E]/5 rounded-3xl p-5 border border-[#5C3D1E]/10 space-y-4">
-              <div className="flex items-center gap-2 text-[#5C3D1E]">
+            <div className="bg-[#6B4423]/5 rounded-3xl p-5 border border-[#6B4423]/10 space-y-4">
+              <div className="flex items-center gap-2 text-[#6B4423]">
                 <RefreshCw className="w-4 h-4 animate-spin-slow" />
                 <h4 className="font-serif font-bold text-sm uppercase tracking-wider">{isId ? 'Eco Products (Nol Limbah)' : 'Eco Products (Zero Waste)'}</h4>
               </div>
@@ -710,20 +720,20 @@ export default function BatchDetailPage() {
                 {isId ? 'Setiap batch sulingan minyak nilam menghasilkan limbah ampas daun & air hidrosol yang diolah kembali secara produktif:' : 'Every batch of distilled patchouli oil yields organic residues that are productively repurposed:'}
               </p>
               <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="bg-white p-2.5 rounded-xl border border-[#5C3D1E]/10">
-                  <span className="text-[9px] text-[#5C3D1E] font-bold block mb-0.5">{isId ? 'Ampas Tersedia' : 'Leaves Residue'}</span>
-                  <span className="font-bold text-[#5C3D1E]">{batch.ampas_tersedia_kg} Kg</span>
+                <div className="bg-white p-2.5 rounded-xl border border-[#6B4423]/10">
+                  <span className="text-[9px] text-[#6B4423] font-bold block mb-0.5">{isId ? 'Ampas Tersedia' : 'Leaves Residue'}</span>
+                  <span className="font-bold text-[#6B4423]">{batch.ampas_tersedia_kg} Kg</span>
                 </div>
-                <div className="bg-white p-2.5 rounded-xl border border-[#5C3D1E]/10">
-                  <span className="text-[9px] text-[#5C3D1E] font-bold block mb-0.5">{isId ? 'Terhindar CO2' : 'Avoided CO2'}</span>
-                  <span className="font-bold text-[#5C3D1E]">~{batch.estimasi_co2_ton} Ton</span>
+                <div className="bg-white p-2.5 rounded-xl border border-[#6B4423]/10">
+                  <span className="text-[9px] text-[#6B4423] font-bold block mb-0.5">{isId ? 'Terhindar CO2' : 'Avoided CO2'}</span>
+                  <span className="font-bold text-[#6B4423]">~{batch.estimasi_co2_ton} Ton</span>
                 </div>
               </div>
               <div className="space-y-1.5 pt-2">
                 <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider block">{isId ? 'Produk Turunan Sekunder' : 'Secondary Circular Products'}</span>
                 <div className="flex flex-wrap gap-1.5">
                   {batch.produk_turunan.map((item, idx) => (
-                    <span key={idx} className="bg-white border border-[#5C3D1E]/15 text-[#5C3D1E] px-2 py-0.5 rounded-md text-[9px] font-bold shadow-3xs">
+                    <span key={idx} className="bg-white border border-[#6B4423]/15 text-[#6B4423] px-2 py-0.5 rounded-md text-[9px] font-bold shadow-3xs">
                       {item.nama}
                     </span>
                   ))}
@@ -734,11 +744,11 @@ export default function BatchDetailPage() {
             {/* List Trust Info */}
             <div className="bg-zinc-50 rounded-2xl p-4 border border-zinc-200 text-xs text-zinc-500 space-y-2">
               <div className="flex gap-2 items-start">
-                <ShieldCheck className="w-4 h-4 text-[#1A4D2E] shrink-0 mt-0.5" />
+                <ShieldCheck className="w-4 h-4 text-[#1B5E3A] shrink-0 mt-0.5" />
                 <p>{isId ? 'Pembayaran dilindungi escrow aman pihak ketiga.' : 'Payments are secured using trusted escrow accounts.'}</p>
               </div>
               <div className="flex gap-2 items-start">
-                <CheckCircle2 className="w-4 h-4 text-[#1A4D2E] shrink-0 mt-0.5" />
+                <CheckCircle2 className="w-4 h-4 text-[#1B5E3A] shrink-0 mt-0.5" />
                 <p>{isId ? 'Batch divalidasi keasliannya lewat pengujian GC-MS.' : 'Batch authenticity verified via GC-MS laboratory tests.'}</p>
               </div>
             </div>
@@ -751,7 +761,7 @@ export default function BatchDetailPage() {
         <div className="lg:hidden space-y-5 mt-4">
           
           {/* Card Hijau Tua (Hero Card) */}
-          <div className="bg-[#1A4D2E] text-white rounded-2xl p-5 shadow-md relative overflow-hidden space-y-4">
+          <div className="bg-[#1B5E3A] text-white rounded-2xl p-5 shadow-md relative overflow-hidden space-y-4">
             <div className="absolute inset-0 bg-[radial-gradient(#15803d_0.8px,transparent_0.8px)] [background-size:12px_12px] opacity-10 pointer-events-none" />
             
             {/* Baris atas: kode batch besar bold "#ID-BATCH" (kiri), badge tipe (kanan) */}
@@ -760,7 +770,7 @@ export default function BatchDetailPage() {
                 {batch.batch_code}
               </h1>
               {batch.badge_tipe && (
-                <span className="bg-valam-gold text-[#1A4D2E] font-black text-[9px] px-2.5 py-1 rounded-full uppercase tracking-wider shadow-sm shrink-0">
+                <span className="bg-valam-gold text-[#1B5E3A] font-black text-[9px] px-2.5 py-1 rounded-full uppercase tracking-wider shadow-sm shrink-0">
                   {batch.badge_tipe}
                 </span>
               )}
@@ -778,7 +788,7 @@ export default function BatchDetailPage() {
               <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider border shadow-3xs ${
                 batch.badge_tier === 'Premium' ? 'bg-[#FDF6E2] text-[#855F0D] border-[#F5E6C4]' :
                 batch.badge_tier === 'Standard' ? 'bg-[#F4F4F5] text-[#27272A] border-[#E4E4E7]' :
-                'bg-[#FAF6F0] text-[#5C3D1E] border-[#F0E5D8]'
+                'bg-[#FAF6F0] text-[#6B4423] border-[#F0E5D8]'
               }`}>
                 {batch.badge_tier}
               </span>
@@ -814,7 +824,7 @@ export default function BatchDetailPage() {
               </h4>
 
               <div className="space-y-0.5">
-                <span className="text-4xl font-black text-[#1A4D2E] block">
+                <span className="text-4xl font-black text-[#1B5E3A] block">
                   {batch.pa_persen}%
                 </span>
                 <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block">
@@ -843,7 +853,7 @@ export default function BatchDetailPage() {
                     ? 'bg-[#FDF6E2] text-[#855F0D] border-[#F5E6C4]'
                     : batch.badge_tier === 'Standard'
                     ? 'bg-zinc-100 text-zinc-800 border-zinc-200'
-                    : 'bg-[#FAF6F0] text-[#5C3D1E] border-[#F0E5D8]'
+                    : 'bg-[#FAF6F0] text-[#6B4423] border-[#F0E5D8]'
                 }`}>
                   {batch.badge_tier === 'Premium' ? 'PREMIUM — DI ATAS STANDAR INDUSTRI' :
                    batch.badge_tier === 'Standard' ? 'STANDARD — SESUAI STANDAR INDUSTRI' :
@@ -857,7 +867,7 @@ export default function BatchDetailPage() {
           {!batch.is_circular && (
             <div className="bg-white rounded-2xl p-5 border border-zinc-200 shadow-sm space-y-4">
               <div className="border-b border-zinc-150 pb-2">
-                <h3 className="text-xs font-serif font-black text-[#1A4D2E] uppercase tracking-wide">
+                <h3 className="text-xs font-serif font-black text-[#1B5E3A] uppercase tracking-wide">
                   {isId ? 'Profil Kualitas (Radar)' : 'Quality Profile (Radar)'}
                 </h3>
               </div>
@@ -873,11 +883,11 @@ export default function BatchDetailPage() {
                     <div key={idx} className="space-y-0.5">
                       <div className="flex justify-between text-[10px] font-bold text-zinc-700">
                         <span className="truncate mr-1">{score.label}</span>
-                        <span className="text-[#1A4D2E] shrink-0">{Math.round(score.skor_0_100)}/100</span>
+                        <span className="text-[#1B5E3A] shrink-0">{Math.round(score.skor_0_100)}/100</span>
                       </div>
                       <div className="h-1.5 w-full bg-zinc-100 rounded-full overflow-hidden">
                         <div 
-                          className="h-full rounded-full bg-gradient-to-r from-valam-gold to-[#1A4D2E]"
+                          className="h-full rounded-full bg-gradient-to-r from-valam-gold to-[#1B5E3A]"
                           style={{ width: `${score.skor_0_100}%` }}
                         />
                       </div>
@@ -891,7 +901,7 @@ export default function BatchDetailPage() {
           {/* Card Putih "Parameter Kimia Lengkap" (Mobile: List format) */}
           <div className="bg-white rounded-2xl p-5 border border-zinc-200 shadow-sm space-y-4">
             <div className="border-b border-zinc-150 pb-3">
-              <div className="flex items-center gap-2 text-[#1A4D2E]">
+              <div className="flex items-center gap-2 text-[#1B5E3A]">
                 <FlaskConical className="w-5 h-5" />
                 <h3 className="text-xs font-serif font-black uppercase tracking-wide">
                   {isId ? 'Parameter Kimia Lengkap (SNI)' : 'Full Chemical Parameters (SNI Reference)'}
@@ -899,7 +909,7 @@ export default function BatchDetailPage() {
               </div>
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="text-[10px] text-[#1A4D2E] font-bold underline hover:text-[#123320] text-left block mt-1"
+                className="text-[10px] text-[#1B5E3A] font-bold underline hover:text-[#123320] text-left block mt-1"
               >
                 {isId ? 'Lihat Metode Uji Lab >' : 'View Lab Test Methods >'}
               </button>
@@ -942,14 +952,14 @@ export default function BatchDetailPage() {
           <div className="bg-white rounded-2xl p-5 border border-zinc-200 shadow-sm space-y-4">
             <div className="flex items-center gap-3">
               {/* Initial Avatar (bg gold) */}
-              <div className="w-12 h-12 rounded-full bg-[#B69A1D] flex items-center justify-center text-white text-base font-black border border-[#B69A1D]/25 shadow-sm shrink-0">
+              <div className="w-12 h-12 rounded-full bg-[#C8922A] flex items-center justify-center text-white text-base font-black border border-[#C8922A]/25 shadow-sm shrink-0">
                 {batch.koperasi_nama.substring(0, 2).toUpperCase()}
               </div>
               
               <div className="space-y-0.5">
                 <h4 className="font-bold text-zinc-900 text-sm leading-snug">{batch.koperasi_nama}</h4>
                 <div className="flex items-center gap-1 text-zinc-455 text-[10px]">
-                  <MapPin className="w-3 h-3 text-[#1A4D2E]" />
+                  <MapPin className="w-3 h-3 text-[#1B5E3A]" />
                   <span>{batch.lokasi}</span>
                 </div>
               </div>
@@ -958,14 +968,14 @@ export default function BatchDetailPage() {
             {/* Badge Rating */}
             <div className="flex items-center gap-1.5 bg-[#FAF6F0] border border-[#F0E5D8] px-3 py-1.5 rounded-xl w-max">
               <Star className="w-4 h-4 text-valam-gold fill-valam-gold shrink-0" />
-              <span className="text-xs font-black text-[#5C3D1E]">{batch.rating}</span>
-              <span className="text-[8px] font-black text-[#5C3D1E]/60 tracking-wider">RATING</span>
+              <span className="text-xs font-black text-[#6B4423]">{batch.rating}</span>
+              <span className="text-[8px] font-black text-[#6B4423]/60 tracking-wider">RATING</span>
             </div>
 
             {/* 3 stat kecil berjajar */}
             <div className="grid grid-cols-3 gap-2 text-[10px] border-t border-zinc-100 pt-3">
               <div className="bg-zinc-50 p-2 rounded-xl border border-zinc-100 flex flex-col items-center justify-center text-center space-y-1">
-                <ShoppingCart className="w-4 h-4 text-[#1A4D2E]" />
+                <ShoppingCart className="w-4 h-4 text-[#1B5E3A]" />
                 <div className="leading-tight">
                   <span className="font-bold text-zinc-800 block">{batch.jumlah_batch_terjual} Batch</span>
                   <span className="text-zinc-450 text-[8px] uppercase font-bold block">{isId ? 'Terjual' : 'Sold'}</span>
@@ -973,7 +983,7 @@ export default function BatchDetailPage() {
               </div>
               
               <div className="bg-zinc-50 p-2 rounded-xl border border-zinc-100 flex flex-col items-center justify-center text-center space-y-1">
-                <Compass className="w-4 h-4 text-[#1A4D2E]" />
+                <Compass className="w-4 h-4 text-[#1B5E3A]" />
                 <div className="leading-tight">
                   <span className="font-bold text-zinc-800 block">{batch.lama_di_platform}</span>
                   <span className="text-zinc-450 text-[8px] uppercase font-bold block">{isId ? 'Platform' : 'Joined'}</span>
@@ -997,7 +1007,7 @@ export default function BatchDetailPage() {
                 {isId ? "HARGA" : "PRICE"}
               </span>
               <div className="flex items-baseline gap-1">
-                <span className="font-black text-2xl text-[#1A4D2E]">
+                <span className="font-black text-2xl text-[#1B5E3A]">
                   {formatRupiah(batch.harga_per_kg)}
                 </span>
                 <span className="text-xs text-zinc-550 font-medium">
@@ -1015,7 +1025,7 @@ export default function BatchDetailPage() {
             <div className="space-y-1 border-t border-zinc-100 pt-3">
               <div className="h-2 w-full bg-zinc-100 rounded-full overflow-hidden">
                 <div 
-                  className="h-full rounded-full bg-gradient-to-r from-valam-gold to-[#1A4D2E]"
+                  className="h-full rounded-full bg-gradient-to-r from-valam-gold to-[#1B5E3A]"
                   style={{ width: `${batch.stok_persen}%` }}
                 />
               </div>
@@ -1031,7 +1041,7 @@ export default function BatchDetailPage() {
                 onClick={() => {
                   alert(isId ? 'Mengunduh berkas CoA PDF untuk batch ini...' : 'Downloading CoA PDF file for this batch...');
                 }}
-                className="w-full flex items-center justify-center gap-1.5 bg-white border border-[#1A4D2E] text-[#1A4D2E] text-xs font-bold py-3 rounded-xl hover:bg-[#1A4D2E]/5 transition-colors shadow-2xs"
+                className="w-full flex items-center justify-center gap-1.5 bg-white border border-[#1B5E3A] text-[#1B5E3A] text-xs font-bold py-3 rounded-xl hover:bg-[#1B5E3A]/5 transition-colors shadow-2xs"
               >
                 <FileText className="w-4 h-4" />
                 {isId ? "Unduh CoA PDF" : "Download CoA PDF"}
@@ -1041,7 +1051,7 @@ export default function BatchDetailPage() {
               <button 
                 onClick={handleOpenCartModal}
                 disabled={isAdding}
-                className="w-full flex items-center justify-center gap-1.5 bg-[#1A4D2E] disabled:opacity-75 text-white text-xs font-bold py-3 rounded-xl hover:bg-[#123320] transition-colors shadow-md shadow-[#1A4D2E]/10 text-center cursor-pointer border-none"
+                className="w-full flex items-center justify-center gap-1.5 bg-[#1B5E3A] disabled:opacity-75 text-white text-xs font-bold py-3 rounded-xl hover:bg-[#123320] transition-colors shadow-md shadow-[#1B5E3A]/10 text-center cursor-pointer border-none"
               >
                 <ShoppingCart className="w-4 h-4" />
                 {isAdding 
@@ -1052,7 +1062,8 @@ export default function BatchDetailPage() {
               {/* 3. Ajukan RFQ Global */}
               <Link 
                 href={`/buyer/rfq?product_id=${batch.id}&qty=${batch.volume_min_order_kg}&type=global`}
-                className="w-full flex items-center justify-center gap-1.5 bg-[#B69A1D] text-[#1A4D2E] text-xs font-black py-3 rounded-xl hover:bg-[#A38618] transition-colors shadow-md shadow-[#B69A1D]/10 text-center"
+                prefetch={true}
+                className="w-full flex items-center justify-center gap-1.5 bg-[#C8922A] text-[#1B5E3A] text-xs font-black py-3 rounded-xl hover:bg-[#A38618] transition-colors shadow-md shadow-[#C8922A]/10 text-center"
               >
                 <Compass className="w-4 h-4" />
                 {isId ? "Ajukan RFQ Global · Ekspor Internasional" : "Request Global RFQ · International Export"}
@@ -1063,8 +1074,8 @@ export default function BatchDetailPage() {
           {/* Card Circular Economy */}
           {batch.ampas_tersedia_kg > 0 && batch.produk_turunan && batch.produk_turunan.length > 0 && (
             <div className="bg-[#FAF5EC] border border-[#E9DFD0] rounded-3xl p-5 space-y-4">
-              <div className="flex items-center gap-2 text-[#5C3D1E]">
-                <Leaf className="w-5 h-5 text-[#1A4D2E] fill-emerald-50" />
+              <div className="flex items-center gap-2 text-[#6B4423]">
+                <Leaf className="w-5 h-5 text-[#1B5E3A] fill-emerald-50" />
                 <h4 className="font-serif font-black text-sm uppercase tracking-wide">
                   {isId ? 'Eco Products — Ampas Batch Ini' : 'Eco Products — Residue of this Batch'}
                 </h4>
@@ -1072,22 +1083,22 @@ export default function BatchDetailPage() {
               
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="bg-white p-3 rounded-xl border border-[#E9DFD0] space-y-0.5">
-                  <span className="text-[9px] text-[#5C3D1E]/70 font-bold block uppercase">{isId ? 'Ampas Tersedia' : 'Residue Available'}</span>
-                  <span className="font-bold text-[#5C3D1E] text-sm">{batch.ampas_tersedia_kg.toLocaleString()} kg</span>
+                  <span className="text-[9px] text-[#6B4423]/70 font-bold block uppercase">{isId ? 'Ampas Tersedia' : 'Residue Available'}</span>
+                  <span className="font-bold text-[#6B4423] text-sm">{batch.ampas_tersedia_kg.toLocaleString()} kg</span>
                 </div>
                 <div className="bg-white p-3 rounded-xl border border-[#E9DFD0] space-y-0.5">
-                  <span className="text-[9px] text-[#5C3D1E]/70 font-bold block uppercase">{isId ? 'CO2 Terhindar' : 'CO2 Avoided'}</span>
-                  <span className="font-bold text-[#5C3D1E] text-sm">~{batch.estimasi_co2_ton} ton</span>
+                  <span className="text-[9px] text-[#6B4423]/70 font-bold block uppercase">{isId ? 'CO2 Terhindar' : 'CO2 Avoided'}</span>
+                  <span className="font-bold text-[#6B4423] text-sm">~{batch.estimasi_co2_ton} ton</span>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <span className="text-[9px] text-[#5C3D1E]/70 font-bold uppercase tracking-wider block">
+                <span className="text-[9px] text-[#6B4423]/70 font-bold uppercase tracking-wider block">
                   {isId ? 'Pilihan Produk Turunan Sekunder' : 'Secondary Derivative Products'}
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   {batch.produk_turunan.map((item, idx) => (
-                    <span key={idx} className="bg-white border border-[#E9DFD0] text-[#5C3D1E] px-2.5 py-1 rounded-lg text-[10px] font-bold shadow-3xs">
+                    <span key={idx} className="bg-white border border-[#E9DFD0] text-[#6B4423] px-2.5 py-1 rounded-lg text-[10px] font-bold shadow-3xs">
                       {item.nama}
                     </span>
                   ))}
@@ -1098,11 +1109,15 @@ export default function BatchDetailPage() {
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
+                  if (!isAuthenticated) {
+                    router.push('/login');
+                    return;
+                  }
                   if ((window as any).openCircularOrderModal && batch.produk_turunan.length > 0) {
                     (window as any).openCircularOrderModal(batch.produk_turunan[0], batch.id);
                   }
                 }}
-                className="w-full flex items-center justify-center gap-1.5 bg-[#B69A1D] text-[#1A4D2E] text-xs font-black py-3 rounded-xl hover:bg-[#A38618] transition-colors shadow-sm"
+                className="w-full flex items-center justify-center gap-1.5 bg-[#C8922A] text-[#1B5E3A] text-xs font-black py-3 rounded-xl hover:bg-[#A38618] transition-colors shadow-sm"
               >
                 {isId ? "Pesan Produk Turunan →" : "Order Derivative Products →"}
               </button>
@@ -1119,7 +1134,7 @@ export default function BatchDetailPage() {
               
               return (
                 <div key={idx} className="flex gap-2.5 items-start">
-                  <IconComponent className="w-4.5 h-4.5 text-[#1A4D2E] shrink-0 mt-0.5" />
+                  <IconComponent className="w-4.5 h-4.5 text-[#1B5E3A] shrink-0 mt-0.5" />
                   <p className="leading-snug">{item.text}</p>
                 </div>
               )
@@ -1150,7 +1165,7 @@ export default function BatchDetailPage() {
             </button>
 
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-[#1A4D2E]">
+              <div className="flex items-center gap-2 text-[#1B5E3A]">
                 <FlaskConical className="w-6 h-6" />
                 <h3 className="text-lg font-serif font-black uppercase tracking-wide">
                   {isId ? 'Metode Uji Laboratorium' : 'Laboratory Testing Methods'}
@@ -1190,7 +1205,7 @@ export default function BatchDetailPage() {
 
             <button 
               onClick={() => setIsModalOpen(false)}
-              className="w-full bg-[#1A4D2E] text-white font-bold py-3 rounded-xl hover:bg-[#123320] transition-colors"
+              className="w-full bg-[#1B5E3A] text-white font-bold py-3 rounded-xl hover:bg-[#123320] transition-colors"
             >
               {isId ? 'Tutup Deskripsi' : 'Close Details'}
             </button>
@@ -1203,7 +1218,7 @@ export default function BatchDetailPage() {
         <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm p-0 md:p-4">
           <div className="bg-white rounded-t-3xl md:rounded-3xl w-full max-w-md shadow-2xl overflow-hidden relative animate-in slide-in-from-bottom-full md:slide-in-from-bottom-0 md:fade-in md:zoom-in duration-200">
             <div className="p-5 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
-              <h3 className="font-bold text-[#1A4D2E] flex items-center gap-2">
+              <h3 className="font-bold text-[#1B5E3A] flex items-center gap-2">
                 <ShoppingCart className="w-5 h-5" />
                 {isId ? 'Pilih Metode Pemesanan' : 'Choose Order Method'}
               </h3>
@@ -1223,7 +1238,7 @@ export default function BatchDetailPage() {
                   <p className="text-xs text-zinc-500">{batch.koperasi_nama}</p>
                 </div>
                 <div className="ml-auto text-right">
-                  <span className="block text-xs font-bold text-[#1A4D2E]">{formatRupiah(batch.harga_per_kg)}</span>
+                  <span className="block text-xs font-bold text-[#1B5E3A]">{formatRupiah(batch.harga_per_kg)}</span>
                   <span className="text-[10px] text-zinc-400">/ {batch.unit}</span>
                 </div>
               </div>
@@ -1242,7 +1257,7 @@ export default function BatchDetailPage() {
                     type="number" 
                     value={cartQuantity}
                     onChange={(e) => handleCartQuantityChange(parseInt(e.target.value) || 0)}
-                    className="flex-1 h-10 bg-white border-2 border-zinc-200 rounded-xl text-center font-bold text-zinc-800 focus:outline-none focus:border-[#1A4D2E] transition-colors"
+                    className="flex-1 h-10 bg-white border-2 border-zinc-200 rounded-xl text-center font-bold text-zinc-800 focus:outline-none focus:border-[#1B5E3A] transition-colors"
                   />
                   <button 
                     onClick={() => handleCartQuantityChange(cartQuantity + 1)}
@@ -1264,9 +1279,9 @@ export default function BatchDetailPage() {
               </div>
 
               {/* Subtotal */}
-              <div className="flex justify-between items-center bg-[#1A4D2E]/5 p-4 rounded-2xl border border-[#1A4D2E]/10">
+              <div className="flex justify-between items-center bg-[#1B5E3A]/5 p-4 rounded-2xl border border-[#1B5E3A]/10">
                 <span className="text-xs font-bold text-zinc-600">Subtotal</span>
-                <span className="font-black text-lg text-[#1A4D2E]">{formatRupiah(batch.harga_per_kg * cartQuantity)}</span>
+                <span className="font-black text-lg text-[#1B5E3A]">{formatRupiah(batch.harga_per_kg * cartQuantity)}</span>
               </div>
             </div>
 
@@ -1274,7 +1289,7 @@ export default function BatchDetailPage() {
               <button 
                 onClick={handleConfirmAddToCart}
                 disabled={isAdding || cartError !== ''}
-                className="flex-1 py-3 px-4 text-xs font-bold rounded-xl border-2 border-[#1A4D2E] text-[#1A4D2E] hover:bg-[#1A4D2E]/5 disabled:opacity-70 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1.5"
+                className="flex-1 py-3 px-4 text-xs font-bold rounded-xl border-2 border-[#1B5E3A] text-[#1B5E3A] hover:bg-[#1B5E3A]/5 disabled:opacity-70 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1.5"
               >
                 <ShoppingCart className="w-4 h-4" />
                 {isAdding ? (isId ? 'Memproses...' : 'Processing...') : (isId ? '+ Keranjang' : '+ Cart')}
@@ -1282,7 +1297,7 @@ export default function BatchDetailPage() {
               <button 
                 onClick={handleDirectCheckout}
                 disabled={isAdding || cartError !== ''}
-                className="flex-1 py-3 px-4 text-xs font-bold rounded-xl bg-[#1A4D2E] text-white hover:bg-[#123320] disabled:opacity-70 disabled:cursor-not-allowed transition-colors shadow-md shadow-[#1A4D2E]/20 flex items-center justify-center gap-1.5"
+                className="flex-1 py-3 px-4 text-xs font-bold rounded-xl bg-[#1B5E3A] text-white hover:bg-[#123320] disabled:opacity-70 disabled:cursor-not-allowed transition-colors shadow-md shadow-[#1B5E3A]/20 flex items-center justify-center gap-1.5"
               >
                 <Zap className="w-4 h-4 fill-current text-amber-300" />
                 {isAdding ? (isId ? 'Memproses...' : 'Processing...') : (isId ? 'Langsung Transaksi' : 'Direct Order')}

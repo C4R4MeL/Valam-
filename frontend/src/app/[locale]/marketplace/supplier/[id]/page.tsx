@@ -1,5 +1,7 @@
 'use client'
 
+import { SupplierProfileSkeleton } from '@/components/skeletons'
+
 import { useState, useEffect } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
@@ -342,15 +344,7 @@ export default function SupplierStorePage() {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#f8f9fa] flex flex-col selection:bg-emerald-100 selection:text-emerald-950">
-        <Navbar />
-        <div className="flex-1 flex items-center justify-center pt-32 pb-20">
-          <span className="w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></span>
-        </div>
-        <Footer />
-      </div>
-    )
+    return <SupplierProfileSkeleton />
   }
 
   return (

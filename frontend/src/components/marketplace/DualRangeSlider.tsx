@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 
@@ -130,7 +130,7 @@ export function DualRangeSlider({
           tabIndex={0}
         >
           {/* Tooltip for Min */}
-          <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-[#1A4D2E] text-white text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-700 whitespace-nowrap shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-[#1B5E3A] text-white text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-700 whitespace-nowrap shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
             {formatLabel(localValue[0])}
           </div>
         </div>
@@ -147,7 +147,7 @@ export function DualRangeSlider({
           tabIndex={0}
         >
           {/* Tooltip for Max */}
-          <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-[#1A4D2E] text-white text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-700 whitespace-nowrap shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-[#1B5E3A] text-white text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-700 whitespace-nowrap shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
             {formatLabel(localValue[1])}
           </div>
         </div>

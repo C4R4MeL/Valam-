@@ -1,5 +1,7 @@
 'use client'
 
+import { FormPageSkeleton } from '@/components/skeletons'
+
 import { useState, useEffect } from 'react'
 import { Building, FileText, User, Phone, MapPin, Save, Landmark, Layers } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -135,11 +137,7 @@ export default function SupplierSettingsPage() {
   }
 
   if (loading) {
-    return (
-      <div className="w-full flex flex-col min-h-screen bg-zinc-55 pb-20 justify-center items-center">
-        <span className="text-sm font-bold text-emerald-850">Loading profile settings...</span>
-      </div>
-    )
+    return <FormPageSkeleton />
   }
 
   return (

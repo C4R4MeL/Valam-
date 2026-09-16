@@ -1,5 +1,7 @@
 'use client'
 
+import { FormPageSkeleton } from '@/components/skeletons'
+
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLocale } from 'next-intl'
@@ -327,12 +329,7 @@ export default function SupplierVerificationPage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <div className="w-10 h-10 border-4 border-emerald-800 border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-sm text-zinc-500 font-semibold">Memuat berkas verifikasi...</p>
-      </div>
-    )
+    return <FormPageSkeleton />
   }
 
   const isReadOnly = profile.status === 'DALAM_VERIFIKASI' || profile.status === 'TERVERIFIKASI'

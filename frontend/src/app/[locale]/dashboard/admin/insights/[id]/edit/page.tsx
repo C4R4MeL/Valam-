@@ -16,6 +16,7 @@ import {
 } from '@/lib/valam-insights/insights-api';
 import { generateSlug } from '@/lib/valam-insights/utils';
 import { createClient } from '@/lib/supabase/client';
+import { FormPageSkeleton } from '@/components/skeletons';
 import type {
   ContentType,
   ContentStatus,
@@ -189,11 +190,7 @@ export default function EditInsightPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="w-10 h-10 border-4 border-emerald-200 border-t-emerald-700 rounded-full animate-spin" />
-      </div>
-    );
+    return <FormPageSkeleton />
   }
 
   return (
