@@ -4,6 +4,7 @@ import { ArrowLeft, SlidersHorizontal, MapPin, ShoppingCart } from "lucide-react
 import { useRouter, Link } from "@/i18n/routing"
 import { useLocale } from "next-intl"
 import { useCart } from "@/components/providers/CartProvider"
+import { useAuthContext } from "@/components/providers/AuthProvider"
 
 interface MobileHeaderProps {
   title?: string
@@ -24,6 +25,7 @@ export function MobileHeader({
   const locale = useLocale()
   const isId = locale === 'id'
   const { totalItems } = useCart()
+  const { isAuthenticated } = useAuthContext()
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#1B5E3A] text-white shadow-md md:hidden h-14 flex items-center justify-between px-4">
@@ -49,7 +51,7 @@ export function MobileHeader({
 
       <div className="flex items-center gap-2">
         <Link 
-          href="/cart"
+          href={isAuthenticated ? "/cart" : "/login"}
           prefetch={true}
           className="relative w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 flex items-center justify-center transition-colors text-white shrink-0"
         >

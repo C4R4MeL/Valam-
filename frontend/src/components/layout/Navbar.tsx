@@ -64,7 +64,7 @@ export function Navbar() {
 
   const scrolled = isScrolled
 
-  const { role, email, logout } = useAuthContext()
+  const { role, email, logout, isAuthenticated } = useAuthContext()
   const { totalItems } = useCart()
 
   // Chat state sync listener
@@ -281,10 +281,10 @@ export function Navbar() {
 
             {/* Cart Icon */}
             <Link
-              href="/cart"
+              href={isAuthenticated ? "/cart" : "/login"}
               prefetch={true}
-              onPointerDown={(e) => handleNavPointerDown(e, '/cart')}
-              onClick={(e) => handleNavClick(e, '/cart')}
+              onPointerDown={(e) => handleNavPointerDown(e, isAuthenticated ? '/cart' : '/login')}
+              onClick={(e) => handleNavClick(e, isAuthenticated ? '/cart' : '/login')}
               className={`relative rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] hover:border-white/[0.15] text-white/50 hover:text-white transition-all duration-200 flex items-center justify-center ${scrolled ? 'h-8 w-8' : 'h-9 w-9'}`}
             >
               <ShoppingCart className="w-4 h-4" />
@@ -470,10 +470,10 @@ export function Navbar() {
           <div className="flex items-center gap-1.5">
             {/* Cart */}
             <Link
-              href="/cart"
+              href={isAuthenticated ? "/cart" : "/login"}
               prefetch={true}
-              onPointerDown={(e) => handleNavPointerDown(e, '/cart')}
-              onClick={(e) => handleNavClick(e, '/cart')}
+              onPointerDown={(e) => handleNavPointerDown(e, isAuthenticated ? '/cart' : '/login')}
+              onClick={(e) => handleNavClick(e, isAuthenticated ? '/cart' : '/login')}
               className="relative h-8 w-8 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] text-white/50 flex items-center justify-center transition-all"
             >
               <ShoppingCart className="w-4 h-4" />
