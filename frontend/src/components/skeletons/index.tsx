@@ -44,43 +44,46 @@ export function ProductCardSkeleton() {
 
 export function MarketplaceSkeleton() {
   return (
-    <Shell>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex gap-6">
-          <aside className="hidden lg:block w-[280px] shrink-0 space-y-4">
-            <Skeleton className="h-8 w-32" />
-            <div className="bg-white rounded-2xl border border-zinc-200 p-4 space-y-4">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="space-y-2">
-                  <Skeleton className="h-3 w-24" />
-                  <Skeleton className="h-9 w-full rounded-xl" />
-                </div>
-              ))}
+    <div className="flex-1 flex w-full max-w-7xl mx-auto md:px-6 pt-2 pb-20 md:pt-4 md:pb-6 mt-16 md:mt-14">
+      {/* Sidebar Skeleton */}
+      <aside className="hidden lg:block w-[280px] shrink-0 space-y-4 pr-8">
+        <Skeleton className="h-8 w-32 mb-6" />
+        <div className="bg-white rounded-2xl border border-zinc-200 p-4 space-y-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="space-y-2">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-9 w-full rounded-xl" />
             </div>
-          </aside>
-          <div className="flex-1 space-y-5">
-            <div className="flex items-center justify-between gap-3">
-              <Skeleton className="h-8 w-48" />
-              <Skeleton className="h-9 w-36 rounded-xl" />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <ProductCardSkeleton key={i} />
-              ))}
-            </div>
-          </div>
+          ))}
         </div>
+      </aside>
+      
+      <div className="flex-1 px-4 md:px-0 md:pl-8 min-w-0">
+        <div className="mb-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <Skeleton className="h-8 w-64 mb-2" />
+            <Skeleton className="h-4 w-96" />
+          </div>
+          <Skeleton className="h-11 w-full lg:w-80 rounded-xl" />
+        </div>
+        <div className="mb-4 flex items-center justify-between">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-6 w-24 rounded-xl" />
+        </div>
+        <ProductGridSkeleton count={6} />
       </div>
-    </Shell>
+    </div>
   )
 }
 
 export function ProductGridSkeleton({ count = 6 }: { count?: number }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-      {Array.from({ length: count }).map((_, i) => (
-        <ProductCardSkeleton key={i} />
-      ))}
+    <div className="max-h-[760px] md:max-h-[820px] overflow-y-auto pr-1.5 sm:pr-2 custom-scrollbar">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 p-1">
+        {Array.from({ length: count }).map((_, i) => (
+          <ProductCardSkeleton key={i} />
+        ))}
+      </div>
     </div>
   )
 }
