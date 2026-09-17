@@ -417,6 +417,12 @@ enum GradeNilam {
   GRADE_C
 }
 
+enum SupplierSubtype {
+  PETANI
+  PENYULING
+  KOPERASI
+}
+
 enum TipeDocument {
   AKTA_KOPERASI
   COA
@@ -447,18 +453,35 @@ model SupplierProfile {
   id                 String             @id @default(uuid()) @db.Uuid
   user_id            String             @unique @db.Uuid
 
-  // Poin 1 — Data Wajib Registrasi
-  nama_koperasi      String
-  nib                String
-  npwp               String
-  nama_pic           String
-  ktp_pic            String
+  // ── Sub-tipe Supplier ──────────────────────────────────────────
+  supplier_subtype   SupplierSubtype    @default(KOPERASI)
+
+  // ── Shared Fields (semua sub-tipe) ─────────────────────────────
+  nama_pic           String             // Petani/Penyuling: "Nama Lengkap (KTP)", Koperasi: "Nama Ketua/PIC"
+  ktp_pic            String             // NIK KTP (16 digit)
   whatsapp           String
-  alamat_lengkap     String
   kabupaten          String
   kecamatan          String
   desa               String
-  kapasitas_produksi Float
+
+  // ── Koperasi-specific (nullable untuk Petani/Penyuling) ────────
+  nama_koperasi      String?
+  nib                String?
+  npwp               String?
+  alamat_lengkap     String?
+
+  // ── Kapasitas (Penyuling & Koperasi wajib, Petani conditional) ─
+  kapasitas_produksi Float?
+
+  // ── Petani-specific ────────────────────────────────────────────
+  luas_lahan         Float?             // Estimasi Luas Lahan (Ha)
+  estimasi_panen     Float?             // Estimasi Panen (kg/bulan, daun basah)
+  punya_alat_suling  Boolean            @default(false)
+
+  // ── Relasi Koperasi Pembina (opsional, untuk Petani/Penyuling) ─
+  koperasi_pembina_id String?           @db.Uuid
+  koperasi_pembina    SupplierProfile?  @relation("KoperasiAnggota", fields: [koperasi_pembina_id], references: [id])
+  anggota_binaan      SupplierProfile[] @relation("KoperasiAnggota")
 
   // Opsional — rekening bank
   nomor_rekening     String?
@@ -493,6 +516,7 @@ model SupplierProfile {
   verification_logs  VerificationLog[]
 
   @@index([status])
+  @@index([supplier_subtype])
   @@map("supplier_profiles")
 }
 

@@ -514,9 +514,9 @@ export default function SupplierDashboardPage() {
                 <div className={`w-12 h-12 rounded-full ${stat.bg} flex items-center justify-center shrink-0`}>
                   <stat.icon className={`w-6 h-6 ${stat.color}`} />
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-zinc-500">{stat.title}</p>
-                  <p className="text-lg sm:text-xl xl:text-2xl font-bold text-emerald-950 truncate max-w-[160px] md:max-w-none" title={stat.value}>{stat.value}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-zinc-500 truncate">{stat.title}</p>
+                  <p className="text-lg sm:text-xl xl:text-2xl font-bold text-emerald-950 truncate" title={stat.value}>{stat.value}</p>
                 </div>
               </div>
             ))}
@@ -537,9 +537,9 @@ export default function SupplierDashboardPage() {
                 <div className="w-12 h-12 rounded-full bg-emerald-100/70 flex items-center justify-center shrink-0">
                   <ClipboardList className="w-5 h-5 text-emerald-700" />
                 </div>
-                <div>
-                  <p className="text-xs font-semibold text-emerald-800/60 uppercase tracking-wider">Total Circular Products</p>
-                  <p className="text-xl sm:text-2xl font-bold text-emerald-950 mt-0.5">{circularMetrics.totalProducts} Produk</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-emerald-800/60 uppercase tracking-wider truncate">Total Circular Products</p>
+                  <p className="text-xl sm:text-2xl font-bold text-emerald-950 mt-0.5 truncate" title={`${circularMetrics.totalProducts} Produk`}>{circularMetrics.totalProducts} Produk</p>
                 </div>
               </div>
               
@@ -547,9 +547,9 @@ export default function SupplierDashboardPage() {
                 <div className="w-12 h-12 rounded-full bg-emerald-100/70 flex items-center justify-center shrink-0">
                   <ShoppingBag className="w-5 h-5 text-emerald-700" />
                 </div>
-                <div>
-                  <p className="text-xs font-semibold text-emerald-800/60 uppercase tracking-wider">Circular Products Sold</p>
-                  <p className="text-xl sm:text-2xl font-bold text-emerald-950 mt-0.5">{circularMetrics.circularProductsSold} Unit</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-emerald-800/60 uppercase tracking-wider truncate">Circular Products Sold</p>
+                  <p className="text-xl sm:text-2xl font-bold text-emerald-950 mt-0.5 truncate" title={`${circularMetrics.circularProductsSold} Unit`}>{circularMetrics.circularProductsSold} Unit</p>
                 </div>
               </div>
 
@@ -557,9 +557,9 @@ export default function SupplierDashboardPage() {
                 <div className="w-12 h-12 rounded-full bg-emerald-100/70 flex items-center justify-center shrink-0">
                   <Wallet className="w-5 h-5 text-emerald-700" />
                 </div>
-                <div>
-                  <p className="text-xs font-semibold text-emerald-800/60 uppercase tracking-wider">Circular Product Revenue</p>
-                  <p className="text-xl sm:text-2xl font-bold text-emerald-950 mt-0.5">{formatRupiah(circularMetrics.circularProductRevenue)}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-emerald-800/60 uppercase tracking-wider truncate">Circular Product Revenue</p>
+                  <p className="text-xl sm:text-2xl font-bold text-emerald-950 mt-0.5 truncate" title={formatRupiah(circularMetrics.circularProductRevenue)}>{formatRupiah(circularMetrics.circularProductRevenue)}</p>
                 </div>
               </div>
             </div>

@@ -47,9 +47,15 @@ export class SupplierController {
   @Post('register')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('supplier')
-  @ApiOperation({ summary: 'Register supplier profile (Poin 1 data)' })
+  @ApiOperation({ summary: 'Register supplier profile (sub-type-aware)' })
   async register(@Request() req: any, @Body() dto: RegisterSupplierDto) {
     return this.supplierService.register(req.user.userId, dto);
+  }
+
+  @Get('koperasi-pembina')
+  @ApiOperation({ summary: 'Get list of Koperasi for "Koperasi Pembina" dropdown' })
+  async getKoperasiPembina() {
+    return this.supplierService.getKoperasiPembina();
   }
 
   @Get('me')

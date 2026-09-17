@@ -14,6 +14,7 @@ import { UpdateSupplierDto } from './dto/update-supplier.dto';
 import { ReviewAction } from './dto/review-document.dto';
 import {
   SupplierStatus,
+  SupplierSubtype,
   TipeDocument,
   StatusDokumen,
   AksiVerifikasi,
@@ -32,7 +33,7 @@ export class SupplierService {
   // ── Supplier Endpoints ──────────────────────────────────────────
 
   /**
-   * Register a new supplier profile (Poin 1 data).
+   * Register a new supplier profile with sub-type-specific validation.
    * Status = TERDAFTAR.
    */
   async register(userId: string, dto: RegisterSupplierDto) {
@@ -44,21 +45,82 @@ export class SupplierService {
       throw new ConflictException('Profil supplier sudah terdaftar untuk akun ini.');
     }
 
+    // ── Conditional validation per sub-type ───────────────────────
+    const errors: string[] = [];
+
+    switch (dto.supplierSubtype) {
+      case SupplierSubtype.PETANI:
+        if (!dto.luasLahan && dto.luasLahan !== 0) errors.push('Estimasi luas lahan wajib diisi untuk Petani.');
+        if (!dto.estimasiPanen && dto.estimasiPanen !== 0) errors.push('Estimasi panen wajib diisi untuk Petani.');
+        // If petani has distillation equipment, require penyuling fields too
+        if (dto.punyaAlatSuling) {
+          if (!dto.kapasitasProduksi && dto.kapasitasProduksi !== 0) {
+            errors.push('Kapasitas produksi wajib diisi jika punya alat suling.');
+          }
+          if (!dto.gradeNilam || dto.gradeNilam.length === 0) {
+            errors.push('Grade nilam wajib dipilih jika punya alat suling.');
+          }
+        }
+        break;
+
+      case SupplierSubtype.PENYULING:
+        if (!dto.kapasitasProduksi && dto.kapasitasProduksi !== 0) errors.push('Kapasitas produksi wajib diisi untuk Penyuling.');
+        if (!dto.gradeNilam || dto.gradeNilam.length === 0) errors.push('Grade nilam wajib dipilih untuk Penyuling.');
+        break;
+
+      case SupplierSubtype.KOPERASI:
+        if (!dto.namaKoperasi) errors.push('Nama koperasi wajib diisi.');
+        if (!dto.nib) errors.push('NIB koperasi wajib diisi.');
+        if (!dto.npwp) errors.push('NPWP koperasi wajib diisi.');
+        if (!dto.alamatLengkap) errors.push('Alamat lengkap wajib diisi.');
+        if (!dto.kapasitasProduksi && dto.kapasitasProduksi !== 0) errors.push('Kapasitas produksi wajib diisi.');
+        if (!dto.gradeNilam || dto.gradeNilam.length === 0) errors.push('Grade nilam wajib dipilih.');
+        break;
+    }
+
+    if (errors.length > 0) {
+      throw new BadRequestException({ message: 'Validasi gagal.', errors });
+    }
+
+    // ── Validate koperasi_pembina_id if provided ─────────────────
+    if (dto.koperasiPembinaId) {
+      const koperasi = await this.prisma.supplierProfile.findFirst({
+        where: {
+          id: dto.koperasiPembinaId,
+          supplier_subtype: SupplierSubtype.KOPERASI,
+        },
+      });
+      if (!koperasi) {
+        throw new BadRequestException('Koperasi pembina tidak ditemukan.');
+      }
+    }
+
     const supplier = await this.prisma.supplierProfile.create({
       data: {
         user_id: userId,
-        nama_koperasi: dto.namaKoperasi,
-        nib: dto.nib,
-        npwp: dto.npwp,
+        supplier_subtype: dto.supplierSubtype,
+        // Shared
         nama_pic: dto.namaPic,
         ktp_pic: dto.ktpPic,
         whatsapp: dto.whatsapp,
-        alamat_lengkap: dto.alamatLengkap,
         kabupaten: dto.kabupaten,
         kecamatan: dto.kecamatan,
         desa: dto.desa,
-        kapasitas_produksi: dto.kapasitasProduksi,
-        grade_nilam: dto.gradeNilam,
+        // Koperasi-specific (nullable)
+        nama_koperasi: dto.namaKoperasi || null,
+        nib: dto.nib || null,
+        npwp: dto.npwp || null,
+        alamat_lengkap: dto.alamatLengkap || null,
+        // Capacity & Grade
+        kapasitas_produksi: dto.kapasitasProduksi ?? null,
+        grade_nilam: dto.gradeNilam || [],
+        // Petani-specific
+        luas_lahan: dto.luasLahan ?? null,
+        estimasi_panen: dto.estimasiPanen ?? null,
+        punya_alat_suling: dto.punyaAlatSuling || false,
+        // Koperasi Pembina
+        koperasi_pembina_id: dto.koperasiPembinaId || null,
+        // Storefront defaults
         nomor_rekening: dto.nomorRekening,
         nama_bank: dto.namaBank,
         nama_rekening: dto.namaRekening,
@@ -130,7 +192,7 @@ export class SupplierService {
   }
 
   /**
-   * Update supplier profile data (Poin 1 fields + bank account).
+   * Update supplier profile data (all fields + bank account).
    */
   async updateProfile(userId: string, dto: UpdateSupplierDto) {
     const supplier = await this.findSupplierByUserId(userId);
@@ -158,6 +220,11 @@ export class SupplierService {
     if (dto.metodeDistilasi !== undefined) updateData.metode_distilasi = dto.metodeDistilasi;
     if (dto.bahanBaku !== undefined) updateData.bahan_baku = dto.bahanBaku;
     if (dto.website !== undefined) updateData.website = dto.website;
+    // New sub-type fields
+    if (dto.luasLahan !== undefined) updateData.luas_lahan = dto.luasLahan;
+    if (dto.estimasiPanen !== undefined) updateData.estimasi_panen = dto.estimasiPanen;
+    if (dto.punyaAlatSuling !== undefined) updateData.punya_alat_suling = dto.punyaAlatSuling;
+    if (dto.koperasiPembinaId !== undefined) updateData.koperasi_pembina_id = dto.koperasiPembinaId;
 
     const updated = await this.prisma.supplierProfile.update({
       where: { id: supplier.id },
@@ -262,7 +329,7 @@ export class SupplierService {
 
   /**
    * Submit all documents for verification.
-   * Validates completeness → status changes to DALAM_VERIFIKASI.
+   * Validates completeness based on supplier_subtype → status changes to DALAM_VERIFIKASI.
    */
   async submitVerification(userId: string) {
     const supplier = await this.findSupplierByUserId(userId);
@@ -282,14 +349,44 @@ export class SupplierService {
     // Validate completeness
     const errors: string[] = [];
 
-    // Check each required document type
-    const requiredTypes: TipeDocument[] = [
-      TipeDocument.AKTA_KOPERASI,
-      TipeDocument.COA,
-      TipeDocument.FOTO_FASILITAS,
-      TipeDocument.SURAT_PERNYATAAN,
-    ];
+    // ── Determine required document types based on sub-type ───────
+    let requiredTypes: TipeDocument[] = [];
 
+    switch (supplier.supplier_subtype) {
+      case SupplierSubtype.KOPERASI:
+        requiredTypes = [
+          TipeDocument.AKTA_KOPERASI,
+          TipeDocument.COA,
+          TipeDocument.FOTO_FASILITAS,
+          TipeDocument.SURAT_PERNYATAAN,
+        ];
+        break;
+
+      case SupplierSubtype.PENYULING:
+        // Penyuling: COA + Foto Fasilitas (no Akta Koperasi)
+        requiredTypes = [
+          TipeDocument.COA,
+          TipeDocument.FOTO_FASILITAS,
+        ];
+        break;
+
+      case SupplierSubtype.PETANI:
+        // Petani with alat suling: COA + Foto Fasilitas
+        // Petani without alat suling: Foto Fasilitas only
+        if (supplier.punya_alat_suling) {
+          requiredTypes = [
+            TipeDocument.COA,
+            TipeDocument.FOTO_FASILITAS,
+          ];
+        } else {
+          requiredTypes = [
+            TipeDocument.FOTO_FASILITAS,
+          ];
+        }
+        break;
+    }
+
+    // Check each required document type
     for (const tipe of requiredTypes) {
       const docs = documents.filter((d) => d.tipe_document === tipe);
       if (docs.length === 0) {
@@ -298,19 +395,23 @@ export class SupplierService {
       }
     }
 
-    // Check FOTO_FASILITAS minimum 3
-    const fotoCount = documents.filter((d) => d.tipe_document === TipeDocument.FOTO_FASILITAS).length;
-    if (fotoCount > 0 && fotoCount < 3) {
-      errors.push(`Foto fasilitas penyulingan minimal 3 foto. Saat ini baru ada ${fotoCount} foto.`);
+    // Check FOTO_FASILITAS minimum 3 (only if required)
+    if (requiredTypes.includes(TipeDocument.FOTO_FASILITAS)) {
+      const fotoCount = documents.filter((d) => d.tipe_document === TipeDocument.FOTO_FASILITAS).length;
+      if (fotoCount > 0 && fotoCount < 3) {
+        errors.push(`Foto fasilitas penyulingan minimal 3 foto. Saat ini baru ada ${fotoCount} foto.`);
+      }
     }
 
-    // Check COA not expired
-    const coaDocs = documents.filter((d) => d.tipe_document === TipeDocument.COA);
-    for (const coa of coaDocs) {
-      if (coa.tanggal_coa) {
-        const diffDays = this.daysDiff(coa.tanggal_coa, new Date());
-        if (diffDays > 180) {
-          errors.push('COA sudah kadaluarsa. Harap upload COA terbaru dari laboratorium terakreditasi (maksimal 6 bulan terakhir).');
+    // Check COA not expired (only if COA is required)
+    if (requiredTypes.includes(TipeDocument.COA)) {
+      const coaDocs = documents.filter((d) => d.tipe_document === TipeDocument.COA);
+      for (const coa of coaDocs) {
+        if (coa.tanggal_coa) {
+          const diffDays = this.daysDiff(coa.tanggal_coa, new Date());
+          if (diffDays > 180) {
+            errors.push('COA sudah kadaluarsa. Harap upload COA terbaru dari laboratorium terakreditasi (maksimal 6 bulan terakhir).');
+          }
         }
       }
     }
@@ -363,7 +464,10 @@ export class SupplierService {
     if (query.isLegacy === 'true') where.is_legacy = true;
     if (query.isLegacy === 'false') where.is_legacy = false;
     if (query.search) {
-      where.nama_koperasi = { contains: query.search, mode: 'insensitive' };
+      where.OR = [
+        { nama_koperasi: { contains: query.search, mode: 'insensitive' } },
+        { nama_pic: { contains: query.search, mode: 'insensitive' } },
+      ];
     }
 
     const [data, total] = await Promise.all([
@@ -585,7 +689,7 @@ export class SupplierService {
     await this.notificationService.sendVerificationApproved(updated);
 
     return {
-      message: `Supplier ${updated.nama_koperasi} berhasil diverifikasi!`,
+      message: `Supplier ${updated.nama_koperasi || updated.nama_pic} berhasil diverifikasi!`,
       data: updated,
     };
   }
@@ -613,7 +717,7 @@ export class SupplierService {
       }
 
       if (supplier.is_legacy) {
-        results.push({ id, name: supplier.nama_koperasi, status: 'ALREADY_MIGRATED' });
+        results.push({ id, name: supplier.nama_koperasi || supplier.nama_pic, status: 'ALREADY_MIGRATED' });
         skipped++;
         continue;
       }
@@ -638,7 +742,7 @@ export class SupplierService {
 
       await this.notificationService.sendLegacyMigrationNotice(supplier, deadline);
 
-      results.push({ id, name: supplier.nama_koperasi, status: 'MIGRATED' });
+      results.push({ id, name: supplier.nama_koperasi || supplier.nama_pic, status: 'MIGRATED' });
       migrated++;
     }
 
@@ -764,6 +868,27 @@ export class SupplierService {
       orderBy: { verified_at: 'desc' },
       take: limit,
     });
+  }
+
+  /**
+   * Get list of Koperasi suppliers for "Koperasi Pembina" dropdown.
+   * Returns only id and nama_koperasi.
+   */
+  async getKoperasiPembina() {
+    const koperasiList = await this.prisma.supplierProfile.findMany({
+      where: {
+        supplier_subtype: SupplierSubtype.KOPERASI,
+        status: { in: [SupplierStatus.TERVERIFIKASI, SupplierStatus.LEGACY_VERIFIED, SupplierStatus.TERDAFTAR] },
+      },
+      select: {
+        id: true,
+        nama_koperasi: true,
+        kabupaten: true,
+      },
+      orderBy: { nama_koperasi: 'asc' },
+    });
+
+    return { data: koperasiList };
   }
 }
 
