@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast'
 import { useLocale } from 'next-intl'
 import { useSearchParams } from 'next/navigation'
 import { useCart } from '@/components/providers/CartProvider'
-import { formatRupiah, validateOrderQuantity } from '@/lib/utils'
+import { formatRupiah, validateOrderQuantity, getSupplierDisplayName } from '@/lib/utils'
 import { CheckoutSkeleton } from '@/components/skeletons'
 
 export default function CheckoutPage() {
@@ -85,9 +85,9 @@ export default function CheckoutPage() {
               id: data.id,
               batch_code: data.name,
               nama: data.name,
-              supplier_name: data.supplier?.profile?.company_name || data.supplier?.supplier_profile?.nama_koperasi || 'Mitra Sirkular',
+              supplier_name: data.supplier ? getSupplierDisplayName(data.supplier) : 'Mitra Sirkular',
               supplier_id: data.supplier_id || 'mitra-direct',
-              mitra_pengolah_nama: data.supplier?.supplier_profile?.nama_koperasi || 'Mitra Sirkular',
+              mitra_pengolah_nama: data.supplier ? getSupplierDisplayName(data.supplier) : 'Mitra Sirkular',
               mitra_pengolah_id: data.supplier_id,
               status: data.status,
               origin_district: data.supplier?.supplier_profile?.kabupaten || 'Aceh',

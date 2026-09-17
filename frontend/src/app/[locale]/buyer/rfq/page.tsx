@@ -41,6 +41,7 @@ import {
 import { mockProducts, formatRupiah } from '@/lib/mock-data'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { getSupplierDisplayName } from '@/lib/utils'
 
 const COUNTRIES = [
   { code: 'FR', name: 'France (Perancis)' },
@@ -393,7 +394,7 @@ function BuyerRfqContent() {
 
       const volume = rfq.response?.proposed_volume_kg || rfq.data?.volume_kg || rfq.volume_kg || '100'
       const price = rfq.response?.proposed_price_per_kg || rfq.data?.budget_max || rfq.budget_per_kg || '850000'
-      const message = `Halo ${rfq.supplier?.supplier_profile?.nama_koperasi || rfq.supplier?.profile?.company_name || 'Pemasok'}, saya ingin menindaklanjuti RFQ ${rfq.rfq_number} yang telah disepakati di Valam untuk volume ${volume} Kg dengan harga ${formatRupiah(Number(price))}/Kg. Silakan kirimkan instruksi pengiriman dan pembayaran.`
+      const message = `Halo ${rfq.supplier ? getSupplierDisplayName(rfq.supplier) : 'Pemasok'}, saya ingin menindaklanjuti RFQ ${rfq.rfq_number} yang telah disepakati di Valam untuk volume ${volume} Kg dengan harga ${formatRupiah(Number(price))}/Kg. Silakan kirimkan instruksi pengiriman dan pembayaran.`
       const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
       
       setTimeout(() => {

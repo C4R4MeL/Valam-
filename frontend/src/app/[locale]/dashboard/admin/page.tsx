@@ -6,6 +6,7 @@ import { Link } from '@/i18n/routing'
 import { Button } from '@/components/ui/button'
 import { DashboardHeader } from '@/components/layout/DashboardHeader'
 import { useLocale } from 'next-intl'
+import { getSupplierDisplayName } from '@/lib/utils'
 import { useState, useEffect } from 'react'
 
 const contentMap = {
@@ -271,7 +272,7 @@ export default function AdminDashboardPage() {
                   {pendingSuppliersList.slice(0, 4).map((sup) => (
                     <tr key={sup.id} className="hover:bg-zinc-50 transition-colors group">
                       <td className="py-4 px-6">
-                        <div className="text-sm font-semibold text-zinc-900">{sup.nama_koperasi}</div>
+                        <div className="text-sm font-semibold text-zinc-900">{getSupplierDisplayName(sup)}</div>
                         <div className="text-xs text-zinc-400 mt-0.5">{t.validation.registeredPrefix} {new Date(sup.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
                       </td>
                       <td className="py-4 px-6 text-xs text-zinc-500 max-w-[120px] truncate">

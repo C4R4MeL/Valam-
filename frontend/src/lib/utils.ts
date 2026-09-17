@@ -1,4 +1,4 @@
-﻿import { type ClassValue, clsx } from "clsx"
+import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 
 export function cn(...inputs: ClassValue[]) {
@@ -39,4 +39,21 @@ export const validateOrderQuantity = (qty: number, moq: number, available: numbe
     return { valid: false, messageId: 'maxStock', errorMsg: `Stok tersisa hanya ${available} ${unit}` };
   }
   return { valid: true, messageId: '', errorMsg: '' };
+};
+
+export const getSupplierDisplayName = (supplier: any): string => {
+  if (!supplier) return 'Supplier';
+  
+  // Check if we passed a user object with nested profile, or the profile itself
+  const profile = supplier.supplier_profile || supplier.profile || supplier;
+  
+  // If subtype is explicitly set
+  if (profile.supplier_subtype === 'KOPERASI') {
+    return profile.nama_koperasi || profile.company_name || 'Koperasi';
+  } else if (profile.supplier_subtype === 'PETANI' || profile.supplier_subtype === 'PENYULING') {
+    return profile.nama_pic || profile.company_name || 'Supplier Perorangan';
+  }
+  
+  // Fallback for legacy or incomplete data
+  return profile.nama_koperasi || profile.company_name || profile.nama_pic || 'Supplier';
 };

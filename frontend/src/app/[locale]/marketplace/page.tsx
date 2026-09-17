@@ -13,6 +13,7 @@ import { useLocale } from 'next-intl'
 import { useSearchParams } from 'next/navigation'
 import { getLatestMarketPrices } from '@/lib/valam-insights/insights-api'
 import { MarketplaceSkeleton, ProductGridSkeleton } from '@/components/skeletons'
+import { getSupplierDisplayName } from '@/lib/utils'
 
 const contentMap = {
   id: {
@@ -157,7 +158,7 @@ function MarketplaceContent({ isFilterOpen, setIsFilterOpen }: { isFilterOpen: b
               .map((p: any) => ({
                 ...p,
                 supplier: {
-                  company_name: p.supplier_name || p.supplier?.profile?.company_name || p.supplier?.supplier_profile?.nama_koperasi || 'Koperasi Nilam Atsiri'
+                  company_name: p.supplier_name || (p.supplier ? getSupplierDisplayName(p.supplier) : 'Koperasi Nilam Atsiri')
                 }
               }))
             
@@ -180,7 +181,7 @@ function MarketplaceContent({ isFilterOpen, setIsFilterOpen }: { isFilterOpen: b
             const mapped = (Array.isArray(result) ? result : [])
               .filter((cp: any) => cp.status === 'APPROVED')
               .map((cp: any) => {
-                const partnerName = cp.supplier?.supplier_profile?.nama_koperasi || cp.supplier?.profile?.company_name || 'Mitra Sirkular Valam'
+                const partnerName = cp.supplier ? getSupplierDisplayName(cp.supplier) : 'Mitra Sirkular Valam'
                 return {
                   id: cp.id,
                   batch_code: cp.name,

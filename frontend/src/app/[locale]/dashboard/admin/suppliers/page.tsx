@@ -12,6 +12,7 @@ import { useLocale } from 'next-intl'
 import { useToast } from '@/hooks/use-toast'
 import { Label } from '@/components/ui/label'
 import { TablePageSkeleton } from '@/components/skeletons'
+import { getSupplierDisplayName } from '@/lib/utils'
 
 const contentMap = {
   id: {
@@ -234,7 +235,7 @@ export default function AdminSuppliersPage() {
 
       toast({
         title: "Koperasi Terverifikasi",
-        description: t.modal.successApprove.replace('{name}', selectedSupplier.nama_koperasi),
+        description: t.modal.successApprove.replace('{name}', getSupplierDisplayName(selectedSupplier)),
       })
 
       setSelectedSupplier(null)
@@ -261,7 +262,7 @@ export default function AdminSuppliersPage() {
     })
   }
 
-  const pendingSuppliers = suppliers.filter(s => s.nama_koperasi.toLowerCase().includes(searchTerm.toLowerCase()))
+  const pendingSuppliers = suppliers.filter(s => getSupplierDisplayName(s).toLowerCase().includes(searchTerm.toLowerCase()))
 
   const formatDocType = (type: string) => {
     const map: Record<string, string> = {
@@ -330,6 +331,7 @@ export default function AdminSuppliersPage() {
                 <thead>
                   <tr className="bg-zinc-50 border-b border-zinc-200">
                     <th className="py-4 px-6 text-xs font-bold text-zinc-500 uppercase tracking-wider">{t.table.colName}</th>
+                    <th className="py-4 px-6 text-xs font-bold text-zinc-500 uppercase tracking-wider">Sub-Tipe</th>
                     <th className="py-4 px-6 text-xs font-bold text-zinc-500 uppercase tracking-wider">{t.table.colEmail}</th>
                     <th className="py-4 px-6 text-xs font-bold text-zinc-500 uppercase tracking-wider">{t.table.colDoc}</th>
                     <th className="py-4 px-6 text-xs font-bold text-zinc-500 uppercase tracking-wider">{t.table.colDate}</th>
@@ -340,8 +342,17 @@ export default function AdminSuppliersPage() {
                   {pendingSuppliers.map((sup) => (
                     <tr key={sup.id} className="hover:bg-zinc-50/50 transition-colors">
                       <td className="py-4 px-6">
-                        <div className="font-bold text-emerald-950">{sup.nama_koperasi}</div>
-                        <div className="text-xs text-zinc-400 mt-0.5">NIB: {sup.nib}</div>
+                        <div className="font-bold text-emerald-950">{getSupplierDisplayName(sup)}</div>
+                        {sup.nib && <div className="text-xs text-zinc-400 mt-0.5">NIB: {sup.nib}</div>}
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold ${
+                          sup.supplier_subtype === 'PETANI' ? 'bg-amber-100 text-amber-800' :
+                          sup.supplier_subtype === 'PENYULING' ? 'bg-blue-100 text-blue-800' :
+                          'bg-emerald-100 text-emerald-800'
+                        }`}>
+                          {sup.supplier_subtype || 'KOPERASI'}
+                        </span>
                       </td>
                       <td className="py-4 px-6 text-zinc-650">{sup.user?.email}</td>
                       <td className="py-4 px-6">
@@ -412,16 +423,16 @@ export default function AdminSuppliersPage() {
                 <h3 className="text-sm font-bold text-emerald-900 border-l-4 border-gold-500 pl-2">Profil Koperasi</h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-xs">
                   <div>
-                    <span className="text-zinc-400 block">Nama Koperasi</span>
-                    <strong className="text-zinc-800 text-sm">{selectedSupplier.nama_koperasi}</strong>
+                    <span className="text-zinc-400 block">Nama / PIC</span>
+                    <strong className="text-zinc-800 text-sm">{getSupplierDisplayName(selectedSupplier)}</strong>
                   </div>
                   <div>
                     <span className="text-zinc-400 block">NIB OSS</span>
-                    <strong className="text-zinc-800 text-sm">{selectedSupplier.nib}</strong>
+                    <strong className="text-zinc-800 text-sm">{selectedSupplier.nib || '-'}</strong>
                   </div>
                   <div>
                     <span className="text-zinc-400 block">NPWP</span>
-                    <strong className="text-zinc-800 text-sm">{selectedSupplier.npwp}</strong>
+                    <strong className="text-zinc-800 text-sm">{selectedSupplier.npwp || '-'}</strong>
                   </div>
                   <div>
                     <span className="text-zinc-400 block">WhatsApp PIC</span>

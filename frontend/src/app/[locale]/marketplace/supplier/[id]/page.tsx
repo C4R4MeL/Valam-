@@ -18,6 +18,7 @@ import { Footer } from '@/components/layout/Footer'
 import { mockProducts, mockCircularProducts, formatRupiah } from '@/lib/mock-data'
 import { useLocale } from 'next-intl'
 import { Badge } from '@/components/ui/badge'
+import { getSupplierDisplayName } from '@/lib/utils'
 
 const getSupplierInfo = (id: string, locale: 'id' | 'en') => {
   const suppliers: Record<string, any> = {
@@ -216,7 +217,7 @@ export default function SupplierStorePage() {
           const mapped = (result.data.products || []).map((p: any) => ({
             id: p.id,
             batch_code: p.batch_code,
-            supplier_name: result.data.supplier_profile?.nama_koperasi || 'Koperasi Atsiri',
+            supplier_name: getSupplierDisplayName(result.data),
             status: p.status,
             origin_village: p.origin_village || '',
             origin_district: p.origin_district || '',
@@ -231,7 +232,7 @@ export default function SupplierStorePage() {
           const circularMapped = (result.data.circular_products || []).map((cp: any) => ({
             id: cp.id,
             batch_code: cp.name,
-            supplier_name: result.data.supplier_profile?.nama_koperasi || 'Koperasi Atsiri',
+            supplier_name: getSupplierDisplayName(result.data),
             status: cp.status,
             origin_village: '',
             origin_district: result.data.supplier_profile?.kabupaten || 'Aceh',
@@ -297,7 +298,7 @@ export default function SupplierStorePage() {
 
   // Dynamically compute info from supplierUser
   const info = {
-    name: supplierUser?.supplier_profile?.nama_koperasi || decodeURIComponent(supplierId).replace(/-/g, ' '),
+    name: supplierUser ? getSupplierDisplayName(supplierUser) : decodeURIComponent(supplierId).replace(/-/g, ' '),
     district: supplierUser?.supplier_profile?.kabupaten || 'Aceh',
     village: supplierUser?.supplier_profile?.desa || 'Aceh',
     sales: supplierUser?.products ? `${supplierUser.products.length} Batch` : '2.4 Ton',
@@ -305,8 +306,8 @@ export default function SupplierStorePage() {
     reviews: '12',
     respons: '± 1 Jam',
     desc: locale === 'id'
-      ? `${supplierUser?.supplier_profile?.nama_koperasi || 'Koperasi Pemasok'} adalah penyedia minyak nilam terpercaya yang memproduksi nilam berkualitas tinggi di wilayah ${supplierUser?.supplier_profile?.kabupaten || 'Aceh'}.`
-      : `${supplierUser?.supplier_profile?.nama_koperasi || 'Supplier'} is a trusted patchouli oil provider producing high quality patchouli at ${supplierUser?.supplier_profile?.kabupaten || 'Aceh'} region.`,
+      ? `${supplierUser ? getSupplierDisplayName(supplierUser) : 'Supplier'} adalah penyedia minyak nilam terpercaya yang memproduksi nilam berkualitas tinggi di wilayah ${supplierUser?.supplier_profile?.kabupaten || 'Aceh'}.`
+      : `${supplierUser ? getSupplierDisplayName(supplierUser) : 'Supplier'} is a trusted patchouli oil provider producing high quality patchouli at ${supplierUser?.supplier_profile?.kabupaten || 'Aceh'} region.`,
     founded: supplierUser?.supplier_profile?.tahun_berdiri || '2020',
     members: supplierUser?.supplier_profile?.jumlah_anggota ? `${supplierUser.supplier_profile.jumlah_anggota} Petani` : '15 Petani',
     legalitas: supplierUser?.supplier_profile?.nib || 'AHU-000123.AH.01.07.Tahun 2020',

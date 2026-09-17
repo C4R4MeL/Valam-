@@ -40,7 +40,7 @@ export default function SupplierVerificationPage() {
 
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [uploadType, setUploadType] = useState<string>('AKTA_KOPERASI')
+  const [uploadType, setUploadType] = useState<string>('FOTO_FASILITAS')
   const [tanggalCoa, setTanggalCoa] = useState<string>('')
   
   // Selected Draft File State (for PDF single files)
@@ -339,8 +339,12 @@ export default function SupplierVerificationPage() {
     return profile.documents?.some((d: any) => d.tipe_document === tipe && d.status_dokumen !== 'REJECTED')
   }
 
-  const isAktaUploaded = profile.documents?.some((d: any) => d.tipe_document === 'AKTA_KOPERASI' && d.status_dokumen !== 'REJECTED')
-  const isCoaUploaded = profile.documents?.some((d: any) => d.tipe_document === 'COA' && d.status_dokumen !== 'REJECTED')
+  const subtype = profile?.supplier_subtype || 'KOPERASI'
+  const requiresAkta = subtype === 'KOPERASI'
+  const requiresCoa = subtype === 'PENYULING' || subtype === 'KOPERASI' || (subtype === 'PETANI' && profile?.punya_alat_suling)
+
+  const isAktaUploaded = !requiresAkta || profile.documents?.some((d: any) => d.tipe_document === 'AKTA_KOPERASI' && d.status_dokumen !== 'REJECTED')
+  const isCoaUploaded = !requiresCoa || profile.documents?.some((d: any) => d.tipe_document === 'COA' && d.status_dokumen !== 'REJECTED')
   const isStatementUploaded = profile.documents?.some((d: any) => d.tipe_document === 'SURAT_PERNYATAAN' && d.status_dokumen !== 'REJECTED')
   const facilityPhotosCount = profile.documents?.filter((d: any) => d.tipe_document === 'FOTO_FASILITAS' && d.status_dokumen !== 'REJECTED').length || 0
   const isFacilityPhotosUploaded = facilityPhotosCount >= 3
@@ -444,8 +448,8 @@ export default function SupplierVerificationPage() {
                       }}
                       className="w-full h-12 bg-white border border-zinc-200 rounded-xl px-3 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-600 font-medium text-zinc-800"
                     >
-                      <option value="AKTA_KOPERASI">Akta Koperasi + SK Kemenkop (PDF)</option>
-                      <option value="COA">COA (Certificate of Analysis) Lab (PDF)</option>
+                      {requiresAkta && <option value="AKTA_KOPERASI">Akta Koperasi + SK Kemenkop (PDF)</option>}
+                      {requiresCoa && <option value="COA">COA (Certificate of Analysis) Lab (PDF)</option>}
                       <option value="FOTO_FASILITAS">Foto Fasilitas Penyulingan (JPG/PNG/WEBP)</option>
                       <option value="SURAT_PERNYATAAN">Surat Pernyataan Standar & SLA (PDF)</option>
                     </select>
@@ -643,16 +647,16 @@ export default function SupplierVerificationPage() {
 
           <div className="space-y-4">
             {[
-              {
+              ...(requiresAkta ? [{
                 name: 'Akta Pendirian + SK Kemenkop',
                 done: profile.documents?.some((d: any) => d.tipe_document === 'AKTA_KOPERASI' && d.status_dokumen !== 'REJECTED'),
                 desc: '1 file PDF asli'
-              },
-              {
+              }] : []),
+              ...(requiresCoa ? [{
                 name: 'COA Lab Terakreditasi',
                 done: profile.documents?.some((d: any) => d.tipe_document === 'COA' && d.status_dokumen !== 'REJECTED'),
                 desc: 'Berusia kurang dari 180 hari (6 bulan)'
-              },
+              }] : []),
               {
                 name: 'Foto Fasilitas Penyulingan',
                 done: (profile.documents?.filter((d: any) => d.tipe_document === 'FOTO_FASILITAS' && d.status_dokumen !== 'REJECTED').length || 0) >= 3,
@@ -687,7 +691,7 @@ export default function SupplierVerificationPage() {
                   <div className="bg-rose-50 border border-rose-200 p-3.5 rounded-xl flex gap-2 text-xs text-rose-800 animate-in fade-in duration-300">
                     <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
                     <p>
-                      <strong>Tombol Kirim Terkunci:</strong> Harap unggah seluruh 4 dokumen persyaratan wajib di atas terlebih dahulu untuk mengajukan verifikasi.
+                      <strong>Tombol Kirim Terkunci:</strong> Harap unggah seluruh dokumen persyaratan wajib di atas terlebih dahulu untuk mengajukan verifikasi.
                     </p>
                   </div>
                   <Button 

@@ -15,7 +15,9 @@ import { useLocale } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { getSupplierDisplayName } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
+import { SupplierRegistrationForm, SupplierFormData } from '@/components/auth/SupplierRegistrationForm'
 
 const contentMap = {
   id: {
@@ -95,22 +97,25 @@ export default function SupplierDashboardPage() {
 
   // Onboarding Form Modal State (Poin 1)
   const [showOnboardingModal, setShowOnboardingModal] = useState(false)
-  const [onboardingForm, setOnboardingForm] = useState({
-    namaKoperasi: '',
-    nib: '',
-    npwp: '',
+  const [onboardingForm, setOnboardingForm] = useState<SupplierFormData>({
+    supplierSubtype: null,
     namaPic: '',
     ktpPic: '',
+    ktpError: '',
     whatsapp: '',
-    alamatLengkap: '',
-    kabupaten: '',
-    kecamatan: '',
     desa: '',
+    kecamatan: '',
+    kabupaten: '',
+    namaKoperasi: '',
+    nib: '',
+    npwpSupplier: '',
+    alamatLengkap: '',
+    luasLahan: '',
+    estimasiPanen: '',
+    punyaAlatSuling: false,
     kapasitasProduksi: '',
-    gradeNilam: [] as string[],
-    nomorRekening: '',
-    namaBank: '',
-    namaRekening: '',
+    gradeNilam: [],
+    koperasiPembinaId: '',
   })
   const [submittingOnboarding, setSubmittingOnboarding] = useState(false)
 
@@ -304,7 +309,19 @@ export default function SupplierDashboardPage() {
   // Submit Poin 1 Onboarding Form
   const handleOnboardingSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (onboardingForm.gradeNilam.length === 0) {
+    if (!onboardingForm.supplierSubtype) {
+      toast({ title: "Validasi Gagal", description: "Pilih jenis supplier terlebih dahulu.", variant: "destructive" })
+      return
+    }
+    if (onboardingForm.ktpError) {
+      toast({ title: "Validasi Gagal", description: "Perbaiki error NIK KTP.", variant: "destructive" })
+      return
+    }
+    const needsGrade = onboardingForm.supplierSubtype === 'KOPERASI' || 
+                       onboardingForm.supplierSubtype === 'PENYULING' || 
+                       (onboardingForm.supplierSubtype === 'PETANI' && onboardingForm.punyaAlatSuling)
+                       
+    if (needsGrade && (!onboardingForm.gradeNilam || onboardingForm.gradeNilam.length === 0)) {
       toast({
         title: "Validasi Gagal",
         description: "Pilih minimal satu grade minyak nilam yang bisa Anda pasok.",
@@ -316,29 +333,47 @@ export default function SupplierDashboardPage() {
     setSubmittingOnboarding(true)
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api'
     try {
+      const supplierPayload: any = {
+        supplierSubtype: onboardingForm.supplierSubtype,
+        namaPic: onboardingForm.namaPic,
+        ktpPic: onboardingForm.ktpPic,
+        whatsapp: onboardingForm.whatsapp,
+        kabupaten: onboardingForm.kabupaten,
+        kecamatan: onboardingForm.kecamatan,
+        desa: onboardingForm.desa,
+      }
+
+      if (onboardingForm.supplierSubtype === 'KOPERASI') {
+        supplierPayload.namaKoperasi = onboardingForm.namaKoperasi
+        supplierPayload.nib = onboardingForm.nib
+        supplierPayload.npwp = onboardingForm.npwpSupplier
+        supplierPayload.alamatLengkap = onboardingForm.alamatLengkap
+        supplierPayload.kapasitasProduksi = parseFloat(onboardingForm.kapasitasProduksi) || 0
+        supplierPayload.gradeNilam = onboardingForm.gradeNilam
+      } else if (onboardingForm.supplierSubtype === 'PENYULING') {
+        supplierPayload.kapasitasProduksi = parseFloat(onboardingForm.kapasitasProduksi) || 0
+        supplierPayload.gradeNilam = onboardingForm.gradeNilam
+        if (onboardingForm.nib) supplierPayload.nib = onboardingForm.nib
+        if (onboardingForm.npwpSupplier) supplierPayload.npwp = onboardingForm.npwpSupplier
+        if (onboardingForm.koperasiPembinaId) supplierPayload.koperasiPembinaId = onboardingForm.koperasiPembinaId
+      } else if (onboardingForm.supplierSubtype === 'PETANI') {
+        supplierPayload.luasLahan = parseFloat(onboardingForm.luasLahan) || 0
+        supplierPayload.estimasiPanen = parseFloat(onboardingForm.estimasiPanen) || 0
+        supplierPayload.punyaAlatSuling = onboardingForm.punyaAlatSuling
+        if (onboardingForm.punyaAlatSuling) {
+          supplierPayload.kapasitasProduksi = parseFloat(onboardingForm.kapasitasProduksi) || 0
+          supplierPayload.gradeNilam = onboardingForm.gradeNilam
+        }
+        if (onboardingForm.koperasiPembinaId) supplierPayload.koperasiPembinaId = onboardingForm.koperasiPembinaId
+      }
+
       const res = await fetch(`${apiUrl}/suppliers/register`, {
         method: 'POST',
         headers: {
           ...getAuthHeaders(),
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          namaKoperasi: onboardingForm.namaKoperasi,
-          nib: onboardingForm.nib,
-          npwp: onboardingForm.npwp,
-          namaPic: onboardingForm.namaPic,
-          ktpPic: onboardingForm.ktpPic,
-          whatsapp: onboardingForm.whatsapp,
-          alamatLengkap: onboardingForm.alamatLengkap,
-          kabupaten: onboardingForm.kabupaten,
-          kecamatan: onboardingForm.kecamatan,
-          desa: onboardingForm.desa,
-          kapasitasProduksi: parseFloat(onboardingForm.kapasitasProduksi) || 0,
-          gradeNilam: onboardingForm.gradeNilam,
-          nomorRekening: onboardingForm.nomorRekening || undefined,
-          namaBank: onboardingForm.namaBank || undefined,
-          namaRekening: onboardingForm.namaRekening || undefined,
-        }),
+        body: JSON.stringify(supplierPayload),
       })
 
       const data = await res.json()
@@ -363,16 +398,6 @@ export default function SupplierDashboardPage() {
     }
   }
 
-  const handleGradeToggle = (grade: string) => {
-    setOnboardingForm(prev => {
-      const exists = prev.gradeNilam.includes(grade)
-      const newGrades = exists 
-        ? prev.gradeNilam.filter(g => g !== grade)
-        : [...prev.gradeNilam, grade]
-      return { ...prev, gradeNilam: newGrades }
-    })
-  }
-
   if (loadingProfile) {
     return <DashboardSkeleton />
   }
@@ -387,7 +412,7 @@ export default function SupplierDashboardPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
           <div>
             <h1 className="text-3xl font-bold text-zinc-900 tracking-tight font-serif">
-              {isRegistered ? profile.nama_koperasi : t.title}
+              {isRegistered ? getSupplierDisplayName(profile) : t.title}
             </h1>
             <p className="text-zinc-500 mt-1 text-sm">
               {isRegistered ? `Status Akun: ${profile.status}` : t.subtitle}
@@ -703,147 +728,11 @@ export default function SupplierDashboardPage() {
             {/* Modal Scrollable Form (Standard Styles) */}
             <form onSubmit={handleOnboardingSubmit} className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
               
-              <div className="space-y-2">
-                <Label htmlFor="namaKoperasi" className="text-emerald-900 font-semibold">Nama Koperasi (Sesuai Akta Resmi)</Label>
-                <Input 
-                  id="namaKoperasi"
-                  placeholder="Koperasi Tani Nilam Jaya"
-                  value={onboardingForm.namaKoperasi}
-                  onChange={e => setOnboardingForm({...onboardingForm, namaKoperasi: e.target.value})}
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="nib" className="text-emerald-900 font-semibold">NIB Koperasi (OSS)</Label>
-                  <Input 
-                    id="nib"
-                    placeholder="Contoh: 1234567890123"
-                    value={onboardingForm.nib}
-                    onChange={e => setOnboardingForm({...onboardingForm, nib: e.target.value})}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="npwp" className="text-emerald-900 font-semibold">NPWP Koperasi</Label>
-                  <Input 
-                    id="npwp"
-                    placeholder="00.000.000.0-000.000"
-                    value={onboardingForm.npwp}
-                    onChange={e => setOnboardingForm({...onboardingForm, npwp: e.target.value})}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="namaPic" className="text-emerald-900 font-semibold">Nama PIC</Label>
-                  <Input 
-                    id="namaPic"
-                    placeholder="Nama Ketua"
-                    value={onboardingForm.namaPic}
-                    onChange={e => setOnboardingForm({...onboardingForm, namaPic: e.target.value})}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="ktpPic" className="text-emerald-900 font-semibold">NIK KTP PIC</Label>
-                  <Input 
-                    id="ktpPic"
-                    placeholder="NIK 16 digit"
-                    value={onboardingForm.ktpPic}
-                    onChange={e => setOnboardingForm({...onboardingForm, ktpPic: e.target.value})}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="whatsapp" className="text-emerald-900 font-semibold">WhatsApp PIC</Label>
-                  <Input 
-                    id="whatsapp"
-                    placeholder="0812345..."
-                    value={onboardingForm.whatsapp}
-                    onChange={e => setOnboardingForm({...onboardingForm, whatsapp: e.target.value})}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="desa" className="text-emerald-900 font-semibold">Desa/Gampong</Label>
-                  <Input 
-                    id="desa"
-                    placeholder="Desa"
-                    value={onboardingForm.desa}
-                    onChange={e => setOnboardingForm({...onboardingForm, desa: e.target.value})}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="kecamatan" className="text-emerald-900 font-semibold">Kecamatan</Label>
-                  <Input 
-                    id="kecamatan"
-                    placeholder="Kecamatan"
-                    value={onboardingForm.kecamatan}
-                    onChange={e => setOnboardingForm({...onboardingForm, kecamatan: e.target.value})}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="kabupaten" className="text-emerald-900 font-semibold">Kabupaten</Label>
-                  <Input 
-                    id="kabupaten"
-                    placeholder="Aceh Barat"
-                    value={onboardingForm.kabupaten}
-                    onChange={e => setOnboardingForm({...onboardingForm, kabupaten: e.target.value})}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="alamatLengkap" className="text-emerald-900 font-semibold">Alamat Lengkap</Label>
-                <Input 
-                  id="alamatLengkap"
-                  placeholder="Nama Jalan, RT/RW, Dusun"
-                  value={onboardingForm.alamatLengkap}
-                  onChange={e => setOnboardingForm({...onboardingForm, alamatLengkap: e.target.value})}
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="kapasitasProduksi" className="text-emerald-900 font-semibold">Kapasitas (Kg/Bulan)</Label>
-                  <Input 
-                    id="kapasitasProduksi"
-                    type="number"
-                    placeholder="Contoh: 500"
-                    value={onboardingForm.kapasitasProduksi}
-                    onChange={e => setOnboardingForm({...onboardingForm, kapasitasProduksi: e.target.value})}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-emerald-900 font-semibold block">Grade Nilam yang Dipasok:</Label>
-                <div className="flex gap-4">
-                  {['GRADE_A', 'GRADE_B', 'GRADE_C'].map((g) => (
-                    <label key={g} className="flex items-center gap-2 text-sm font-medium text-zinc-700 cursor-pointer">
-                      <input 
-                        type="checkbox"
-                        checked={onboardingForm.gradeNilam.includes(g)}
-                        onChange={() => handleGradeToggle(g)}
-                        className="rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500"
-                      />
-                      <span>{g === 'GRADE_A' ? 'A (PA≥32%)' : g === 'GRADE_B' ? 'B (PA28-31%)' : 'C (PA<28%)'}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
+              <SupplierRegistrationForm 
+                data={onboardingForm} 
+                onChange={(newData) => setOnboardingForm(prev => ({ ...prev, ...newData }))}
+                t={t}
+              />
 
               <div className="pt-4 flex gap-2">
                 <Button 

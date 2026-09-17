@@ -182,7 +182,7 @@ export class SupplierService {
     }
 
     // Compute document completeness
-    const docStatus = this.getDocumentCompleteness(supplier.documents);
+    const docStatus = this.getDocumentCompleteness(supplier);
 
     return {
       data: supplier,
@@ -780,7 +780,7 @@ export class SupplierService {
         return {
           ...s,
           sisaHari,
-          documentCompleteness: this.getDocumentCompleteness(s.documents),
+          documentCompleteness: this.getDocumentCompleteness(s),
         };
       }),
       total: suppliers.length,
@@ -813,13 +813,26 @@ export class SupplierService {
     return Math.floor(Math.abs(dateB.getTime() - dateA.getTime()) / (1000 * 60 * 60 * 24));
   }
 
-  private getDocumentCompleteness(documents: any[]) {
-    const types: TipeDocument[] = [
-      TipeDocument.AKTA_KOPERASI,
-      TipeDocument.COA,
-      TipeDocument.FOTO_FASILITAS,
-      TipeDocument.SURAT_PERNYATAAN,
-    ];
+  private getDocumentCompleteness(supplier: any) {
+    const documents = supplier.documents || [];
+    const subtype = supplier.supplier_subtype || 'KOPERASI';
+    
+    let types: TipeDocument[] = [];
+    if (subtype === 'PETANI') {
+      types = [TipeDocument.FOTO_FASILITAS, TipeDocument.SURAT_PERNYATAAN];
+      if (supplier.punya_alat_suling) {
+        types.push(TipeDocument.COA);
+      }
+    } else if (subtype === 'PENYULING') {
+      types = [TipeDocument.COA, TipeDocument.FOTO_FASILITAS, TipeDocument.SURAT_PERNYATAAN];
+    } else {
+      types = [
+        TipeDocument.AKTA_KOPERASI,
+        TipeDocument.COA,
+        TipeDocument.FOTO_FASILITAS,
+        TipeDocument.SURAT_PERNYATAAN,
+      ];
+    }
 
     return types.map((tipe) => {
       const docs = documents.filter((d: any) => d.tipe_document === tipe);
