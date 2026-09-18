@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Put, Patch, Body, Param, Query, UseGuards, Request, Res, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Body, Param, Query, Headers, UseGuards, Request, Res, HttpCode, HttpStatus, UnauthorizedException } from '@nestjs/common';
 import * as express from 'express';
 import { ShipmentService } from './shipment.service';
+import { BiteshipService } from './biteship.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -8,13 +9,27 @@ import { ConfirmOngkirDto, EksporShippingDto, ReportMasalahDto, ResolveMasalahDt
 
 @Controller('shipment')
 export class ShipmentController {
-  constructor(private readonly shipmentService: ShipmentService) {}
+  constructor(
+    private readonly shipmentService: ShipmentService,
+    private readonly biteshipService: BiteshipService,
+  ) {}
 
-  // Webhook public (unprotected)
+  // Webhook public (unprotected) — verified via Biteship header signature
   @Post('webhook/biteship')
   @HttpCode(HttpStatus.OK)
-  async handleBiteshipWebhook(@Body() body: any) {
+  async handleBiteshipWebhook(@Headers() headers: any, @Body() body: any) {
+    const isValid = this.biteshipService.verifyWebhook(headers);
+    if (!isValid) {
+      throw new UnauthorizedException('Invalid Biteship webhook signature');
+    }
     return this.shipmentService.handleBiteshipWebhook(body);
+  }
+
+  // Area search for address autocomplete (Maps API proxy)
+  @Get('areas/search')
+  @UseGuards(JwtAuthGuard)
+  async searchAreas(@Query('q') query: string) {
+    return this.biteshipService.searchArea(query);
   }
 
   // Buyer: get rates

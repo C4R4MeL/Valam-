@@ -10,6 +10,6 @@ import { DocumentHelper } from './document.helper';
   imports: [PrismaModule, SupabaseModule],
   providers: [ShipmentService, BiteshipService, DocumentHelper],
   controllers: [ShipmentController],
-  exports: [ShipmentService]
+  exports: [ShipmentService, BiteshipService]
 })
 export class ShipmentModule {}

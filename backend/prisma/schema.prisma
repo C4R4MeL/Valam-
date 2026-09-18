@@ -57,6 +57,8 @@ model Profile {
   contact_person String?
   phone          String?
   address        String?
+  postal_code    String?
+  area_id        String?
   avatar_url     String?
   user           User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
@@ -497,6 +499,8 @@ model SupplierProfile {
   metode_distilasi   String?            @default("Uap (Steam Distillation)")
   bahan_baku         String?            @default("100% Daun Nilam Segar")
   website            String?
+  postal_code        String?
+  area_id            String?
 
   // Grade & Status
   grade_nilam        GradeNilam[]

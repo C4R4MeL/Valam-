@@ -53,24 +53,41 @@ export class ShipmentService {
     const supplierProfile = order.supplier.supplier_profile;
     const buyerProfile = order.buyer.profile;
 
-    const originPostalCode = supplierProfile?.npwp ? '14310' : '23111'; // Mock or fallback
-    const destPostalCode = buyerProfile?.npwp ? '17530' : '17530'; // Mock/fallback
+    // Validate real address data — no more hardcoded postal codes
+    const originPostalCode = supplierProfile?.postal_code;
+    const originAreaId = supplierProfile?.area_id;
+    const destPostalCode = buyerProfile?.postal_code;
+    const destAreaId = buyerProfile?.area_id;
 
-    const rawRates = await this.biteshipService.getRates(
-      originPostalCode,
-      destPostalCode,
+    if (!originPostalCode && !originAreaId) {
+      throw new BadRequestException(
+        'Supplier belum melengkapi data alamat (kode pos / area). Harap minta supplier melengkapi profil terlebih dahulu.'
+      );
+    }
+    if (!destPostalCode && !destAreaId) {
+      throw new BadRequestException(
+        'Alamat pengiriman Anda belum lengkap (kode pos / area). Harap lengkapi data alamat di halaman profil terlebih dahulu.'
+      );
+    }
+
+    const rawRates = await this.biteshipService.getRates({
+      originPostalCode: originPostalCode || undefined,
+      originAreaId: originAreaId || undefined,
+      destinationPostalCode: destPostalCode || undefined,
+      destinationAreaId: destAreaId || undefined,
       weightInGrams,
       itemValue,
-      drumCount
-    );
+      drumCount,
+    });
 
     const originProvince = order.items[0]?.product?.origin_province || 'Aceh';
     const orderAddress = (order.shipping_address as any)?.address;
     const destinationAddressStr = orderAddress || buyerProfile?.address || '';
 
     return rawRates.map((rate) => {
-      // Calculate dynamic B2B shipping rate
-      const baseCost = this.calculateBaseRate(rate.kurirKode, totalWeight, originProvince, destinationAddressStr);
+      // Calculate dynamic B2B shipping rate with floor protection
+      // Custom formula must not be lower than Biteship's actual rate
+      const baseCost = this.calculateBaseRate(rate.kurirKode, totalWeight, originProvince, destinationAddressStr, rate.ongkirDasar);
       const insurance = Math.ceil(itemValue * TARIF_ASURANSI);
       const packaging = drumCount * BIAYA_PENGEMASAN_PER_DRUM;
       const total = baseCost + insurance + packaging;
@@ -91,14 +108,23 @@ export class ShipmentService {
     });
   }
 
-  private calculateBaseRate(courier: string, weight: number, origin: string, destination: string): number {
+  /**
+   * Menghitung tarif dasar B2B shipping dengan formula custom VALAM.
+   * Formula ini memperhitungkan rute (Sumatra → Jawa) dan jenis kurir.
+   *
+   * FLOOR PROTECTION: Hasil formula custom TIDAK BOLEH lebih rendah dari
+   * harga real Biteship (biteshipRate). Ini mencegah VALAM menanggung
+   * selisih biaya kirim (nombok). Jika formula custom menghasilkan
+   * angka lebih rendah, dipakai harga Biteship sebagai base cost.
+   */
+  private calculateBaseRate(courier: string, weight: number, origin: string, destination: string, biteshipRate?: number): number {
     let ratePerKg = 1500;
     if (courier === 'jne') ratePerKg = 2500;
     else if (courier === 'sicepat') ratePerKg = 2200;
 
     let base = weight * ratePerKg;
     
-    // Multiplier
+    // Multiplier berdasarkan rute
     const lowerOrigin = origin.toLowerCase();
     const lowerDest = destination.toLowerCase();
     let multiplier = 1.0;
@@ -112,7 +138,14 @@ export class ShipmentService {
       else if (isDestJavaCentralEast) multiplier = 1.6;
     }
 
-    return Math.round(base * multiplier);
+    const customRate = Math.round(base * multiplier);
+
+    // Floor protection: never go below Biteship's real rate
+    if (biteshipRate && biteshipRate > 0) {
+      return Math.max(customRate, biteshipRate);
+    }
+
+    return customRate;
   }
 
   async confirmOngkir(orderId: string, selectedRateId: string, userId: string) {
@@ -138,17 +171,21 @@ export class ShipmentService {
     const options = await this.getOngkirOptions(orderId, userId);
     const rate = options.find((opt) => opt.rateId === selectedRateId) || options[0];
 
-    // Snapshot addresses
+    // Snapshot addresses — include postal_code and area_id for Biteship createOrder
     const originAddr = {
       name: order.supplier.supplier_profile?.nama_koperasi || 'Koperasi Produsen',
       phone: order.supplier.supplier_profile?.whatsapp || '08123456789',
-      address: order.supplier.supplier_profile?.alamat_lengkap || 'Aceh'
+      address: order.supplier.supplier_profile?.alamat_lengkap || 'Aceh',
+      postal_code: order.supplier.supplier_profile?.postal_code || null,
+      area_id: order.supplier.supplier_profile?.area_id || null,
     };
 
     const destAddr = {
       name: order.buyer.profile?.company_name || 'Buyer Corp',
       phone: order.buyer.profile?.phone || '08123456789',
-      address: order.buyer.profile?.address || 'Destination Port'
+      address: order.buyer.profile?.address || 'Destination Port',
+      postal_code: order.buyer.profile?.postal_code || null,
+      area_id: order.buyer.profile?.area_id || null,
     };
 
     // Upsert Shipment record
@@ -323,20 +360,26 @@ export class ShipmentService {
     }
 
     if (shipment.shipment_type === 'DOMESTIK') {
-      // Create shipping order on Biteship
+      // Read address data from snapshot (saved during confirmOngkir)
+      const originSnapshot = shipment.origin_address as any;
+      const destSnapshot = shipment.destination_address as any;
+
+      // Create shipping order on Biteship using real snapshot data
       const biteshipOrder = await this.biteshipService.createOrder({
         shipper_contact_name: shipment.order.supplier.supplier_profile?.nama_pic || 'PIC Supplier',
         shipper_contact_phone: shipment.order.supplier.supplier_profile?.whatsapp || '08123456789',
         shipper_contact_email: shipment.order.supplier.email,
         shipper_organization: shipment.order.supplier.supplier_profile?.nama_koperasi || 'Koperasi Produsen',
         origin_contact_name: shipment.order.supplier.supplier_profile?.nama_pic || 'PIC Supplier',
-        origin_contact_phone: shipment.order.supplier.supplier_profile?.whatsapp || '08123456789',
-        origin_address: shipment.order.supplier.supplier_profile?.alamat_lengkap || 'Aceh',
-        origin_postal_code: '23111',
-        destination_contact_name: shipment.order.buyer.email,
-        destination_contact_phone: '08123456789',
-        destination_address: (shipment.destination_address as any).address || 'Jakarta',
-        destination_postal_code: '17530',
+        origin_contact_phone: originSnapshot?.phone || shipment.order.supplier.supplier_profile?.whatsapp || '08123456789',
+        origin_address: originSnapshot?.address || shipment.order.supplier.supplier_profile?.alamat_lengkap || 'Aceh',
+        origin_postal_code: originSnapshot?.postal_code || undefined,
+        origin_area_id: originSnapshot?.area_id || undefined,
+        destination_contact_name: destSnapshot?.name || shipment.order.buyer.email,
+        destination_contact_phone: destSnapshot?.phone || '08123456789',
+        destination_address: destSnapshot?.address || 'Jakarta',
+        destination_postal_code: destSnapshot?.postal_code || undefined,
+        destination_area_id: destSnapshot?.area_id || undefined,
         courier_company: shipment.courier_code || 'jne',
         courier_type: shipment.service_code || 'jtr',
         delivery_type: 'now',
@@ -345,9 +388,9 @@ export class ShipmentService {
             name: 'Minyak Nilam',
             description: 'Patchouli Oil Cargo',
             weight: Number(shipment.actual_weight || 100) * 1000,
-            quantity: shipment.drum_count || 1
-          }
-        ]
+            quantity: shipment.drum_count || 1,
+          },
+        ],
       });
 
       await this.prisma.shipment.update({
