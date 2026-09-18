@@ -113,7 +113,7 @@ export default function CartPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 flex flex-col selection:bg-[#1B5E3A]/10 selection:text-[#1B5E3A] font-sans pb-28 lg:pb-12">
+    <div className="min-h-screen valam-grid-bg flex flex-col selection:bg-[#1B5E3A]/10 selection:text-[#1B5E3A] font-sans pb-28 lg:pb-12">
       <div className="hidden md:block">
         <Navbar />
       </div>

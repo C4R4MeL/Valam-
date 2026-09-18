@@ -12,7 +12,7 @@ export default function BuyerLayout({
 }) {
   return (
     <RouteGuard requiredRole="buyer">
-      <div className="min-h-screen bg-zinc-50 flex flex-col selection:bg-[#1B5E3A]/10 selection:text-[#1B5E3A]">
+      <div className="min-h-screen valam-grid-bg flex flex-col selection:bg-[#1B5E3A]/10 selection:text-[#1B5E3A]">
         <Navbar />
         <main className="flex-1 w-full pt-16">
           {children}

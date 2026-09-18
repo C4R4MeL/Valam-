@@ -1,111 +1,102 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocale } from 'next-intl';
-import { BookOpen, Filter } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { BookOpen } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
-import { getPublishedContent, getAllTags, searchContent } from '@/lib/valam-insights/insights-api';
-import type { ContentType, InsightContentWithAuthor, InsightTag, InsightSearchResult } from '@/lib/valam-insights/types';
-
-// Redesigned components
+import { getPublishedContent, searchContent } from '@/lib/valam-insights/insights-api';
+import type { InsightContentWithAuthor, InsightSearchResult } from '@/lib/valam-insights/types';
 import { ScrollProgressIndicator } from '@/components/insights/ScrollProgressIndicator';
 import { InsightsHero } from '@/components/insights/InsightsHero';
+import { MarketOverview } from '@/components/insights/MarketOverview';
 import { FeaturedArticle } from '@/components/insights/FeaturedArticle';
 import { ArticleGrid } from '@/components/insights/ArticleGrid';
 import { InsightsSidebar } from '@/components/insights/InsightsSidebar';
 import { ArticleSkeleton } from '@/components/insights/ArticleSkeleton';
+import { InsightsCTA } from '@/components/insights/InsightsCTA';
 import { FAQSection } from '@/components/landing/FAQSection';
+import {
+  INSIGHT_CATEGORIES,
+  type InsightCategoryId,
+  articleMatchesCategory,
+} from '@/components/insights/categories';
+
+const MARKET_FEATURE_HINTS = [
+  'harga minyak nilam',
+  'harga nilam',
+  'patchouli oil price',
+  'tren dan faktor',
+  'price',
+];
+
+function pickFeatured(
+  articles: InsightContentWithAuthor[]
+): InsightContentWithAuthor | null {
+  if (!articles.length) return null;
+  const marketHit = articles.find((a) => {
+    const t = `${a.title_id} ${a.title_en || ''}`.toLowerCase();
+    return MARKET_FEATURE_HINTS.some((h) => t.includes(h));
+  });
+  return marketHit || articles[0];
+}
 
 export function InsightsHub() {
   const locale = useLocale();
   const isEn = locale === 'en';
+  const searchParams = useSearchParams();
 
-  // State
-  const [activeTab, setActiveTab] = useState<ContentType | null>(null);
-  const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState<InsightCategoryId>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [content, setContent] = useState<InsightContentWithAuthor[]>([]);
   const [searchResults, setSearchResults] = useState<InsightSearchResult[]>([]);
-  const [tags, setTags] = useState<InsightTag[]>([]);
-  const [tagCounts, setTagCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [isSearching, setIsSearching] = useState(false);
-
-  // Stats State (calculated dynamically or loaded at mount)
-  const [stats, setStats] = useState({
-    articles: 2,
-    guides: 2,
-    stories: 2,
-    weeks: 52,
-    countries: 18
-  });
   const [allArticles, setAllArticles] = useState<InsightContentWithAuthor[]>([]);
 
-  // Fetch tag counts and global stats at mount
+  // Deep-link: ?focus=harga → Harga & Pasar category
   useEffect(() => {
-    getAllTags().then(setTags).catch(console.error);
+    const focus = searchParams.get('focus');
+    if (focus === 'harga') {
+      setActiveCategory('harga-pasar');
+    }
+  }, [searchParams]);
 
+  useEffect(() => {
     getPublishedContent({ pageSize: 100 })
-      .then((res) => {
-        setAllArticles(res.data);
-        
-        // Count tag occurrences
-        const counts: Record<string, number> = {};
-        res.data.forEach((item) => {
-          item.insights_content_tags?.forEach((ct) => {
-            const slug = ct.insights_tags?.slug;
-            if (slug) {
-              counts[slug] = (counts[slug] || 0) + 1;
-            }
-          });
-        });
-        setTagCounts(counts);
-
-        // Update stats counters
-        setStats({
-          articles: res.data.filter((a) => a.content_type === 'artikel').length,
-          guides: res.data.filter((a) => a.content_type === 'panduan').length,
-          stories: res.data.filter((a) => a.content_type === 'cerita_koperasi').length,
-          weeks: 52,
-          countries: 18
-        });
-      })
+      .then((res) => setAllArticles(res.data))
       .catch(console.error);
   }, []);
 
-  // Fetch content dynamically based on target page and append state
-  const fetchContent = useCallback(async (targetPage: number, append: boolean) => {
-    if (append) {
-      setIsLoadingMore(true);
-    } else {
-      setLoading(true);
-    }
-    try {
-      const result = await getPublishedContent({
-        contentType: activeTab || undefined,
-        tag: activeTag || undefined,
-        language: locale as 'id' | 'en',
-        page: targetPage,
-        pageSize: 9,
-      });
+  const fetchContent = useCallback(
+    async (targetPage: number, append: boolean) => {
+      if (append) setIsLoadingMore(true);
+      else setLoading(true);
 
-      setContent((prev) => append ? [...prev, ...result.data] : result.data);
-      setTotalPages(result.totalPages);
-      setPage(targetPage);
-    } catch (err) {
-      console.error('Failed to fetch content:', err);
-    } finally {
-      setLoading(false);
-      setIsLoadingMore(false);
-    }
-  }, [activeTab, activeTag, locale]);
+      try {
+        const result = await getPublishedContent({
+          language: locale as 'id' | 'en',
+          page: targetPage,
+          pageSize: 9,
+        });
+        setContent((prev) => (append ? [...prev, ...result.data] : result.data));
+        setTotalPages(result.totalPages);
+        setPage(targetPage);
+      } catch (err) {
+        console.error('Failed to fetch content:', err);
+      } finally {
+        setLoading(false);
+        setIsLoadingMore(false);
+      }
+    },
+    [locale]
+  );
 
-  // Initial fetch triggers when filters change
   useEffect(() => {
     if (!searchQuery) {
       fetchContent(1, false);
@@ -113,7 +104,6 @@ export function InsightsHub() {
     }
   }, [fetchContent, searchQuery]);
 
-  // Search with debounce
   useEffect(() => {
     if (!searchQuery.trim()) return;
 
@@ -138,15 +128,13 @@ export function InsightsHub() {
     return () => clearTimeout(timer);
   }, [searchQuery, locale]);
 
-  // Load more function for infinite scroll sentinel
   const handleLoadMore = () => {
-    if (page < totalPages && !isLoadingMore) {
+    if (page < totalPages && !isLoadingMore && activeCategory === 'all' && !isSearching) {
       fetchContent(page + 1, true);
     }
   };
 
-  // Map search results flat structures to Content Cards structure
-  const mappedSearchResults = searchResults.map((item) => ({
+  const mappedSearchResults: InsightContentWithAuthor[] = searchResults.map((item) => ({
     id: item.id,
     slug: item.slug,
     content_type: item.content_type,
@@ -178,158 +166,159 @@ export function InsightsHub() {
       bio_id: null,
       bio_en: null,
       created_at: '',
-      updated_at: ''
-    }
+      updated_at: '',
+    },
   }));
 
-  // Identify featured hero card (only if not searching and no active filters)
-  const featuredArticle = !searchQuery && !activeTab && !activeTag ? content[0] : null;
-  const displayArticles = featuredArticle ? content.slice(1) : (isSearching ? mappedSearchResults : content);
-  const popularArticles = [...allArticles].sort((a, b) => b.view_count - a.view_count).slice(0, 3);
+  const baseList = isSearching
+    ? mappedSearchResults
+    : activeCategory === 'all'
+      ? content
+      : allArticles.filter((a) => articleMatchesCategory(a, activeCategory));
+
+  const showFeatured =
+    !searchQuery && activeCategory === 'all' && !isSearching && baseList.length > 0;
+
+  const featuredArticle = useMemo(
+    () => (showFeatured ? pickFeatured(baseList) : null),
+    [showFeatured, baseList]
+  );
+
+  const displayArticles = featuredArticle
+    ? baseList.filter((a) => a.id !== featuredArticle.id)
+    : baseList;
+
+  const popularArticles = [...allArticles]
+    .sort((a, b) => b.view_count - a.view_count)
+    .slice(0, 3);
 
   return (
-    <div className="min-h-screen flex flex-col font-sans bg-zinc-50 selection:bg-emerald-100 selection:text-emerald-900">
+    <div className="min-h-screen flex flex-col font-sans valam-grid-bg selection:bg-emerald-100 selection:text-emerald-900 overflow-x-hidden">
       <Navbar />
-
-      {/* Floating Scroll Indicator on the right */}
       <ScrollProgressIndicator />
 
       <main className="flex-1">
-        {/* HERO SECTION */}
         <InsightsHero
           locale={locale}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
           setPage={setPage}
-          stats={stats}
         />
 
-        {/* CONTENT AREA */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
-          
-          {/* Tag Filter Chips with Count Badges */}
-          {tags.length > 0 && !searchQuery && (
-            <div className="flex items-center gap-2 mb-10 overflow-x-auto pb-3 scrollbar-hide border-b border-zinc-200/60">
-              <div className="flex items-center gap-2 text-zinc-400 font-bold text-xs uppercase tracking-wider shrink-0 mr-2">
-                <Filter className="w-4 h-4" />
-                <span>Filter Tag:</span>
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 md:py-12 space-y-8 sm:space-y-10">
+          {/* Prominent price block */}
+          <MarketOverview locale={locale} variant="section" />
+
+          {/* Category navigation — horizontal scroll on mobile */}
+          {!searchQuery && (
+            <nav
+              aria-label={isEn ? 'Insight categories' : 'Kategori insight'}
+              className="-mx-4 sm:mx-0 px-4 sm:px-0"
+            >
+              <div className="flex gap-2 overflow-x-auto pb-1 snap-x snap-mandatory hide-scrollbar">
+                {INSIGHT_CATEGORIES.map((cat) => {
+                  const active = activeCategory === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => {
+                        setActiveCategory(cat.id);
+                        setPage(1);
+                      }}
+                      className={`snap-start flex-shrink-0 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all border ${
+                        active
+                          ? 'bg-emerald-800 text-white border-emerald-800 shadow-sm'
+                          : 'bg-white text-zinc-600 border-zinc-200 hover:border-emerald-600/40 hover:text-emerald-800'
+                      }`}
+                    >
+                      {isEn ? cat.labelEn : cat.labelId}
+                    </button>
+                  );
+                })}
               </div>
-              <button
-                onClick={() => { setActiveTag(null); setPage(1); }}
-                className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
-                  !activeTag
-                    ? 'bg-emerald-800 text-white border-emerald-800 shadow-md scale-[1.03]'
-                    : 'bg-white text-zinc-600 border-zinc-200 hover:border-emerald-400'
-                }`}
-              >
-                {isEn ? 'All Tags' : 'Semua Tag'} ({allArticles.length})
-              </button>
-              {tags.map((tag) => {
-                const count = tagCounts[tag.slug] || 0;
-                return (
-                  <button
-                    key={tag.id}
-                    onClick={() => { setActiveTag(tag.slug); setPage(1); }}
-                    className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
-                      activeTag === tag.slug
-                        ? 'bg-emerald-800 text-white border-emerald-800 shadow-md scale-[1.03]'
-                        : 'bg-white text-zinc-600 border-zinc-200 hover:border-emerald-400'
-                    }`}
-                  >
-                    {tag.name} ({count})
-                  </button>
-                );
-              })}
-            </div>
+            </nav>
           )}
 
-          {/* Main Content Layout: Content Grid (Left) + Sidebar (Right) */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-10 items-start">
-            
-            {/* Left Column: Articles Bento Grid */}
-            <div className="lg:col-span-3 space-y-12">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
+            <div className="lg:col-span-8 xl:col-span-9 space-y-8">
               {loading ? (
                 <ArticleSkeleton />
               ) : (
                 <>
-                  {/* Featured Hero Card (Full Width) */}
                   {featuredArticle && (
                     <FeaturedArticle article={featuredArticle} locale={locale} />
                   )}
 
-                  {/* Asymmetric Bento Grid Wrap with Tag Transition AnimatePresence */}
-                  <AnimatePresence mode="wait">
-                    {displayArticles.length > 0 ? (
-                      <motion.div
-                        key={`${activeTab}-${activeTag}-${searchQuery}`}
-                        initial={{ opacity: 0, scale: 0.98 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.98 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <ArticleGrid
-                          articles={displayArticles}
-                          locale={locale}
-                          onLoadMore={handleLoadMore}
-                          hasMore={page < totalPages && !isSearching}
-                          isLoadingMore={isLoadingMore}
-                        />
-                      </motion.div>
-                    ) : (
-                      // Empty State
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="flex flex-col items-center justify-center py-20 text-center bg-white rounded-3xl border border-zinc-200/80 p-8 shadow-sm"
-                      >
-                        {/* SVG Illustration (book & patchouli plant) */}
-                        <svg className="w-32 h-32 text-zinc-300 mb-6" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <rect x="25" y="45" width="70" height="50" rx="4" fill="currentColor" fillOpacity="0.1" stroke="currentColor" strokeWidth="2"/>
-                          <line x1="35" y1="58" x2="85" y2="58" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                          <line x1="35" y1="70" x2="75" y2="70" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                          <line x1="35" y1="82" x2="65" y2="82" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                          {/* Leaves sketch */}
-                          <path d="M60 40C60 25 72 20 72 20C72 20 65 30 60 40Z" fill="#10B981" fillOpacity="0.4" stroke="#10B981" strokeWidth="1.5"/>
-                          <path d="M60 40C60 25 48 20 48 20C48 20 55 30 60 40Z" fill="#059669" fillOpacity="0.3" stroke="#059669" strokeWidth="1.5"/>
-                        </svg>
-                        
-                        <h3 className="text-lg font-bold text-zinc-900 mb-2">
-                          {isEn ? 'No Content Found' : 'Belum ada konten untuk kategori ini'}
-                        </h3>
-                        <p className="text-xs text-zinc-500 max-w-sm mb-6 leading-relaxed">
-                          {isEn
-                            ? 'Try clearing your active tags or categories to browse all of our publications.'
-                            : 'Coba bersihkan filter pencarian atau tag aktif untuk melihat semua artikel.'}
-                        </p>
-                        <button
-                          onClick={() => {
-                            setActiveTab(null);
-                            setActiveTag(null);
-                            setSearchQuery('');
-                            setPage(1);
-                          }}
-                          className="bg-emerald-800 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider px-6 py-3.5 rounded-xl shadow-lg shadow-emerald-800/10 transition-all flex items-center gap-2"
+                  <div>
+                    <h2 className="text-lg font-bold text-zinc-900 tracking-tight mb-4">
+                      {isEn ? 'Latest insights' : 'Artikel Terbaru'}
+                    </h2>
+
+                    <AnimatePresence mode="wait">
+                      {displayArticles.length > 0 ? (
+                        <motion.div
+                          key={`${activeCategory}-${searchQuery}`}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -4 }}
+                          transition={{ duration: 0.25 }}
                         >
-                          <BookOpen className="w-4 h-4" />
-                          {isEn ? 'View All Articles' : 'Lihat Semua Artikel'}
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                          <ArticleGrid
+                            articles={displayArticles}
+                            locale={locale}
+                            onLoadMore={handleLoadMore}
+                            hasMore={
+                              page < totalPages &&
+                              !isSearching &&
+                              activeCategory === 'all'
+                            }
+                            isLoadingMore={isLoadingMore}
+                          />
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          initial={{ opacity: 0, y: 12 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="flex flex-col items-center justify-center py-16 text-center bg-white rounded-2xl border border-zinc-200/80 px-6"
+                        >
+                          <BookOpen className="w-10 h-10 text-zinc-300 mb-4" />
+                          <h3 className="text-base font-bold text-zinc-900 mb-2">
+                            {isEn
+                              ? 'No articles in this category'
+                              : 'Belum ada artikel di kategori ini'}
+                          </h3>
+                          <p className="text-sm text-zinc-500 max-w-sm mb-5">
+                            {isEn
+                              ? 'Try another category or browse all insights.'
+                              : 'Coba kategori lain atau lihat semua insights.'}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveCategory('all');
+                              setSearchQuery('');
+                              setPage(1);
+                            }}
+                            className="bg-emerald-800 hover:bg-emerald-700 text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-colors"
+                          >
+                            {isEn ? 'View all articles' : 'Lihat Semua Artikel'}
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </>
               )}
             </div>
 
-            {/* Right Column: Sticky Sidebar */}
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-4 xl:col-span-3 order-last lg:order-none">
               <InsightsSidebar locale={locale} popularArticles={popularArticles} />
             </div>
-
           </div>
         </section>
 
+        <InsightsCTA locale={locale} />
         <FAQSection />
       </main>
 
@@ -337,4 +326,5 @@ export function InsightsHub() {
     </div>
   );
 }
+
 export default InsightsHub;

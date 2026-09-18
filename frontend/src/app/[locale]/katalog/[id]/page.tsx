@@ -291,13 +291,10 @@ export default function BatchDetailPage() {
       setCartError(validation.errorMsg)
       return
     }
-    setIsAdding(true)
-    const ok = await addToCart(batch.id, cartQuantity, batch.is_circular ? 'circular' : 'patchouli')
-    setIsAdding(false)
-    if (ok) {
-      setIsCartModalOpen(false)
-      router.push('/checkout')
-    }
+    // Buy Now: skip cart — go straight to checkout
+    setIsCartModalOpen(false)
+    const circularParam = batch.is_circular ? '&type=circular' : ''
+    router.push(`/checkout?direct=true&productId=${batch.id}&qty=${cartQuantity}${circularParam}`)
   }
 
   if (loadingProduct) {
@@ -306,7 +303,7 @@ export default function BatchDetailPage() {
 
   if (!batch) {
     return (
-      <div className="min-h-screen bg-zinc-50 flex flex-col">
+      <div className="min-h-screen valam-grid-bg flex flex-col">
         <Navbar />
         <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
           <div className="w-16 h-16 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mb-4">
@@ -332,7 +329,7 @@ export default function BatchDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 flex flex-col selection:bg-[#1B5E3A]/10 selection:text-[#1B5E3A]">
+    <div className="min-h-screen valam-grid-bg flex flex-col selection:bg-[#1B5E3A]/10 selection:text-[#1B5E3A]">
       
       {/* ─── DESKTOP HEADER NAVBAR ──────────────────────────────────────── */}
       <div className="hidden md:block">

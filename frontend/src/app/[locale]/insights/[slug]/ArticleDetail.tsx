@@ -209,7 +209,7 @@ export function ArticleDetail({ slug }: ArticleDetailProps) {
   const tags = article.insights_content_tags?.map((ct) => ct.insights_tags) || [];
 
   return (
-    <div className="min-h-screen flex flex-col bg-zinc-50 font-sans selection:bg-emerald-100 selection:text-emerald-900">
+    <div className="min-h-screen flex flex-col valam-grid-bg font-sans selection:bg-emerald-100 selection:text-emerald-900">
       <Navbar />
 
       {/* Reading Progress Indicator */}

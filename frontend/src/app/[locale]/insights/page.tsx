@@ -1,26 +1,31 @@
 import { Metadata } from 'next';
+import { Suspense } from 'react';
 import { InsightsHub } from './InsightsHub';
 
 export const metadata: Metadata = {
-  title: 'Valam Insights — Knowledge Hub Industri Nilam',
+  title: 'Insights Minyak Nilam — Harga, Kualitas & Tren Pasar | VALAM',
   description:
-    'Artikel, panduan, dan cerita koperasi seputar industri minyak nilam Indonesia. Edukasi mendalam, harga pasar terkini, dan kisah dari produsen terverifikasi.',
+    'Pusat informasi VALAM mengenai harga minyak nilam, kualitas Patchouli Alcohol (PA), tren permintaan, dan rantai pasok untuk petani, penyuling, koperasi, dan buyer.',
   keywords: [
-    'nilam insights',
-    'patchouli oil article',
-    'harga nilam',
-    'panduan nilam',
-    'koperasi nilam',
-    'minyak nilam Aceh',
+    'insights minyak nilam',
+    'harga nilam Aceh',
+    'patchouli alcohol',
+    'pasar minyak nilam',
+    'kualitas nilam',
+    'supply chain nilam',
   ],
   openGraph: {
-    title: 'Valam Insights — Knowledge Hub Industri Nilam',
+    title: 'Insights Minyak Nilam | VALAM',
     description:
-      'Artikel, panduan, dan cerita koperasi seputar industri minyak nilam Indonesia.',
+      'Informasi pasar, harga, kualitas, dan tren industri minyak nilam untuk keputusan yang lebih tepat.',
     type: 'website',
   },
 };
 
 export default function InsightsPage() {
-  return <InsightsHub />;
+  return (
+    <Suspense fallback={null}>
+      <InsightsHub />
+    </Suspense>
+  );
 }

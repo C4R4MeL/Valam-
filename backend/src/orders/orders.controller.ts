@@ -43,14 +43,13 @@ export class OrdersController {
     return this.ordersService.updateOrderShipping(req.user.userId, orderId, body);
   }
 
-  @Put(':id/pay')
+  @Put(':id/retry-payment')
   @Roles('BUYER')
-  async payOrder(
+  async retryPayment(
     @Request() req: any, 
     @Param('id') orderId: string, 
-    @Body() body: { payment_method: string }
   ) {
-    return this.ordersService.payOrder(req.user.userId, orderId, body.payment_method);
+    return this.ordersService.retryPayment(req.user.userId, orderId);
   }
 
   @Put(':id/complete')

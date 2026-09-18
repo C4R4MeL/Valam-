@@ -327,7 +327,7 @@ export default function SmartMatchingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 flex flex-col selection:bg-[#1B5E3A]/10 selection:text-[#1B5E3A] font-sans">
+    <div className="min-h-screen valam-grid-bg flex flex-col selection:bg-[#1B5E3A]/10 selection:text-[#1B5E3A] font-sans">
       <Navbar />
 
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16 space-y-6">

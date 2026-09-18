@@ -251,6 +251,16 @@ export default function AddBatchPage() {
     setSubmitting(true)
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api'
     try {
+      let imageString = photoName ? `/uploads/batches/${photoName}` : undefined
+      if (photoFile) {
+        imageString = await new Promise<string>((resolve) => {
+          const reader = new FileReader()
+          reader.onloadend = () => resolve(reader.result as string)
+          reader.onerror = () => resolve(`/uploads/batches/${photoName}`)
+          reader.readAsDataURL(photoFile)
+        })
+      }
+
       const res = await fetch(`${apiUrl}/products/batches`, {
         method: 'POST',
         headers: {
@@ -261,7 +271,7 @@ export default function AddBatchPage() {
           origin_district: formData.origin_district,
           origin_village: formData.origin_village,
           total_volume_kg: parseFloat(formData.volume) || 0,
-          images: photoName ? [`/uploads/batches/${photoName}`] : undefined,
+          images: imageString ? [imageString] : undefined,
         }),
       })
 

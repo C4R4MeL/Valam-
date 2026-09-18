@@ -590,7 +590,7 @@ export default function MarketplacePage() {
   const [isFilterOpen, setIsFilterOpen] = useState(false)
 
   return (
-    <div className="min-h-screen bg-zinc-50 flex flex-col relative selection:bg-[#1B5E3A]/10 selection:text-[#1B5E3A]">
+    <div className="min-h-screen valam-grid-bg flex flex-col relative selection:bg-[#1B5E3A]/10 selection:text-[#1B5E3A]">
       <div className="relative z-10 flex flex-col min-h-screen">
         <MobileHeader onFilterClick={() => setIsFilterOpen(true)} showFilter={true} />
         <Navbar />

@@ -72,8 +72,16 @@ export function useFastNav(prefetchRoutes: readonly string[] = []) {
   const navigateTo = useCallback(
     (href: string) => {
       if (pathname === href) return
+      // Allow retry if a previous soft-nav stalled
       if (pendingHrefRef.current === href) return
       pendingHrefRef.current = href
+
+      // Clear pending lock if navigation never completes (stalled RSC)
+      window.setTimeout(() => {
+        if (pendingHrefRef.current === href) {
+          pendingHrefRef.current = null
+        }
+      }, 2000)
 
       startTransition(() => {
         router.push(href)

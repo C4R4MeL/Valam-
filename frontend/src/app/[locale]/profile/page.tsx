@@ -227,7 +227,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-55 flex flex-col selection:bg-emerald-100 selection:text-emerald-950 font-sans">
+    <div className="min-h-screen valam-grid-bg flex flex-col selection:bg-emerald-100 selection:text-emerald-950 font-sans">
       <Navbar />
 
       {/* Hero Header Area */}

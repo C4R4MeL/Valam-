@@ -256,7 +256,7 @@ export function ChatHub() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#FAF9F6] text-zinc-900 font-sans selection:bg-[#1B5E3A]/10 selection:text-[#1B5E3A]">
+    <div className="min-h-screen flex flex-col valam-grid-bg text-zinc-900 font-sans selection:bg-[#1B5E3A]/10 selection:text-[#1B5E3A]">
       <Navbar />
 
       <main className="flex-1 pt-24 sm:pt-28 md:pt-32 pb-16">

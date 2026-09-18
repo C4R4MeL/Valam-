@@ -1,9 +1,10 @@
 "use client";
 
-import { Link } from "@/i18n/routing";
+import { Link, useRouter } from "@/i18n/routing";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
+import { useAuthContext } from "@/components/providers/AuthProvider";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { useLocale } from "next-intl";
@@ -65,6 +66,19 @@ export default function Home() {
   const isId = locale === "id";
   const content = landingContent[locale as keyof typeof landingContent] || landingContent.en;
   
+  const router = useRouter();
+  const { isAuthenticated, role, isLoading } = useAuthContext();
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      if (role === 'supplier' || role === 'admin') {
+        router.push('/dashboard/supplier');
+      } else {
+        router.push('/marketplace');
+      }
+    }
+  }, [isLoading, isAuthenticated, role, router]);
+  
   const suppliersCounter = useCounter(154);
   const destinationsCounter = useCounter(28);
   const verifiedCounter = useCounter(4320);
@@ -77,6 +91,17 @@ export default function Home() {
     }, 3000);
     return () => clearInterval(timer);
   }, [content.heroSlides.length]);
+
+  if (isLoading || isAuthenticated) {
+    return (
+      <div className="min-h-screen flex flex-col font-sans bg-white">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full border-4 border-emerald-500/20 border-t-emerald-600 animate-spin" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col font-sans bg-white selection:bg-emerald-100 selection:text-emerald-900 overflow-x-hidden">

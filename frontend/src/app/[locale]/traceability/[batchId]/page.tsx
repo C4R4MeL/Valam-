@@ -70,7 +70,7 @@ export default function TraceabilityPage() {
   if (!product || product.error) return <div className="p-20 text-center">Product not found.</div>
 
   return (
-    <div className="min-h-screen bg-zinc-50 flex flex-col font-sans selection:bg-gold-200 selection:text-emerald-950">
+    <div className="min-h-screen valam-grid-bg flex flex-col font-sans selection:bg-gold-200 selection:text-emerald-950">
       
       {/* Simplified Header */}
       <header className="bg-emerald-950 text-white sticky top-0 z-50 shadow-md">

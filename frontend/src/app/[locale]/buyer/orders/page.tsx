@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Package, Clock, Truck, CheckCircle2, XCircle, AlertCircle, Search, Calendar, Globe, FileText, Download, ShieldCheck, Camera, Eye } from 'lucide-react'
+import { Package, Clock, Truck, CheckCircle2, XCircle, AlertCircle, Search, Calendar, Globe, FileText, Download, ShieldCheck, Camera, Eye, MapPin, CreditCard, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
@@ -246,12 +246,61 @@ export default function BuyerOrdersPage() {
     e.preventDefault()
     if (!payingOrder) return
     
-    setActivePaymentInstruction({
-      orderId: payingOrder.id,
-      totalAmount: payingOrder.total_amount + (payingOrder.shipping_cost || 0),
-      paymentMethod: paymentType,
-    })
-    setPayingOrder(null)
+    if (paymentType === 'ESCROW') {
+      setPaying(true)
+      try {
+        const token = localStorage.getItem('valam_token')
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api'
+        
+        const res = await fetch(`${API_URL}/orders/${payingOrder.id}/retry-payment`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        const data = await res.json()
+        const snapToken = data.snapToken || data.snap_token;
+        
+        if (!res.ok || !snapToken) throw new Error(data.message || 'Gagal memuat pembayaran Midtrans')
+        
+        const snap = (window as any).snap;
+        if (snap) {
+          snap.pay(snapToken, {
+            onSuccess: function (result: any) {
+              toast({ title: 'Pembayaran Berhasil', description: 'Sistem sedang memproses pembayaran Anda.' })
+              setPayingOrder(null)
+              window.location.reload()
+            },
+            onPending: function (result: any) {
+              toast({ title: 'Menunggu Pembayaran', description: 'Silakan selesaikan pembayaran.' })
+              setPayingOrder(null)
+              window.location.reload()
+            },
+            onError: function (result: any) {
+              toast({ title: 'Pembayaran Gagal', description: 'Terjadi kesalahan atau pembayaran ditolak.', variant: 'destructive' })
+              setPayingOrder(null)
+            },
+            onClose: function () {
+              toast({ title: 'Pembayaran Tertunda', description: 'Anda menutup jendela pembayaran sebelum selesai.' })
+              setPayingOrder(null)
+            }
+          })
+        } else {
+          throw new Error('Midtrans Script belum termuat')
+        }
+      } catch (err: any) {
+        toast({ title: 'Gagal', description: err.message, variant: 'destructive' })
+      } finally {
+        setPaying(false)
+      }
+    } else {
+      setActivePaymentInstruction({
+        orderId: payingOrder.id,
+        totalAmount: payingOrder.total_amount + (payingOrder.shipping_cost || 0),
+        paymentMethod: paymentType,
+      })
+      setPayingOrder(null)
+    }
   }
 
   const handleConfirmFinalPayment = async (orderId: string, method: string) => {
@@ -433,13 +482,9 @@ export default function BuyerOrdersPage() {
         
         if (res.ok) {
           const data = await res.json()
-          const combined = [...data]
-          localOrders.forEach((lo: any) => {
-            if (!combined.some(o => o.id === lo.id || o.order_number === lo.order_number)) {
-              combined.push(lo)
-            }
-          })
-          setOrders(combined)
+          // Overwrite local storage with the authoritative backend data to prevent orphaned/deleted orders from persisting
+          localStorage.setItem('valam_buyer_orders_' + email, JSON.stringify(data))
+          setOrders(data)
         } else {
           setOrders(localOrders)
         }
@@ -456,6 +501,21 @@ export default function BuyerOrdersPage() {
 
   const formatRupiah = (num: number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num)
+  }
+
+  /** Resolve UI status: unpaid awaiting payment vs fulfillment */
+  const resolveDisplayStatus = (order: any): string => {
+    const ps = String(order.payment_status || order.payment?.status || '').toLowerCase()
+    if (ps === 'pending' || order.status === 'UNPAID') return 'UNPAID'
+    if (ps === 'failed') return 'CANCELLED'
+    if (ps === 'cancelled') return 'CANCELLED'
+    // paid / completed payment → use fulfillment status
+    return order.status || 'PENDING'
+  }
+
+  const isAwaitingPayment = (order: any) => {
+    const ps = String(order.payment_status || order.payment?.status || '').toLowerCase()
+    return ps === 'pending' || order.status === 'UNPAID' || (!ps && order.status === 'UNPAID')
   }
 
   const getStatusIcon = (status: string) => {
@@ -552,7 +612,7 @@ export default function BuyerOrdersPage() {
                     </div>
                   </div>
                   <div>
-                    {getStatusBadge(order.status)}
+                    {getStatusBadge(resolveDisplayStatus(order))}
                   </div>
                 </div>
 
@@ -623,15 +683,15 @@ export default function BuyerOrdersPage() {
                           ({locale === 'id' ? 'Termasuk Ongkir:' : 'Inc. Shipping:'} {formatRupiah(order.shipping_cost)})
                         </p>
                       )}
-                      {order.status === 'UNPAID' && !order.shipping_address?.address && (
+                      {isAwaitingPayment(order) && !order.shipping_address?.address && (
                         <p className="text-[10px] text-amber-600 font-bold mt-1">⚠️ Atur kargo terlebih dahulu untuk membayar</p>
                       )}
-                      {order.status === 'UNPAID' && order.shipping_address?.address && (
+                      {isAwaitingPayment(order) && order.shipping_address?.address && (
                         <p className="text-[10px] text-emerald-700 font-bold mt-1">✓ Kargo diatur: {order.shipping_cost === 150000 ? 'Land Cargo' : order.shipping_cost === 250000 ? 'JNE JTR' : 'Sea Container'}</p>
                       )}
                     </div>
                     <div className="flex gap-3">
-                      {order.status === 'UNPAID' && (
+                      {isAwaitingPayment(order) && (
                         <div className="flex gap-2">
                           <Button 
                             variant="outline" 
@@ -1773,98 +1833,121 @@ export default function BuyerOrdersPage() {
 
       {/* DIALOG 2: PEMBAYARAN ORDER (CHECKOUT CONFIRMATION) */}
       <Dialog open={!!payingOrder} onOpenChange={(open) => !open && setPayingOrder(null)}>
-        <DialogContent className="max-w-md bg-white rounded-2xl p-6 shadow-xl border border-zinc-150">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold font-serif text-zinc-900">
-              {locale === 'id' ? 'Selesaikan Pembayaran B2B' : 'Complete B2B Payment'}
-            </DialogTitle>
-            <DialogDescription className="text-zinc-500 text-xs mt-1">
-              {locale === 'id' ? 'Tinjau total tagihan produk, ongkos pengiriman kargo, dan pilih metode pembayaran.' : 'Review product cost, shipping fee, and select your payment method.'}
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="max-w-md bg-white/95 backdrop-blur-xl rounded-3xl p-0 shadow-2xl border border-white overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-[#1B5E3A] via-emerald-400 to-[#1B5E3A]"></div>
+          
+          <div className="p-7">
+            <DialogHeader className="mb-5">
+              <DialogTitle className="text-2xl font-black font-serif bg-gradient-to-r from-zinc-900 to-zinc-600 bg-clip-text text-transparent">
+                {locale === 'id' ? 'Selesaikan Pembayaran' : 'Complete Payment'}
+              </DialogTitle>
+              <DialogDescription className="text-zinc-500 text-xs mt-1.5 font-medium leading-relaxed">
+                {locale === 'id' ? 'Tinjau tagihan produk, ongkos kirim kargo, dan pilih metode pembayaran B2B Anda.' : 'Review product cost, shipping fee, and select your B2B payment method.'}
+              </DialogDescription>
+            </DialogHeader>
 
-          {payingOrder && (
-            <form onSubmit={handlePaySubmit} className="space-y-4 pt-3">
-              <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100 space-y-2">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-zinc-600 font-semibold">{locale === 'id' ? 'Subtotal Produk' : 'Product Subtotal'}</span>
-                  <span className="font-bold text-zinc-800">{formatRupiah(payingOrder.total_amount)}</span>
-                </div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-zinc-600 font-semibold">{locale === 'id' ? 'Ongkos Kirim' : 'Shipping Cost'}</span>
-                  <span className="font-bold text-zinc-800">{formatRupiah(payingOrder.shipping_cost || 0)}</span>
-                </div>
-                {payingOrder.shipment && (
-                  <div className="pl-3.5 py-1 border-l-2 border-emerald-300 space-y-1 text-[11px] text-zinc-600">
-                    {payingOrder.shipment.shipment_type === 'DOMESTIK' ? (
-                      <>
-                        <div className="flex justify-between">
-                          <span>• {locale === 'id' ? 'Biaya Kargo Dasar' : 'Base Cargo Fee'}</span>
-                          <span>{formatRupiah(Number(payingOrder.shipment.base_shipping_cost) || 0)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>• {locale === 'id' ? 'Asuransi Kargo (0.2%)' : 'Cargo Insurance (0.2%)'}</span>
-                          <span>{formatRupiah(Number(payingOrder.shipment.insurance_fee) || 0)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>• {locale === 'id' ? 'Kemasan Drum Kayu/Alu' : 'Drum Packaging Fee'} ({payingOrder.shipment.drum_count || 0} Drum)</span>
-                          <span>{formatRupiah(Number(payingOrder.shipment.packaging_fee) || 0)}</span>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="flex justify-between">
-                          <span>• Incoterms</span>
-                          <span className="font-semibold text-emerald-800">{payingOrder.shipment.incoterms || 'EXW'}</span>
-                        </div>
-                        {payingOrder.shipment.incoterms !== 'EXW' && (
-                          <div className="flex justify-between">
-                            <span>• {locale === 'id' ? 'Estimasi Freight Ekspor' : 'Estimated Export Freight'}</span>
-                            <span>{formatRupiah(Number(payingOrder.shipment.estimated_freight) || 0)}</span>
-                          </div>
-                        )}
-                      </>
-                    )}
+            {payingOrder && (
+              <form onSubmit={handlePaySubmit} className="space-y-6">
+                {/* Ringkasan Biaya */}
+                <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 p-5 rounded-2xl border border-emerald-100/80 space-y-3 relative overflow-hidden shadow-inner">
+                  <div className="absolute -right-10 -top-10 w-32 h-32 bg-emerald-200/40 rounded-full blur-2xl"></div>
+                  
+                  <div className="flex justify-between items-center text-xs relative z-10">
+                    <span className="text-emerald-900/70 font-bold">{locale === 'id' ? 'Subtotal Produk' : 'Product Subtotal'}</span>
+                    <span className="font-black text-emerald-950">{formatRupiah(payingOrder.total_amount)}</span>
                   </div>
-                )}
-                <div className="border-t border-emerald-250 pt-2 flex justify-between items-center">
-                  <span className="text-xs text-emerald-800 font-bold">{locale === 'id' ? 'Total Tagihan' : 'Grand Total'}</span>
-                  <span className="text-lg font-bold text-emerald-950">{formatRupiah(payingOrder.total_amount + (payingOrder.shipping_cost || 0))}</span>
+                  <div className="flex justify-between items-center text-xs relative z-10">
+                    <span className="text-emerald-900/70 font-bold">{locale === 'id' ? 'Ongkos Kirim' : 'Shipping Cost'}</span>
+                    <span className="font-black text-emerald-950">{formatRupiah(payingOrder.shipping_cost || 0)}</span>
+                  </div>
+                  
+                  {payingOrder.shipment && (
+                    <div className="pl-3 py-2 border-l-2 border-emerald-300 space-y-1.5 text-[10px] text-emerald-800/80 font-medium relative z-10">
+                      {payingOrder.shipment.shipment_type === 'DOMESTIK' ? (
+                        <>
+                          <div className="flex justify-between">
+                            <span>• {locale === 'id' ? 'Biaya Kargo Dasar' : 'Base Cargo Fee'}</span>
+                            <span>{formatRupiah(Number(payingOrder.shipment.base_shipping_cost) || 0)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>• {locale === 'id' ? 'Asuransi Kargo (0.2%)' : 'Cargo Insurance (0.2%)'}</span>
+                            <span>{formatRupiah(Number(payingOrder.shipment.insurance_fee) || 0)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>• {locale === 'id' ? 'Kemasan Drum Kayu/Alu' : 'Drum Packaging Fee'} ({payingOrder.shipment.drum_count || 0} Drum)</span>
+                            <span>{formatRupiah(Number(payingOrder.shipment.packaging_fee) || 0)}</span>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex justify-between">
+                            <span>• Incoterms</span>
+                            <span className="font-bold text-emerald-900">{payingOrder.shipment.incoterms || 'EXW'}</span>
+                          </div>
+                          {payingOrder.shipment.incoterms !== 'EXW' && (
+                            <div className="flex justify-between">
+                              <span>• {locale === 'id' ? 'Estimasi Freight Ekspor' : 'Estimated Export Freight'}</span>
+                              <span>{formatRupiah(Number(payingOrder.shipment.estimated_freight) || 0)}</span>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="border-t border-emerald-200/60 pt-3 mt-1 flex justify-between items-center relative z-10">
+                    <span className="text-xs text-emerald-900 font-bold">{locale === 'id' ? 'Total Tagihan' : 'Grand Total'}</span>
+                    <span className="text-2xl font-black bg-gradient-to-r from-[#1B5E3A] to-emerald-600 bg-clip-text text-transparent">
+                      {formatRupiah(payingOrder.total_amount + (payingOrder.shipping_cost || 0))}
+                    </span>
+                  </div>
                 </div>
-              </div>
 
-              {/* Alamat Pengiriman Review (ReadOnly) */}
-              <div className="bg-zinc-50 p-3 rounded-xl border border-zinc-200 space-y-1">
-                <p className="text-[10px] uppercase font-bold text-zinc-500">{locale === 'id' ? 'Tujuan Pengiriman:' : 'Shipping Destination:'}</p>
-                <p className="text-xs font-semibold text-zinc-800 leading-relaxed">{payingOrder.shipping_address?.address || '-'}</p>
-              </div>
+                {/* Alamat Pengiriman Review (ReadOnly) */}
+                <div className="bg-white p-4 rounded-2xl border border-zinc-100 shadow-sm space-y-1.5 transition-all hover:border-emerald-100 hover:shadow-md">
+                  <p className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider flex items-center gap-1">
+                    <MapPin className="w-3 h-3 text-emerald-600" /> {locale === 'id' ? 'Tujuan Pengiriman:' : 'Shipping Destination:'}
+                  </p>
+                  <p className="text-xs font-semibold text-zinc-700 leading-relaxed line-clamp-2">{payingOrder.shipping_address?.address || '-'}</p>
+                </div>
 
-              {/* Metode Pembayaran */}
-              <div className="space-y-1.5">
-                <Label className="text-zinc-700 text-xs font-bold">
-                  {locale === 'id' ? 'Metode Pembayaran B2B' : 'B2B Payment Method'}
-                </Label>
-                <select
-                  value={paymentType}
-                  onChange={(e) => setPaymentType(e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-zinc-200 bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-                >
-                  <option value="ESCROW">{locale === 'id' ? 'Rekening Bersama Valam (Escrow Safepay)' : 'Valam Joint Account (Escrow Safepay)'}</option>
-                  <option value="bank_transfer">{locale === 'id' ? 'Transfer Bank Manual Direct TT' : 'Manual Bank Transfer Direct TT'}</option>
-                </select>
-              </div>
+                {/* Metode Pembayaran */}
+                <div className="space-y-2">
+                  <Label className="text-zinc-700 text-xs font-bold flex items-center gap-1.5">
+                    <CreditCard className="w-4 h-4 text-emerald-600" />
+                    {locale === 'id' ? 'Metode Pembayaran B2B' : 'B2B Payment Method'}
+                  </Label>
+                  <select
+                    value={paymentType}
+                    onChange={(e) => setPaymentType(e.target.value)}
+                    className="flex h-12 w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-4 py-2 text-sm font-bold text-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-emerald-500 transition-all shadow-sm hover:border-emerald-200 cursor-pointer appearance-none"
+                    style={{ backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1em' }}
+                  >
+                    <option value="ESCROW">{locale === 'id' ? 'Rekening Bersama Valam (Escrow Safepay)' : 'Valam Joint Account (Escrow Safepay)'}</option>
+                    <option value="bank_transfer">{locale === 'id' ? 'Transfer Bank Manual Direct TT' : 'Manual Bank Transfer Direct TT'}</option>
+                  </select>
+                </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-3 pt-3">
-                <Button type="button" variant="ghost" disabled={paying} onClick={() => setPayingOrder(null)} className="w-1/2">
-                  {locale === 'id' ? 'Batal' : 'Cancel'}
-                </Button>
-                <Button type="submit" disabled={paying} className="w-1/2 bg-emerald-900 hover:bg-emerald-950 text-white font-bold">
-                  {paying ? (locale === 'id' ? 'Memproses...' : 'Processing...') : (locale === 'id' ? 'Bayar Sekarang' : 'Confirm & Pay')}
-                </Button>
-              </div>
-            </form>
-          )}
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-2">
+                  <Button type="button" variant="outline" disabled={paying} onClick={() => setPayingOrder(null)} className="w-1/3 h-12 rounded-2xl border-zinc-200 font-bold hover:bg-zinc-50 text-zinc-600">
+                    {locale === 'id' ? 'Batal' : 'Cancel'}
+                  </Button>
+                  <Button type="submit" disabled={paying} className="w-2/3 h-12 rounded-2xl bg-gradient-to-r from-[#1B5E3A] to-[#2A8253] hover:from-[#134228] hover:to-[#1B5E3A] text-white font-bold shadow-xl shadow-emerald-900/20 hover:shadow-2xl hover:shadow-emerald-900/30 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out"></div>
+                    <span className="relative z-10 flex items-center justify-center">
+                      {paying ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          {locale === 'id' ? 'Memproses...' : 'Processing...'}
+                        </>
+                      ) : (locale === 'id' ? 'Bayar Sekarang' : 'Confirm & Pay')}
+                    </span>
+                  </Button>
+                </div>
+              </form>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 

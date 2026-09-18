@@ -6,7 +6,6 @@ import { CheckCircle2, FlaskConical, MapPin, Star, Beaker, ArrowRight, Leaf, Cal
 import { useLocale } from 'next-intl'
 import React, { useMemo, useState } from 'react'
 import { formatRupiah, getPatchouliTier, getTierColorClass, isGcmsVerified } from '@/lib/utils'
-import { useFastNav } from '@/components/layout/useFastNav'
 import { useAuthContext } from '@/components/providers/AuthProvider'
 
 interface ProductCardProps {
@@ -52,7 +51,7 @@ const resolveProductImage = (imagePath?: string) => {
   if (imagePath.includes('hydrosol')) {
     return "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=600&h=400&fit=crop";
   }
-  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://') || imagePath.startsWith('data:')) {
     if (imagePath.includes('photo-1605647540924-852290f6b0d5')) {
       return "https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&h=400&fit=crop";
     }
@@ -64,9 +63,9 @@ const resolveProductImage = (imagePath?: string) => {
   if (imagePath.startsWith('/uploads/')) {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api';
     const origin = API_URL.replace(/\/api$/, '');
-    return `${origin}${imagePath}`;
+    return `${origin}${encodeURI(imagePath)}`;
   }
-  return imagePath;
+  return encodeURI(imagePath);
 }
 
 const UNSPLASH_IMAGES = [
@@ -101,12 +100,18 @@ const getProductImage = (product: any) => {
 
 export function ProductCard({ product }: ProductCardProps) {
   const router = useRouter()
-  const { onNavClick, onNavPointerDown } = useFastNav()
   const { isAuthenticated } = useAuthContext()
   const locale = useLocale()
   const isId = locale === 'id'
   const isVerified = isGcmsVerified(product.status)
   const [isExpanded, setIsExpanded] = useState(false)
+  const [imgSrc, setImgSrc] = useState(() => getProductImage(product))
+  const detailHref = `/katalog/${product.id}`
+  
+  // Update imgSrc if product changes
+  React.useEffect(() => {
+    setImgSrc(getProductImage(product))
+  }, [product])
   
   // Using original batch code from database as per user's preference
 
@@ -199,18 +204,20 @@ export function ProductCard({ product }: ProductCardProps) {
           </div>
         )}
 
-        {/* Image Section - Wrapped in direct Link for 1-click instant navigation */}
+        {/* Image Section - native Link (no soft-nav intercept) for reliable clicks */}
         <Link 
-          href={`/katalog/${product.id}`}
+          href={detailHref}
           prefetch={true}
-          onPointerDown={(e) => onNavPointerDown(e, `/katalog/${product.id}`)}
-          onClick={(e) => onNavClick(e, `/katalog/${product.id}`)}
           className="relative h-44 w-full bg-zinc-100 overflow-hidden block cursor-pointer"
         >
           <Image 
-            src={getProductImage(product)} 
-            alt={product.batch_code}
+            src={imgSrc} 
+            alt={product.batch_code || 'Product Image'}
             fill
+            unoptimized
+            onError={() => {
+              setImgSrc("https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=600&h=400&fit=crop")
+            }}
             className="object-cover group-hover:scale-105 transition-transform duration-300 ease-out"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
@@ -222,8 +229,8 @@ export function ProductCard({ product }: ProductCardProps) {
             </div>
           </div>
           
-          {/* Action Overlay - pointer-events-none by default so it never swallows taps on mobile */}
-          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20 flex items-center justify-center backdrop-blur-[2px] pointer-events-none group-hover:pointer-events-auto">
+          {/* Visual-only overlay — never capture clicks (avoids sticky-hover / double-tap issues) */}
+          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20 flex items-center justify-center backdrop-blur-[2px] pointer-events-none">
             <span className="bg-white/95 text-[#1B5E3A] px-5 py-2.5 rounded-full font-bold text-sm shadow-xl transform translate-y-2 group-hover:translate-y-0 transition-all duration-200 border border-white/50">
               {isId ? "Lihat Detail" : "View Detail"}
             </span>
@@ -245,10 +252,8 @@ export function ProductCard({ product }: ProductCardProps) {
           <div className="flex-1">
             <h3 className="font-serif font-bold text-zinc-900 text-[15px] mb-1 line-clamp-2 leading-snug group-hover:text-[#1B5E3A] transition-colors">
               <Link 
-                href={`/katalog/${product.id}`} 
+                href={detailHref} 
                 prefetch={true} 
-                onPointerDown={(e) => onNavPointerDown(e, `/katalog/${product.id}`)}
-                onClick={(e) => onNavClick(e, `/katalog/${product.id}`)}
                 className="hover:text-[#1B5E3A] transition-colors"
               >
                 {product.is_circular ? (product.nama || product.batch_code) : product.supplier_name}
@@ -354,10 +359,8 @@ export function ProductCard({ product }: ProductCardProps) {
 
             <div className="grid grid-cols-2 gap-2 w-full">
               <Link 
-                href={`/katalog/${product.id}`}
+                href={detailHref}
                 prefetch={true}
-                onPointerDown={(e) => onNavPointerDown(e, `/katalog/${product.id}`)}
-                onClick={(e) => onNavClick(e, `/katalog/${product.id}`)}
                 className="flex items-center justify-center gap-1.5 bg-[#1B5E3A] text-white text-xs font-bold py-2.5 rounded-xl hover:bg-[#123320] active:scale-[0.98] transition-all shadow-md shadow-[#1B5E3A]/10 text-center"
               >
                 {isId ? "Lihat Detail" : "View Detail"}

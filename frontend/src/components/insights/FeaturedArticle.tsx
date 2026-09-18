@@ -1,167 +1,83 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, BookOpen, Clock, Calendar } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { ArrowRight, Clock } from 'lucide-react';
 import type { InsightContentWithAuthor } from '@/lib/valam-insights/types';
+import { resolveArticleCategory } from './categories';
 
 interface FeaturedArticleProps {
   article: InsightContentWithAuthor;
   locale: string;
 }
 
-function ScrambledText({ text }: { text: string }) {
-  const [displayText, setDisplayText] = useState('');
-  const prefersReducedMotion = useReducedMotion();
-
-  useEffect(() => {
-    if (prefersReducedMotion) {
-      setDisplayText(text);
-      return;
-    }
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let currentIteration = 0;
-    const interval = setInterval(() => {
-      setDisplayText(
-        text
-          .split('')
-          .map((char, index) => {
-            if (index < currentIteration) {
-              return text[index];
-            }
-            if (char === ' ') return ' ';
-            return chars[Math.floor(Math.random() * chars.length)];
-          })
-          .join('')
-      );
-      currentIteration += 0.8;
-      if (currentIteration >= text.length + 2) {
-        clearInterval(interval);
-        setDisplayText(text);
-      }
-    }, 20);
-    return () => clearInterval(interval);
-  }, [text, prefersReducedMotion]);
-
-  return <>{displayText}</>;
-}
-
 export function FeaturedArticle({ article, locale }: FeaturedArticleProps) {
   const isEn = locale === 'en';
   const title = isEn && article.title_en ? article.title_en : article.title_id;
   const excerpt = isEn && article.excerpt_en ? article.excerpt_en : article.excerpt_id;
-  const [isHovered, setIsHovered] = useState(false);
+  const category = resolveArticleCategory(article, isEn);
+  const prefersReducedMotion = useReducedMotion();
 
-  // Map category styles
-  const categoryLabels: Record<string, string> = {
-    artikel: isEn ? 'Article' : 'Artikel',
-    panduan: isEn ? 'Guide' : 'Panduan',
-    cerita_koperasi: isEn ? 'Cooperative Story' : 'Cerita Koperasi',
-  };
+  const dateLabel = new Date(article.published_at || article.created_at).toLocaleDateString(
+    isEn ? 'en-US' : 'id-ID',
+    { day: 'numeric', month: 'long', year: 'numeric' }
+  );
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 40 }}
+    <motion.article
+      initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-50px' }}
-      transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-      className="relative w-full h-[420px] rounded-3xl overflow-hidden shadow-2xl border border-zinc-200/50 bg-[#0a1a0f] cursor-pointer group"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      viewport={{ once: true, margin: '-40px' }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      className="group rounded-2xl sm:rounded-3xl border border-zinc-200/80 bg-white overflow-hidden shadow-sm shadow-zinc-200/40 hover:shadow-md hover:border-emerald-700/20 transition-all duration-300"
     >
-      <Link href={`/${locale}/insights/${article.slug}`}>
-        <div className="relative w-full h-full">
-          
-          {/* Cover Image with 6s zoom transition on hover */}
-          <div className="absolute inset-0 w-full h-full overflow-hidden">
-            <Image
-              src={article.cover_image_url || '/images/premium_oil_dark.png'}
-              alt={title}
-              fill
-              priority
-              sizes="100vw"
-              className="object-cover transition-transform ease-in-out scale-100 group-hover:scale-105"
-              style={{ transitionDuration: '6000ms' }}
-            />
-          </div>
+      <Link
+        href={`/${locale}/insights/${article.slug}`}
+        className="grid grid-cols-1 md:grid-cols-2 min-h-0"
+      >
+        <div className="relative aspect-[16/10] md:aspect-auto md:min-h-[280px] bg-emerald-950">
+          <Image
+            src={article.cover_image_url || '/images/premium_oil_dark.png'}
+            alt={title}
+            fill
+            priority
+            sizes="(max-width: 768px) 100vw, 50vw"
+            className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/40 to-transparent md:hidden" />
+        </div>
 
-          {/* Bottom-to-Top Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+        <div className="flex flex-col justify-center p-5 sm:p-7 lg:p-8 space-y-3 sm:space-y-4">
+          <span className="inline-flex w-fit items-center px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-800 text-[11px] font-semibold">
+            {category.label}
+          </span>
 
-          {/* Badges - Top Left */}
-          <div className="absolute top-6 left-6 z-20 flex gap-2">
-            <span className="bg-emerald-600 text-white font-bold text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-full shadow-sm flex items-center gap-1.5">
-              <BookOpen className="w-3.5 h-3.5" />
-              {categoryLabels[article.content_type] || article.content_type}
+          <h2 className="text-xl sm:text-2xl font-bold text-zinc-900 tracking-tight leading-snug text-balance group-hover:text-emerald-800 transition-colors">
+            {title}
+          </h2>
+
+          {excerpt && (
+            <p className="text-sm text-zinc-600 leading-relaxed line-clamp-3 text-pretty">
+              {excerpt}
+            </p>
+          )}
+
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500 pt-1">
+            <time dateTime={article.published_at || article.created_at}>{dateLabel}</time>
+            <span aria-hidden>·</span>
+            <span className="inline-flex items-center gap-1">
+              <Clock className="w-3.5 h-3.5" />
+              {article.read_time_minutes || 5} {isEn ? 'min read' : 'min baca'}
             </span>
-            <span className="bg-amber-500 text-white font-bold text-[10px] tracking-wider uppercase px-3 py-1.5 rounded-full shadow-sm">
-              ✓ {isEn ? 'Editor\'s Choice' : 'Artikel Pilihan'}
-            </span>
           </div>
 
-          {/* Content Overlays - Bottom Left */}
-          <div className="absolute bottom-6 left-6 right-6 z-20 text-white flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-            
-            <div className="max-w-2xl space-y-3">
-              {/* Animated Scramble Title */}
-              <h2 className="font-serif text-2xl md:text-3xl font-bold text-white tracking-tight leading-tight max-w-xl">
-                <ScrambledText text={title} />
-              </h2>
-              
-              {/* Excerpt */}
-              {excerpt && (
-                <p className="text-sm text-white/70 line-clamp-2 leading-relaxed font-sans max-w-lg">
-                  {excerpt}
-                </p>
-              )}
-
-              {/* Author Meta */}
-              <div className="flex flex-wrap items-center gap-3 pt-2 text-xs text-white/60">
-                {article.insights_authors?.avatar_url && (
-                  <div className="relative w-6 h-6 rounded-full overflow-hidden border border-white/20">
-                    <Image
-                      src={article.insights_authors.avatar_url}
-                      alt={article.insights_authors.name}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                )}
-                <span className="font-medium text-white/90">
-                  {article.insights_authors?.name || 'Tim Valam'}
-                </span>
-                <span>•</span>
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  {article.read_time_minutes} Min
-                </span>
-                <span>•</span>
-                <span className="flex items-center gap-1">
-                  <Calendar className="w-3 h-3" />
-                  {new Date(article.published_at || new Date()).toLocaleDateString(
-                    locale === 'id' ? 'id-ID' : 'en-US',
-                    { day: 'numeric', month: 'short', year: 'numeric' }
-                  )}
-                </span>
-              </div>
-            </div>
-
-            {/* Read Button - Emerald pill slides x: -10 to 0 on hover */}
-            <motion.div
-              animate={{ x: isHovered ? 0 : -10, opacity: isHovered ? 1 : 0.8 }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider py-3.5 px-6 rounded-full shadow-lg flex items-center gap-2 shrink-0 w-fit"
-            >
-              <span>{isEn ? 'Read More' : 'Baca Selengkapnya'}</span>
-              <ArrowRight className="w-4 h-4" />
-            </motion.div>
-
-          </div>
-
+          <span className="inline-flex items-center gap-1.5 pt-2 text-sm font-semibold text-emerald-700 group-hover:gap-2.5 transition-all">
+            {isEn ? 'Read more' : 'Baca Selengkapnya'}
+            <ArrowRight className="w-4 h-4" />
+          </span>
         </div>
       </Link>
-    </motion.div>
+    </motion.article>
   );
 }

@@ -173,9 +173,19 @@ export function CircularOrderModal() {
   }
 
   const handleDirectCheckout = async () => {
+    // Buy Now: skip cart — go straight to checkout with selected product(s)
+    if (singleProduct) {
+      if (singleQty < (singleProduct.min_order || 1) || singleQty > (singleProduct.stok_tersedia || 9999)) return
+      setIsOpen(false)
+      const circularParam = singleProduct.is_circular ? '&type=circular' : ''
+      router.push(`/checkout?direct=true&productId=${singleProduct.id}&qty=${singleQty}${circularParam}`)
+      return
+    }
+
+    // Multi-select circular: add to cart then checkout (multiple SKUs)
     const success = await handleAddToCart()
     if (success) {
-      router.push('/checkout')
+      router.push('/checkout?type=circular')
     }
   }
 

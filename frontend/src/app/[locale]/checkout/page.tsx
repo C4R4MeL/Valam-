@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { Link, useRouter } from '@/i18n/routing'
-import { ArrowLeft, CheckCircle2, ShieldCheck, MapPin, Factory, AlertCircle, Package } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, ShieldCheck, MapPin, Factory, AlertCircle, Package, Clock, XCircle, RefreshCw, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
@@ -24,8 +24,12 @@ export default function CheckoutPage() {
   const [agreedToEscrow, setAgreedToEscrow] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   
-  // Step 3 States
+  // Step 3 / Payment States
   const [orderResults, setOrderResults] = useState<{ supplier: string, orderId: string }[]>([])
+  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success' | 'pending' | 'error' | 'closed'>('idle')
+  const [currentOrderId, setCurrentOrderId] = useState<string>('')
+  const [isPolling, setIsPolling] = useState(false)
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
   
   const router = useRouter()
   const { toast } = useToast()
@@ -209,127 +213,256 @@ export default function CheckoutPage() {
       const token = localStorage.getItem('valam_token')
       const email = localStorage.getItem('valam_email') || 'buyer@valam.id'
 
-      let backendSuccess = false
-      let newOrdersList: { supplier: string, orderId: string }[] = []
-
-      // 1. Attempt real backend checkout if token exists
-      if (token) {
-        try {
-          const res = await fetch(`${API_URL}/orders/checkout`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              shipping_address: address,
-              shipping_cost: 0,
-              shipping_method: 'DOMESTIK',
-              shipping_courier: 'cargo_truck',
-              payment_method: isCircular ? 'DIRECT_TRANSFER' : 'ESCROW',
-              ...(isDirect && directProduct ? {
-                direct: true,
-                product_id: directProduct.product_id,
-                quantity_kg: directProduct.quantity_kg,
-                price_per_kg: directProduct.price
-              } : {})
-            })
-          })
-
-          if (res.ok) {
-            const data = await res.json()
-            backendSuccess = true
-            const createdOrderId = data.orderId || `ORD-${Date.now()}`
-            newOrdersList = Object.values(groupedItems).map((group: any) => ({
-              supplier: group.supplierName,
-              orderId: createdOrderId
-            }))
-          }
-        } catch (e) {
-          console.warn('Backend checkout request failed, generating fallback order:', e)
-        }
+      if (!token) {
+        toast({ title: isId ? 'Sesi Berakhir' : 'Session Expired', description: isId ? 'Silakan login kembali.' : 'Please log in again.', variant: 'destructive' })
+        router.push('/login')
+        setIsSubmitting(false)
+        return
       }
 
-      // 2. If backend was offline or mock order, generate structured reference IDs
-      if (!backendSuccess || newOrdersList.length === 0) {
-        newOrdersList = Object.entries(groupedItems).map(([supplierId, group]: [string, any]) => {
-          const orderNum = isCircular 
-            ? `ORD-CIRC-${supplierId.substring(0, 5).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`
-            : `ORD-${group.supplierName.substring(0, 3).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`
-          return {
-            supplier: group.supplierName,
-            orderId: orderNum
-          }
-        })
-      }
-
-      // 3. Save to localStorage for instant, guaranteed availability on /buyer/orders
-      const existingSaved = localStorage.getItem('valam_buyer_orders_' + email)
-      const existingOrders = existingSaved ? JSON.parse(existingSaved) : []
-      
-      const newOrdersFormatted = Object.entries(groupedItems).map(([supplierId, group]: [string, any], idx) => {
-        const ordId = newOrdersList[idx]?.orderId || `ORD-${Date.now()}`
-        return {
-          id: ordId,
-          order_number: ordId,
-          status: 'PENDING',
-          total_amount: group.totalSubtotal,
+      // 1. Call backend to create order + get Midtrans Snap token
+      setPaymentStatus('processing')
+      const res = await fetch(`${API_URL}/orders/checkout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          shipping_address: address,
           shipping_cost: 0,
-          shipping_address: { address: address },
-          created_at: new Date().toISOString(),
-          supplier: {
-            profile: {
-              company_name: group.supplierName
-            }
-          },
-          items: group.items.map((it: any) => ({
-            quantity_kg: it.quantity_kg,
-            price_per_kg: it.calculatedPrice || it.subtotal / it.quantity_kg,
-            subtotal: it.subtotal || it.calculatedSubtotal,
-            product: {
-              batch_code: it.product?.batch_code || it.batch_code || it.product?.nama,
-              origin_district: it.product?.origin_district || 'Aceh',
-              parameters: [
-                { parameter_name: 'PA', value: it.product?.pa_percentage || 32.5 },
-                { parameter_name: 'Moisture', value: it.product?.moisture || 1.2 }
-              ]
-            }
-          }))
-        }
+          shipping_method: 'DOMESTIK',
+          shipping_courier: 'cargo_truck',
+          payment_method: isCircular ? 'DIRECT_TRANSFER' : 'ESCROW',
+          ...(isDirect && directProduct ? {
+            direct: true,
+            product_id: directProduct.product_id,
+            quantity_kg: directProduct.quantity_kg,
+            price_per_kg: directProduct.price,
+            is_circular: !!directProduct.is_circular || isCircular,
+            type: (directProduct.is_circular || isCircular) ? 'circular' : 'patchouli',
+          } : {})
+        })
       })
 
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        throw new Error(errData.message || `Checkout failed (${res.status})`)
+      }
+
+      const data = await res.json()
+      const orderId = data.orderId
+      const snapToken = data.snapToken
+
+      setCurrentOrderId(orderId)
+      const createdOrders: Array<{ orderId: string; orderNumber?: string }> =
+        Array.isArray(data.orders) && data.orders.length
+          ? data.orders
+          : [{ orderId, orderNumber: data.orderNumber }]
+
+      setOrderResults(Object.values(groupedItems).map((group: any, idx: number) => ({
+        supplier: group.supplierName,
+        orderId: createdOrders[idx]?.orderId || orderId
+      })))
+
+      // Save to localStorage for offline availability on /buyer/orders
+      const existingSaved = localStorage.getItem('valam_buyer_orders_' + email)
+      const existingOrders = existingSaved ? JSON.parse(existingSaved) : []
+      const newOrdersFormatted = Object.entries(groupedItems).map(([supplierId, group]: [string, any], idx: number) => ({
+        id: createdOrders[idx]?.orderId || orderId,
+        order_number: createdOrders[idx]?.orderNumber || data.orderNumber || orderId,
+        status: 'PENDING',
+        payment_status: 'pending',
+        total_amount: group.totalSubtotal,
+        shipping_cost: 0,
+        shipping_address: { address: address },
+        created_at: new Date().toISOString(),
+        supplier: { profile: { company_name: group.supplierName } },
+        items: group.items.map((it: any) => ({
+          quantity_kg: it.quantity_kg,
+          price_per_kg: it.calculatedPrice || it.subtotal / it.quantity_kg,
+          subtotal: it.subtotal || it.calculatedSubtotal,
+          product: {
+            batch_code: it.product?.batch_code || it.batch_code || it.product?.nama,
+            origin_district: it.product?.origin_district || 'Aceh',
+            parameters: [
+              { parameter_name: 'PA', value: it.product?.pa_percentage || 32.5 },
+              { parameter_name: 'Moisture', value: it.product?.moisture || 1.2 }
+            ]
+          }
+        }))
+      }))
       localStorage.setItem('valam_buyer_orders_' + email, JSON.stringify([...newOrdersFormatted, ...existingOrders]))
 
-      setOrderResults(newOrdersList)
-
-      // 4. Empty only the checked out cart items cleanly (skip for direct mode)
-      if (isDirect) {
-        // Direct mode: nothing to clear from cart
-      } else if (backendSuccess) {
-        // Backend checkout already cleared the database cart for this user!
-        await clearCart(isCircular)
-      } else {
-        if (isCircular) {
-          for (const item of circularItems) {
-            await removeItem(item.id, true)
-          }
-        } else {
-          for (const item of patchouliItems) {
-            await removeItem(item.id, true)
-          }
-        }
+      // Cart stays until payment succeeds (cleared by payment webhook).
+      // Refresh cart badge only — do not remove items here.
+      if (!isDirect) {
         await fetchCart()
       }
 
-      setIsSubmitting(false)
-      setStep(3)
+      // 2. Open Midtrans Snap popup — order already created with payment_status=pending
+      if (snapToken && typeof window !== 'undefined' && window.snap) {
+        window.snap.pay(snapToken, {
+          onSuccess: (result) => {
+            setPaymentStatus('success')
+            setStep(3)
+            setIsSubmitting(false)
+            // Verify with backend (don't trust frontend callback alone)
+            startPolling(orderId)
+          },
+          onPending: (result) => {
+            setPaymentStatus('pending')
+            setStep(3)
+            setIsSubmitting(false)
+            startPolling(orderId)
+          },
+          onError: (result) => {
+            setPaymentStatus('error')
+            setStep(3)
+            setIsSubmitting(false)
+          },
+          onClose: () => {
+            // User closed popup without completing payment
+            setPaymentStatus('closed')
+            setStep(3)
+            setIsSubmitting(false)
+          },
+        })
+      } else {
+        // Snap.js not loaded — fallback to redirect URL
+        if (data.redirectUrl) {
+          window.open(data.redirectUrl, '_blank')
+          setPaymentStatus('pending')
+          setStep(3)
+          setIsSubmitting(false)
+          startPolling(orderId)
+        } else {
+          // No snap.js and no redirect URL — show error
+          toast({
+            title: isId ? 'Payment Gateway Tidak Tersedia' : 'Payment Gateway Unavailable',
+            description: isId ? 'Midtrans Snap tidak dapat dimuat. Coba muat ulang halaman.' : 'Midtrans Snap could not be loaded. Try reloading the page.',
+            variant: 'destructive'
+          })
+          setPaymentStatus('error')
+          setStep(3)
+          setIsSubmitting(false)
+        }
+      }
     } catch (err: any) {
       console.error('Error submitting order:', err)
       toast({
-        title: 'Gagal Membuat Pesanan',
-        description: err.message || 'Terjadi kesalahan saat memproses checkout.',
+        title: isId ? 'Gagal Membuat Pesanan' : 'Order Failed',
+        description: err.message || (isId ? 'Terjadi kesalahan saat memproses checkout.' : 'An error occurred during checkout.'),
         variant: 'destructive'
       })
+      setPaymentStatus('idle')
+      setIsSubmitting(false)
+    }
+  }
+
+  // Polling payment status from backend
+  const startPolling = useCallback((orderId: string) => {
+    setIsPolling(true)
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api'
+    const token = localStorage.getItem('valam_token')
+    let attempts = 0
+    const maxAttempts = 60 // 5 minutes at 5-second intervals
+
+    // Clear any existing interval
+    if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)
+
+    pollIntervalRef.current = setInterval(async () => {
+      attempts++
+      if (attempts > maxAttempts) {
+        if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)
+        setIsPolling(false)
+        return
+      }
+
+      try {
+        const res = await fetch(`${API_URL}/payment/status/${orderId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        if (res.ok) {
+          const statusData = await res.json()
+          const ps = String(statusData.paymentStatus || '').toLowerCase()
+          if (ps === 'paid' || ps === 'completed') {
+            setPaymentStatus('success')
+            if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)
+            setIsPolling(false)
+            // Refresh cart after paid (backend clears purchased items)
+            fetchCart().catch(() => {})
+          } else if (ps === 'failed' || ps === 'cancelled') {
+            setPaymentStatus('error')
+            if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)
+            setIsPolling(false)
+          }
+        }
+      } catch {
+        // Silently continue polling
+      }
+    }, 5000)
+  }, [])
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)
+    }
+  }, [])
+
+  // Handle retry payment (re-open Snap popup)
+  const handleRetryPayment = async () => {
+    if (!currentOrderId) return
+    setIsSubmitting(true)
+    setPaymentStatus('processing')
+
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api'
+      const token = localStorage.getItem('valam_token')
+
+      const res = await fetch(`${API_URL}/orders/${currentOrderId}/retry-payment`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (!res.ok) throw new Error('Failed to get payment token')
+
+      const data = await res.json()
+      const snapToken = data.snapToken
+
+      if (snapToken && window.snap) {
+        window.snap.pay(snapToken, {
+          onSuccess: () => {
+            setPaymentStatus('success')
+            setIsSubmitting(false)
+            startPolling(currentOrderId)
+          },
+          onPending: () => {
+            setPaymentStatus('pending')
+            setIsSubmitting(false)
+            startPolling(currentOrderId)
+          },
+          onError: () => {
+            setPaymentStatus('error')
+            setIsSubmitting(false)
+          },
+          onClose: () => {
+            setPaymentStatus('closed')
+            setIsSubmitting(false)
+          },
+        })
+      }
+    } catch (err: any) {
+      toast({
+        title: isId ? 'Gagal Membuka Pembayaran' : 'Payment Failed',
+        description: err.message,
+        variant: 'destructive'
+      })
+      setPaymentStatus('error')
       setIsSubmitting(false)
     }
   }
@@ -339,7 +472,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 flex flex-col font-sans text-zinc-900 pb-20">
+    <div className="min-h-screen valam-grid-bg flex flex-col font-sans text-zinc-900 pb-20">
       {/* Header Minimalis */}
       <header className="bg-white border-b border-zinc-200 sticky top-0 z-50 shadow-xs">
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -522,24 +655,28 @@ export default function CheckoutPage() {
 
             {/* Kolom Kanan: Rincian Pembayaran & Tombol Bayar */}
             <div className="md:col-span-5">
-              <div className="bg-white rounded-3xl border border-zinc-200 p-6 shadow-sm md:sticky md:top-24 space-y-6">
-                <h3 className="font-bold text-lg font-serif border-b border-zinc-100 pb-3">{isId ? 'Rincian Pembayaran' : 'Payment Summary'}</h3>
+              <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] border border-white p-7 shadow-2xl shadow-zinc-200/60 md:sticky md:top-24 space-y-7 relative overflow-hidden group/payment">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-zinc-200 to-transparent"></div>
+                <h3 className="font-bold text-xl font-serif border-b border-zinc-100/80 pb-4">{isId ? 'Rincian Pembayaran' : 'Payment Summary'}</h3>
                 
                 <div className="flex justify-between items-end">
                   <span className="text-sm font-bold text-zinc-500">{isId ? 'Total Tagihan' : 'Grand Total'}</span>
-                  <span className={`text-3xl font-black ${isCircular ? 'text-[#C8922A]' : 'text-[#1B5E3A]'}`}>{formatRupiah(grandTotal)}</span>
+                  <span className={`text-4xl font-black ${isCircular ? 'bg-gradient-to-br from-[#C8922A] to-amber-500' : 'bg-gradient-to-br from-[#1B5E3A] to-emerald-500'} bg-clip-text text-transparent`}>
+                    {formatRupiah(grandTotal)}
+                  </span>
                 </div>
 
                 {/* Info Escrow / Proteksi */}
-                <div className="bg-zinc-50 p-4 rounded-2xl border border-zinc-200 space-y-2.5">
-                  <div className={`flex items-center gap-2 font-bold ${isCircular ? 'text-[#C8922A]' : 'text-[#1B5E3A]'}`}>
+                <div className="relative overflow-hidden bg-gradient-to-br from-zinc-50 to-zinc-100/50 p-5 rounded-2xl border border-zinc-200/60 space-y-2.5">
+                  <div className={`absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl opacity-20 ${isCircular ? 'bg-[#C8922A]' : 'bg-[#1B5E3A]'}`}></div>
+                  <div className={`flex items-center gap-2.5 font-bold relative z-10 ${isCircular ? 'text-[#C8922A]' : 'text-[#1B5E3A]'}`}>
                     <ShieldCheck className="w-5 h-5 shrink-0" />
                     <h4>{isCircular 
                       ? (isId ? 'Proteksi Transaksi VALAM' : 'VALAM Transaction Protection')
                       : (isId ? 'Pembayaran Rekening Bersama Escrow' : 'VALAM Escrow Payment')}
                     </h4>
                   </div>
-                  <p className="text-xs text-zinc-500 leading-relaxed">
+                  <p className="text-xs text-zinc-600 leading-relaxed relative z-10 font-medium">
                     {isCircular 
                       ? (isId 
                           ? 'Pembayaran pesanan produk turunan diteruskan langsung ke rekening resmi Mitra Pengolah untuk percepatan pengiriman lokal.'
@@ -551,12 +688,12 @@ export default function CheckoutPage() {
                 </div>
 
                 {/* Syarat & Ketentuan Checkbox */}
-                <label className={`flex items-start gap-3 p-3 bg-white border-2 border-zinc-100 rounded-xl cursor-pointer transition-colors group ${isCircular ? 'hover:border-[#C8922A]/30' : 'hover:border-[#1B5E3A]/30'}`}>
+                <label className={`flex items-start gap-3.5 p-4 bg-white/60 backdrop-blur-md border-2 border-zinc-100/80 rounded-2xl cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-zinc-200/40 group ${isCircular ? 'hover:border-[#C8922A]/40' : 'hover:border-[#1B5E3A]/40'} ${agreedToEscrow ? (isCircular ? 'border-[#C8922A]/50 bg-amber-50/30' : 'border-[#1B5E3A]/50 bg-emerald-50/30') : ''}`}>
                   <input 
                     type="checkbox" 
                     checked={agreedToEscrow}
                     onChange={(e) => setAgreedToEscrow(e.target.checked)}
-                    className={`mt-0.5 w-4 h-4 rounded border-zinc-300 ${isCircular ? 'text-[#C8922A] focus:ring-[#C8922A]' : 'text-[#1B5E3A] focus:ring-[#1B5E3A]'}`}
+                    className={`mt-0.5 w-4 h-4 rounded border-zinc-300 transition-colors ${isCircular ? 'text-[#C8922A] focus:ring-[#C8922A]' : 'text-[#1B5E3A] focus:ring-[#1B5E3A]'}`}
                   />
                   <span className="text-xs font-semibold text-zinc-600 group-hover:text-zinc-900 transition-colors leading-relaxed">
                     {isCircular 
@@ -568,53 +705,179 @@ export default function CheckoutPage() {
                 <Button 
                   onClick={handleSubmitOrder}
                   disabled={!agreedToEscrow || isSubmitting}
-                  className={`w-full h-14 rounded-2xl font-bold text-base transition-all cursor-pointer disabled:bg-zinc-200 disabled:text-zinc-400 disabled:shadow-none ${
+                  className={`w-full h-14 rounded-2xl font-bold text-base transition-all duration-300 cursor-pointer overflow-hidden relative group disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none ${
                     isCircular
-                      ? 'bg-[#C8922A] hover:bg-[#A38618] text-white shadow-lg shadow-[#C8922A]/20'
-                      : 'bg-[#1B5E3A] hover:bg-[#123320] text-white shadow-lg shadow-[#1B5E3A]/20'
+                      ? 'bg-gradient-to-r from-[#C8922A] to-[#E3A836] hover:from-[#B07E1F] hover:to-[#C8922A] text-white shadow-xl shadow-[#C8922A]/20 hover:shadow-2xl hover:shadow-[#C8922A]/40 hover:-translate-y-1'
+                      : 'bg-gradient-to-r from-[#1B5E3A] to-[#2A8253] hover:from-[#134228] hover:to-[#1B5E3A] text-white shadow-xl shadow-[#1B5E3A]/20 hover:shadow-2xl hover:shadow-[#1B5E3A]/40 hover:-translate-y-1'
                   }`}
                 >
-                  {isSubmitting ? (isId ? 'Memproses Pesanan...' : 'Processing Order...') : (isId ? 'Bayar Sekarang' : 'Pay Now')}
+                  <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out"></div>
+                  <span className="relative z-10 flex items-center justify-center">
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                        {isId ? 'Memproses Pesanan...' : 'Processing Order...'}
+                      </>
+                    ) : (isId ? 'Bayar Sekarang' : 'Pay Now')}
+                  </span>
                 </Button>
               </div>
             </div>
           </div>
         )}
 
-        {/* LANGKAH 3: PESANAN SELESAI */}
+        {/* LANGKAH 3: HASIL PEMBAYARAN */}
         {step === 3 && (
-          <div className="max-w-xl mx-auto mt-6 animate-in zoom-in duration-500">
-            <div className="bg-white rounded-[2.5rem] p-8 border border-zinc-200 shadow-xl shadow-zinc-200/50 text-center">
-              <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-5 shadow-inner">
-                <CheckCircle2 className="w-10 h-10" />
-              </div>
-              <h2 className="text-3xl font-serif font-black text-zinc-900 mb-2">
-                {isId ? 'Pesanan Berhasil Dibuat!' : 'Order Placed Successfully!'}
-              </h2>
-              <p className="text-sm text-zinc-500 mb-6 max-w-sm mx-auto leading-relaxed">
-                {isCircular
-                  ? (isId ? 'Pesanan produk sirkular Anda telah tercatat dan sedang diproses oleh Mitra Pengolah terkait.' : 'Your circular product order has been recorded and is being prepared by the partner.')
-                  : (isId ? 'Pesanan minyak nilam Anda telah tercatat dalam sistem escrow dan siap dipersiapkan oleh koperasi.' : 'Your patchouli order has been registered in the escrow system and is ready for cooperative fulfillment.')}
-              </p>
-
-              <div className="bg-zinc-50 rounded-2xl border border-zinc-200 p-5 text-left space-y-3 mb-6">
-                <h4 className="font-bold text-xs text-zinc-400 uppercase tracking-wider border-b border-zinc-200 pb-2">
-                  {isId ? 'Nomor Referensi Pesanan:' : 'Order References:'}
-                </h4>
-                <div className="space-y-2.5">
-                  {orderResults.map(res => (
-                    <div key={res.orderId} className="flex justify-between items-center bg-white p-3 rounded-xl border border-zinc-100 shadow-xs">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[10px] text-zinc-400 font-bold uppercase">{res.supplier}</p>
-                        <p className="font-mono font-bold text-emerald-700 text-sm">{res.orderId}</p>
-                      </div>
-                      <span className="text-[10px] bg-blue-100 text-blue-800 px-2.5 py-1 rounded-md font-bold uppercase shrink-0">
-                        {isId ? 'Diproses' : 'Processing'}
-                      </span>
+          <div className="max-w-xl mx-auto mt-6 animate-in zoom-in slide-in-from-bottom-4 duration-700">
+            <div className="bg-white/90 backdrop-blur-2xl rounded-[3rem] p-10 border border-white shadow-2xl shadow-zinc-200/60 text-center relative overflow-hidden">
+              <div className={`absolute top-0 left-0 w-full h-2 ${paymentStatus === 'success' ? 'bg-gradient-to-r from-[#1B5E3A] via-emerald-400 to-[#1B5E3A]' : paymentStatus === 'error' ? 'bg-gradient-to-r from-red-600 via-red-400 to-red-600' : paymentStatus === 'pending' ? 'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500' : 'bg-gradient-to-r from-zinc-400 via-zinc-200 to-zinc-400'}`}></div>
+              
+              {/* PAYMENT SUCCESS */}
+              {paymentStatus === 'success' && (
+                <>
+                  <div className="relative w-28 h-28 mx-auto mb-8">
+                    <div className="absolute inset-0 bg-emerald-400 rounded-full animate-ping opacity-20"></div>
+                    <div className="relative w-full h-full bg-gradient-to-br from-emerald-100 to-emerald-50 text-emerald-600 rounded-full flex items-center justify-center shadow-inner border border-emerald-100">
+                      <CheckCircle2 className="w-14 h-14 drop-shadow-sm" />
                     </div>
-                  ))}
+                  </div>
+                  <h2 className="text-3xl sm:text-4xl font-serif font-black bg-gradient-to-r from-zinc-900 to-zinc-600 bg-clip-text text-transparent mb-4">
+                    {isId ? 'Pembayaran Berhasil!' : 'Payment Successful!'}
+                  </h2>
+                  <p className="text-sm sm:text-base text-zinc-500 mb-8 max-w-sm mx-auto leading-relaxed font-medium">
+                    {isId ? 'Pembayaran Anda telah dikonfirmasi. Pesanan sedang diproses oleh pemasok.' : 'Your payment has been confirmed. Your order is being processed by the supplier.'}
+                  </p>
+                  <Button asChild className="w-full sm:w-auto h-14 px-10 rounded-2xl bg-gradient-to-r from-[#1B5E3A] to-[#257A4C] hover:from-[#134228] hover:to-[#1B5E3A] text-white font-bold shadow-xl shadow-[#1B5E3A]/20 hover:-translate-y-1 transition-all duration-300">
+                    <Link href="/buyer/orders">
+                      {isId ? 'Lihat Pesanan Saya' : 'View My Orders'}
+                    </Link>
+                  </Button>
+                </>
+              )}
+
+              {/* PAYMENT PENDING */}
+              {paymentStatus === 'pending' && (
+                <>
+                  <div className="relative w-28 h-28 mx-auto mb-8">
+                    <div className="absolute inset-0 bg-amber-400 rounded-full animate-pulse opacity-20"></div>
+                    <div className="relative w-full h-full bg-gradient-to-br from-amber-100 to-amber-50 text-amber-600 rounded-full flex items-center justify-center shadow-inner border border-amber-100">
+                      <Clock className="w-14 h-14 drop-shadow-sm" />
+                    </div>
+                  </div>
+                  <h2 className="text-3xl sm:text-4xl font-serif font-black bg-gradient-to-r from-zinc-900 to-zinc-600 bg-clip-text text-transparent mb-4">
+                    {isId ? 'Menunggu Pembayaran' : 'Awaiting Payment'}
+                  </h2>
+                  <p className="text-sm sm:text-base text-zinc-500 mb-6 max-w-sm mx-auto leading-relaxed font-medium">
+                    {isId 
+                      ? 'Selesaikan pembayaran sesuai instruksi dari Midtrans. Status akan otomatis diperbarui.' 
+                      : 'Complete your payment according to the Midtrans instructions. Status will update automatically.'}
+                  </p>
+                  {isPolling && (
+                    <div className="flex items-center justify-center gap-2 text-xs text-amber-700 font-bold mb-8 bg-amber-50 py-2.5 px-5 rounded-full w-max mx-auto shadow-sm border border-amber-100">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      {isId ? 'Memeriksa status pembayaran...' : 'Checking payment status...'}
+                    </div>
+                  )}
+                  <Button asChild variant="outline" className="w-full sm:w-auto h-14 px-10 rounded-2xl border-2 border-zinc-200 text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900 font-bold transition-all hover:-translate-y-1 hover:shadow-md">
+                    <Link href="/buyer/orders">
+                      {isId ? 'Cek Nanti di Pesanan Saya' : 'Check Later in My Orders'}
+                    </Link>
+                  </Button>
+                </>
+              )}
+
+              {/* PAYMENT ERROR */}
+              {paymentStatus === 'error' && (
+                <>
+                  <div className="relative w-28 h-28 mx-auto mb-8">
+                    <div className="absolute inset-0 bg-red-400 rounded-full animate-ping opacity-20"></div>
+                    <div className="relative w-full h-full bg-gradient-to-br from-red-100 to-red-50 text-red-600 rounded-full flex items-center justify-center shadow-inner border border-red-100">
+                      <XCircle className="w-14 h-14 drop-shadow-sm" />
+                    </div>
+                  </div>
+                  <h2 className="text-3xl sm:text-4xl font-serif font-black bg-gradient-to-r from-zinc-900 to-zinc-600 bg-clip-text text-transparent mb-4">
+                    {isId ? 'Pembayaran Gagal' : 'Payment Failed'}
+                  </h2>
+                  <p className="text-sm sm:text-base text-zinc-500 mb-8 max-w-sm mx-auto leading-relaxed font-medium">
+                    {isId 
+                      ? 'Pembayaran tidak berhasil diproses atau dibatalkan. Anda dapat mencoba kembali.' 
+                      : 'Payment could not be processed or was cancelled. You can try again.'}
+                  </p>
+                  <Button
+                    onClick={handleRetryPayment}
+                    disabled={isSubmitting}
+                    className="w-full sm:w-auto h-14 px-10 rounded-2xl bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white font-bold shadow-xl shadow-red-600/20 hover:-translate-y-1 transition-all duration-300"
+                  >
+                    {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <RefreshCw className="w-5 h-5 mr-2" />}
+                    {isId ? 'Coba Bayar Lagi' : 'Retry Payment'}
+                  </Button>
+                </>
+              )}
+
+              {/* POPUP CLOSED */}
+              {paymentStatus === 'closed' && (
+                <>
+                  <div className="relative w-28 h-28 mx-auto mb-8">
+                    <div className="absolute inset-0 bg-zinc-300 rounded-full animate-pulse opacity-30"></div>
+                    <div className="relative w-full h-full bg-gradient-to-br from-zinc-100 to-zinc-50 text-zinc-500 rounded-full flex items-center justify-center shadow-inner border border-zinc-200">
+                      <AlertCircle className="w-14 h-14 drop-shadow-sm" />
+                    </div>
+                  </div>
+                  <h2 className="text-3xl sm:text-4xl font-serif font-black bg-gradient-to-r from-zinc-900 to-zinc-600 bg-clip-text text-transparent mb-4">
+                    {isId ? 'Pembayaran Tertunda' : 'Payment Incomplete'}
+                  </h2>
+                  <p className="text-sm sm:text-base text-zinc-500 mb-8 max-w-sm mx-auto leading-relaxed font-medium">
+                    {isId 
+                      ? 'Anda menutup jendela pembayaran. Pesanan Anda telah tersimpan dengan aman dan Anda bisa melanjutkan pembayaran kapan saja.' 
+                      : 'You closed the payment window. Your order is safely saved and you can continue payment anytime.'}
+                  </p>
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <Button
+                      onClick={handleRetryPayment}
+                      disabled={isSubmitting}
+                      className="w-full sm:w-auto h-14 px-8 rounded-2xl bg-gradient-to-r from-[#1B5E3A] to-[#257A4C] hover:from-[#134228] hover:to-[#1B5E3A] text-white font-bold shadow-xl shadow-[#1B5E3A]/20 hover:-translate-y-1 transition-all duration-300"
+                    >
+                      {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
+                      {isId ? 'Lanjutkan Pembayaran' : 'Continue Payment'}
+                    </Button>
+                    <Button asChild variant="outline" className="w-full sm:w-auto h-14 px-8 rounded-2xl border-2 border-zinc-200 text-zinc-700 hover:bg-zinc-50 font-bold transition-all hover:-translate-y-1">
+                      <Link href="/buyer/orders">
+                        {isId ? 'Bayar Nanti' : 'Pay Later'}
+                      </Link>
+                    </Button>
+                  </div>
+                </>
+              )}
+
+              {/* Order Reference Numbers */}
+              {orderResults.length > 0 && (
+                <div className="bg-zinc-50 rounded-2xl border border-zinc-200 p-5 text-left space-y-3 mb-6">
+                  <h4 className="font-bold text-xs text-zinc-400 uppercase tracking-wider border-b border-zinc-200 pb-2">
+                    {isId ? 'Nomor Referensi Pesanan:' : 'Order References:'}
+                  </h4>
+                  <div className="space-y-2.5">
+                    {orderResults.map(res => (
+                      <div key={res.orderId} className="flex justify-between items-center bg-white p-3 rounded-xl border border-zinc-100 shadow-xs">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[10px] text-zinc-400 font-bold uppercase">{res.supplier}</p>
+                          <p className="font-mono font-bold text-emerald-700 text-sm truncate">{res.orderId}</p>
+                        </div>
+                        <span className={`text-[10px] px-2.5 py-1 rounded-md font-bold uppercase shrink-0 ${
+                          paymentStatus === 'success' ? 'bg-emerald-100 text-emerald-800' :
+                          paymentStatus === 'pending' ? 'bg-amber-100 text-amber-800' :
+                          paymentStatus === 'error' ? 'bg-red-100 text-red-800' :
+                          'bg-blue-100 text-blue-800'
+                        }`}>
+                          {paymentStatus === 'success' ? (isId ? 'Dibayar' : 'Paid') :
+                           paymentStatus === 'pending' ? (isId ? 'Menunggu' : 'Pending') :
+                           paymentStatus === 'error' ? (isId ? 'Gagal' : 'Failed') :
+                           (isId ? 'Belum Bayar' : 'Unpaid')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="space-y-3">
                 <Button asChild className="w-full h-14 rounded-2xl bg-[#1B5E3A] hover:bg-[#123320] text-white font-bold text-base shadow-md cursor-pointer">

@@ -349,7 +349,7 @@ export default function SupplierStorePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa] text-zinc-800 flex flex-col relative selection:bg-emerald-100 selection:text-emerald-950 font-sans">
+    <div className="min-h-screen valam-grid-bg text-zinc-800 flex flex-col relative selection:bg-emerald-100 selection:text-emerald-950 font-sans">
       <Navbar />
 
       <main className="flex-1 mt-20 pb-20 z-10 relative">

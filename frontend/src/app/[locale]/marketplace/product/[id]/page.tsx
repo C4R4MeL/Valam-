@@ -540,7 +540,7 @@ export default function ProductDetailPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-zinc-50 relative selection:bg-emerald-100 selection:text-emerald-900 flex flex-col">
+    <div className="min-h-screen valam-grid-bg relative selection:bg-emerald-100 selection:text-emerald-900 flex flex-col">
       {/* Premium background pattern - made more visible */}
       <div className="absolute inset-0 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:24px_24px] opacity-70 pointer-events-none" />
       <div className="absolute inset-0 bg-gradient-to-br from-emerald-100/20 via-transparent to-zinc-200/20 pointer-events-none" />

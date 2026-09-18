@@ -197,6 +197,7 @@ model Payment {
   order_id           String    @unique @db.Uuid
   payment_method     String?
   payment_gateway_id String?
+  snap_token         String?
   amount             Float
   status             String    @default("pending")
   paid_at            DateTime?
