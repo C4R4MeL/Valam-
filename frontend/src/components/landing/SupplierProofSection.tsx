@@ -72,7 +72,7 @@ export function SupplierProofSection() {
   };
 
   return (
-    <section className="py-14 sm:py-20 md:py-24 bg-emerald-50/40 border-t border-b border-emerald-100/40 relative overflow-hidden">
+    <section className="py-14 sm:py-20 md:py-24 border-t border-emerald-100/50 relative">
       <div className="container mx-auto px-4 sm:px-6 md:px-8 max-w-7xl">
         <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-12">
           <p className="text-xs font-semibold text-emerald-800 tracking-wider uppercase mb-2">

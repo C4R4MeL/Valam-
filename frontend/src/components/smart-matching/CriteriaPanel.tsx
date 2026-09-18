@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React from 'react';
 import { SlidersHorizontal, Search, RotateCcw, HelpCircle, Sparkles } from 'lucide-react';
@@ -59,10 +59,10 @@ export function CriteriaPanel({
             <SlidersHorizontal className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-zinc-900">
+            <h3 className="text-[13px] font-semibold text-zinc-900 tracking-tight leading-snug">
               {translations.title}
             </h3>
-            <p className="text-[11px] text-zinc-400">
+            <p className="text-[11px] text-zinc-400 font-normal leading-snug">
               {isEn ? 'Adjust order parameters' : 'Sesuaikan parameter pesanan'}
             </p>
           </div>
@@ -72,7 +72,7 @@ export function CriteriaPanel({
           <button
             type="button"
             onClick={onReset}
-            className="text-[11px] font-semibold text-zinc-400 hover:text-[#1B5E3A] transition-colors flex items-center gap-1 cursor-pointer"
+            className="text-[11px] font-medium text-zinc-400 hover:text-[#1B5E3A] transition-colors flex items-center gap-1 cursor-pointer"
             title={isEn ? 'Reset to default' : 'Kembalikan ke standar'}
           >
             <RotateCcw className="w-3 h-3" />
@@ -87,12 +87,12 @@ export function CriteriaPanel({
         {/* 1. Target Volume */}
         <div className="space-y-1.5">
           <div className="flex justify-between items-center text-xs">
-            <span className="font-bold text-zinc-700">{translations.volume}</span>
-            <span className="font-mono font-bold text-[#1B5E3A] bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
+            <span className="font-semibold text-zinc-700 tracking-tight">{translations.volume}</span>
+            <span className="font-mono text-[11px] font-semibold tabular-nums text-[#1B5E3A] bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
               {criteria.volume_kg} Kg
             </span>
           </div>
-          <p className="text-[11px] text-zinc-400">
+          <p className="text-[11px] text-zinc-400 font-normal leading-snug">
             {isEn ? 'Minimum B2B order starts at 50 kg' : 'Pesanan B2B umumnya mulai dari 50 kg'}
           </p>
 
@@ -103,7 +103,7 @@ export function CriteriaPanel({
                 key={vol}
                 type="button"
                 onClick={() => updateField('volume_kg', vol)}
-                className={`flex-1 py-1 rounded-lg text-[10px] font-bold transition-all border ${
+                className={`flex-1 py-1 rounded-lg text-[10px] font-semibold tracking-tight transition-all border ${
                   criteria.volume_kg === vol
                     ? 'bg-[#1B5E3A] text-white border-[#1B5E3A]'
                     : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-600 border-zinc-200'
@@ -127,12 +127,12 @@ export function CriteriaPanel({
         {/* 2. Max Budget */}
         <div className="space-y-1.5">
           <div className="flex justify-between items-center text-xs">
-            <span className="font-bold text-zinc-700">{translations.budget}</span>
-            <span className="font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
+            <span className="font-semibold text-zinc-700 tracking-tight">{translations.budget}</span>
+            <span className="font-mono text-[11px] font-semibold tabular-nums text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
               {formatRupiah(criteria.max_budget)}
             </span>
           </div>
-          <p className="text-[11px] text-zinc-400">
+          <p className="text-[11px] text-zinc-400 font-normal leading-snug">
             {isEn ? 'Market range approx. Rp 750k - Rp 950k/Kg' : 'Kisaran pasar saat ini Rp 750rb - Rp 950rb/Kg'}
           </p>
 
@@ -147,7 +147,7 @@ export function CriteriaPanel({
                 key={b.val}
                 type="button"
                 onClick={() => updateField('max_budget', b.val)}
-                className={`flex-1 py-1 rounded-lg text-[10px] font-bold transition-all border ${
+                className={`flex-1 py-1 rounded-lg text-[10px] font-semibold tracking-tight transition-all border ${
                   criteria.max_budget === b.val
                     ? 'bg-[#1B5E3A] text-white border-[#1B5E3A]'
                     : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-600 border-zinc-200'
@@ -171,12 +171,12 @@ export function CriteriaPanel({
         {/* 3. Min PA% */}
         <div className="space-y-1.5">
           <div className="flex justify-between items-center text-xs">
-            <span className="font-bold text-zinc-700">{translations.minPa}</span>
-            <span className="font-mono font-bold text-[#1B5E3A] bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
+            <span className="font-semibold text-zinc-700 tracking-tight">{translations.minPa}</span>
+            <span className="font-mono text-[11px] font-semibold tabular-nums text-[#1B5E3A] bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
               â‰¥ {criteria.min_pa}%
             </span>
           </div>
-          <p className="text-[11px] text-zinc-400">
+          <p className="text-[11px] text-zinc-400 font-normal leading-snug">
             {isEn ? 'Aroma intensity indicator (Export benchmark: 30%+)' : 'Penentu mutu aroma nilam (Standar ekspor: 30%+)'}
           </p>
 
@@ -191,7 +191,7 @@ export function CriteriaPanel({
                 key={pa.val}
                 type="button"
                 onClick={() => updateField('min_pa', pa.val)}
-                className={`flex-1 py-1 rounded-lg text-[10px] font-bold transition-all border ${
+                className={`flex-1 py-1 rounded-lg text-[10px] font-semibold tracking-tight transition-all border ${
                   criteria.min_pa === pa.val
                     ? 'bg-[#1B5E3A] text-white border-[#1B5E3A]'
                     : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-600 border-zinc-200'
@@ -215,12 +215,12 @@ export function CriteriaPanel({
         {/* 4. Max Moisture% */}
         <div className="space-y-1.5">
           <div className="flex justify-between items-center text-xs">
-            <span className="font-bold text-zinc-700">{translations.maxMoisture}</span>
-            <span className="font-mono font-bold text-[#1B5E3A] bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
+            <span className="font-semibold text-zinc-700 tracking-tight">{translations.maxMoisture}</span>
+            <span className="font-mono text-[11px] font-semibold tabular-nums text-[#1B5E3A] bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
               â‰¤ {criteria.max_moisture}%
             </span>
           </div>
-          <p className="text-[11px] text-zinc-400">
+          <p className="text-[11px] text-zinc-400 font-normal leading-snug">
             {isEn ? 'Purity level (Lower is better, ISO standard â‰¤ 3%)' : 'Tingkat kemurnian minyak (Standar mutu â‰¤ 3%)'}
           </p>
 
@@ -235,7 +235,7 @@ export function CriteriaPanel({
                 key={m.val}
                 type="button"
                 onClick={() => updateField('max_moisture', m.val)}
-                className={`flex-1 py-1 rounded-lg text-[10px] font-bold transition-all border ${
+                className={`flex-1 py-1 rounded-lg text-[10px] font-semibold tracking-tight transition-all border ${
                   criteria.max_moisture === m.val
                     ? 'bg-[#1B5E3A] text-white border-[#1B5E3A]'
                     : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-600 border-zinc-200'
@@ -264,7 +264,7 @@ export function CriteriaPanel({
           type="button"
           onClick={onSubmit}
           disabled={loading}
-          className="w-full bg-[#1B5E3A] hover:bg-[#123320] text-white font-bold h-11 rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
+          className="w-full bg-[#1B5E3A] hover:bg-[#123320] text-white font-semibold h-11 rounded-xl text-[13px] tracking-tight flex items-center justify-center gap-2 shadow-sm transition-all"
         >
           {loading ? (
             <>

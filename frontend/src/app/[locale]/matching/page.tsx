@@ -335,14 +335,14 @@ export default function SmartMatchingPage() {
         {/* ─── DIRECT PAGE HEADER ──────────────────────────────────────── */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-200 pb-5">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-[#1B5E3A] text-xs font-bold border border-emerald-200 mb-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-[#1B5E3A] text-[11px] font-semibold tracking-[0.12em] uppercase leading-none border border-emerald-200 mb-2">
               <Sparkles className="w-3.5 h-3.5" />
               <span>{t.badge}</span>
             </div>
-            <h1 className="text-2xl md:text-3xl font-serif font-bold text-zinc-900 tracking-tight">
+            <h1 className="font-serif text-[1.75rem] md:text-[2.25rem] font-semibold text-zinc-900 tracking-[-0.02em] leading-[1.15] text-balance">
               {t.title}
             </h1>
-            <p className="text-zinc-500 text-sm mt-1 max-w-2xl">
+            <p className="text-zinc-500 text-sm md:text-[15px] font-normal leading-relaxed tracking-normal mt-1 max-w-2xl">
               {t.subtitle}
             </p>
           </div>
@@ -351,10 +351,10 @@ export default function SmartMatchingPage() {
         {/* ─── QUICK INDUSTRY PRESET CARDS ─────────────────────────────── */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xs font-black uppercase tracking-wider text-zinc-400">
+            <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-400 leading-none">
               {t.presetTitle}
             </h2>
-            <span className="text-[11px] text-zinc-400 font-medium hidden sm:inline">
+            <span className="text-[12px] text-zinc-400 font-normal leading-snug hidden sm:inline">
               {t.presetSubtitle}
             </span>
           </div>
@@ -377,21 +377,21 @@ export default function SmartMatchingPage() {
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <span className="text-2xl">{preset.icon}</span>
                       {isSelected && (
-                        <span className="flex items-center gap-1 text-[10px] font-black bg-[#1B5E3A] text-white px-2 py-0.5 rounded-full">
+                        <span className="flex items-center gap-1 text-[10px] font-semibold tracking-wide bg-[#1B5E3A] text-white px-2 py-0.5 rounded-full">
                           <Check className="w-3 h-3" />
                           <span>{isId ? 'Aktif' : 'Active'}</span>
                         </span>
                       )}
                     </div>
-                    <h3 className="text-xs font-bold text-zinc-900 leading-snug mb-1">
+                    <h3 className="text-[13px] font-semibold text-zinc-900 leading-snug tracking-tight mb-1">
                       {preset.title}
                     </h3>
-                    <p className="text-[11px] text-zinc-500 leading-relaxed">
+                    <p className="text-[12px] text-zinc-500 font-normal leading-relaxed">
                       {preset.desc}
                     </p>
                   </div>
 
-                  <div className="mt-3 pt-2.5 border-t border-zinc-150 flex items-center justify-between text-[10px] text-zinc-400 font-mono">
+                  <div className="mt-3 pt-2.5 border-t border-zinc-150 flex items-center justify-between text-[10px] text-zinc-400 font-mono font-medium tracking-tight">
                     <span>PA ≥ {preset.criteria.min_pa}%</span>
                     <span>Air ≤ {preset.criteria.max_moisture}%</span>
                     <span>{preset.criteria.volume_kg} Kg</span>

@@ -94,7 +94,7 @@ export default function Home() {
 
   if (isLoading || isAuthenticated) {
     return (
-      <div className="min-h-screen flex flex-col font-sans bg-white">
+      <div className="min-h-screen flex flex-col font-sans valam-grid-bg">
         <Navbar />
         <div className="flex-1 flex items-center justify-center">
           <div className="w-10 h-10 rounded-full border-4 border-emerald-500/20 border-t-emerald-600 animate-spin" />
@@ -104,39 +104,31 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col font-sans bg-white selection:bg-emerald-100 selection:text-emerald-900 overflow-x-hidden">
+    <div className="min-h-screen flex flex-col font-sans valam-grid-bg selection:bg-emerald-100 selection:text-emerald-900 overflow-x-clip">
       <Navbar />
 
       <main className="flex-1">
         {/* ═══════════════════ HERO SECTION ═══════════════════ */}
-        <section className="relative w-full min-h-[88vh] flex flex-col justify-center pt-24 sm:pt-28 md:pt-32 pb-14 sm:pb-16 overflow-hidden">
-          {/* Background Image Carousel */}
-          {content.heroSlides.map((slide, index) => (
-            <div 
-              key={index}
-              className={`absolute inset-0 z-0 transition-opacity duration-1000 ease-in-out ${currentSlide === index ? 'opacity-100' : 'opacity-0'}`}
-            >
-              <Image
-                src={slide.image}
-                alt={slide.title}
-                fill
-                className="object-cover blur-[1.5px] scale-105"
-                priority={index === 0}
-              />
-              {/* Overlay for optimal text readability */}
-              <div className="absolute inset-0 bg-emerald-950/70 mix-blend-multiply" />
-              <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/80 via-black/40 to-transparent h-36" />
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent h-48" />
-            </div>
-          ))}
-
-          {/* Floating Subtle Ambient Particles */}
-          <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-            <div className="absolute top-[25%] left-[12%] w-2 h-2 rounded-full bg-amber-400 opacity-50 blur-[1px] animate-float" style={{ animationDuration: '9s' }} />
-            <div className="absolute top-[65%] left-[20%] w-3 h-3 rounded-full bg-emerald-400 opacity-35 blur-[1.5px] animate-float-slow" style={{ animationDuration: '14s' }} />
-            <div className="absolute top-[35%] right-[15%] w-2.5 h-2.5 rounded-full bg-amber-300 opacity-45 blur-[1px] animate-float" style={{ animationDuration: '11s', animationDelay: '3s' }} />
-            <div className="absolute top-[75%] right-[25%] w-2 h-2 rounded-full bg-amber-400 opacity-60 blur-[0.5px] animate-float-slow" style={{ animationDuration: '8s', animationDelay: '1s' }} />
-          </div>
+        <section className="relative w-full pb-8 sm:pb-12">
+          <div className="relative w-full min-h-[90vh] flex flex-col justify-center pt-28 sm:pt-32 pb-16 rounded-b-[2.5rem] sm:rounded-b-[3rem] overflow-hidden shadow-2xl">
+            {/* Background Image Carousel */}
+            {content.heroSlides.map((slide, index) => (
+              <div 
+                key={index}
+                className={`absolute inset-0 z-0 transition-all duration-1000 ease-[cubic-bezier(0.25,0.1,0.25,1)] ${currentSlide === index ? 'opacity-100 scale-100' : 'opacity-0 scale-105 pointer-events-none'}`}
+              >
+                <Image
+                  src={slide.image}
+                  alt={slide.title}
+                  fill
+                  className="object-cover blur-[2px]"
+                  priority={index === 0}
+                />
+                {/* Overlay for optimal text readability */}
+                <div className="absolute inset-0 bg-emerald-950/60 mix-blend-multiply transition-opacity duration-1000" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/40" />
+              </div>
+            ))}
 
           <div className="container relative z-10 px-4 sm:px-6 md:px-8 mx-auto">
             <div className="flex flex-col items-center space-y-5 sm:space-y-6 text-center max-w-4xl mx-auto justify-center">
@@ -144,43 +136,43 @@ export default function Home() {
               {/* Dynamic Content wrapper */}
               <div key={currentSlide} className="flex flex-col items-center space-y-4 sm:space-y-5 animate-fade-up">
                 {/* Badge */}
-                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-950/70 border border-emerald-500/25 text-emerald-100 text-xs sm:text-sm font-medium backdrop-blur-md">
-                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-950/70 border border-emerald-500/25 text-emerald-100 text-[11px] sm:text-xs font-semibold tracking-[0.08em] uppercase backdrop-blur-md">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                   {content.heroSlides[currentSlide].badge}
                 </div>
 
-                {/* Headline - Serif Luxury with eye-friendly sizing */}
-                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif font-medium text-white tracking-tight leading-[1.18] pb-1 max-w-4xl">
+                {/* Headline */}
+                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.25rem] font-serif font-semibold text-white tracking-[-0.02em] leading-[1.15] text-balance max-w-4xl">
                   {content.heroSlides[currentSlide].title}{" "}
-                  <span className="font-serif italic text-amber-300 inline-block mt-1 sm:mt-2">
+                  <span className="font-serif italic font-medium text-amber-300 inline-block mt-1 sm:mt-2">
                     {content.heroSlides[currentSlide].highlight}
                   </span>
                 </h1>
 
                 {/* Subtitle */}
-                <p className="mx-auto max-w-[660px] text-sm sm:text-base md:text-lg text-zinc-100/90 leading-relaxed font-sans font-normal px-2">
+                <p className="mx-auto max-w-[640px] text-sm sm:text-[15px] md:text-base text-zinc-100/85 leading-relaxed font-sans font-normal px-2">
                   {content.heroSlides[currentSlide].subtitle}
                 </p>
               </div>
 
               {/* Carousel Indicators */}
-              <div className="flex gap-2.5 mt-2">
+              <div className="flex gap-2 mt-1">
                 {content.heroSlides.map((_, idx) => (
                   <button 
                     key={idx}
                     onClick={() => setCurrentSlide(idx)}
-                    className={`h-1.5 rounded-full transition-all duration-300 ${currentSlide === idx ? 'w-8 bg-amber-400' : 'w-3.5 bg-white/35 hover:bg-white/60'}`}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${currentSlide === idx ? 'w-7 bg-amber-400' : 'w-2.5 bg-white/35 hover:bg-white/60'}`}
                     aria-label={`Go to slide ${idx + 1}`}
                   />
                 ))}
               </div>
 
-              {/* CTA Buttons - Full width on small screens for easy tapping */}
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 pt-2 w-full sm:w-auto px-4 sm:px-0 animate-fade-up" style={{ animationDelay: "0.3s" }}>
+              {/* CTA Buttons */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-3.5 pt-2 w-full sm:w-auto px-4 sm:px-0 animate-fade-up" style={{ animationDelay: "0.3s" }}>
                 <Link href="/marketplace" prefetch={true} className="w-full sm:w-auto">
                   <Button
                     size="lg"
-                    className="w-full sm:w-auto h-12 px-7 text-sm sm:text-base bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-950/40 rounded-xl transition-all duration-300 hover:translate-y-[-1px] font-semibold border-0"
+                    className="w-full sm:w-auto h-12 px-7 text-sm bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-950/40 rounded-xl transition-all duration-300 hover:translate-y-[-1px] font-semibold border-0"
                   >
                     {content.buttons.searchOil}
                     <ArrowRight className="ml-2 w-4 h-4" />
@@ -190,7 +182,7 @@ export default function Home() {
                   <Button
                     size="lg"
                     variant="outline"
-                    className="w-full sm:w-auto h-12 px-7 text-sm sm:text-base bg-white/15 hover:bg-white/25 border border-white/30 hover:border-white/50 text-white backdrop-blur-md rounded-xl transition-all duration-300 hover:translate-y-[-1px] font-medium"
+                    className="w-full sm:w-auto h-12 px-7 text-sm bg-white/10 hover:bg-white/20 border border-white/30 hover:border-white/50 text-white backdrop-blur-md rounded-xl transition-all duration-300 hover:translate-y-[-1px] font-medium"
                   >
                     {content.buttons.startSupplier}
                   </Button>
@@ -199,97 +191,97 @@ export default function Home() {
 
             </div>
 
-            {/* Floating Stats Bar - Responsive padding & typography */}
+            {/* Floating Stats Bar */}
             <motion.div
               onViewportEnter={() => { suppliersCounter.start(); destinationsCounter.start(); verifiedCounter.start(); }}
-              className="mt-8 sm:mt-10 w-full max-w-3xl mx-auto rounded-2xl p-4 sm:p-6 shadow-2xl shadow-emerald-950/40 animate-fade-up bg-emerald-950/60 backdrop-blur-xl border border-emerald-700/30"
+              className="mt-8 sm:mt-10 w-full max-w-3xl mx-auto rounded-2xl p-4 sm:p-5 shadow-2xl shadow-emerald-950/40 animate-fade-up bg-emerald-950/55 backdrop-blur-xl border border-emerald-700/25"
               style={{ animationDelay: "0.5s" }}
             >
-              <div className="grid grid-cols-3 divide-x divide-emerald-700/40">
+              <div className="grid grid-cols-3 divide-x divide-emerald-700/35">
                 <div className="flex flex-col items-center px-2 sm:px-4">
-                  <span className="text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-tight">
+                  <span className="text-2xl sm:text-3xl md:text-[2.25rem] font-bold text-white tracking-tight tabular-nums">
                     {suppliersCounter.count}+
                   </span>
-                  <span className="text-[10px] sm:text-xs text-emerald-200/80 mt-1 uppercase tracking-wider text-center font-medium">
+                  <span className="text-[10px] sm:text-[11px] text-emerald-200/75 mt-1 uppercase tracking-[0.1em] text-center font-medium">
                     {content.stats.suppliers}
                   </span>
                 </div>
                 <div className="flex flex-col items-center px-2 sm:px-4">
-                  <span className="text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-tight">
+                  <span className="text-2xl sm:text-3xl md:text-[2.25rem] font-bold text-white tracking-tight tabular-nums">
                     {destinationsCounter.count}
                   </span>
-                  <span className="text-[10px] sm:text-xs text-emerald-200/80 mt-1 uppercase tracking-wider text-center font-medium">
+                  <span className="text-[10px] sm:text-[11px] text-emerald-200/75 mt-1 uppercase tracking-[0.1em] text-center font-medium">
                     {content.stats.destinations}
                   </span>
                 </div>
                 <div className="flex flex-col items-center px-2 sm:px-4">
-                  <span className="text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-tight">
+                  <span className="text-2xl sm:text-3xl md:text-[2.25rem] font-bold text-white tracking-tight tabular-nums">
                     {verifiedCounter.count.toLocaleString()}
                   </span>
-                  <span className="text-[10px] sm:text-xs text-emerald-200/80 mt-1 uppercase tracking-wider text-center font-medium">
+                  <span className="text-[10px] sm:text-[11px] text-emerald-200/75 mt-1 uppercase tracking-[0.1em] text-center font-medium">
                     {content.stats.verified}
                   </span>
                 </div>
               </div>
             </motion.div>
           </div>
+          </div>
         </section>
 
-        {/* VISION SECTION - Natural comfortable spacing */}
-        <section className="py-14 sm:py-20 md:py-24 bg-white relative overflow-hidden">
+        {/* VISION SECTION */}
+        <section className="py-14 sm:py-20 md:py-24 relative">
           <div className="container mx-auto px-4 sm:px-6 md:px-8 max-w-7xl">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
               <motion.div 
                 initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer}
                 className="lg:col-span-5 space-y-5 sm:space-y-6"
               >
                 <div className="space-y-3">
-                  <motion.div variants={fadeInUp} className="text-emerald-700 font-semibold tracking-wider text-xs uppercase">{content.vision.badge}</motion.div>
-                  <motion.h2 variants={fadeInUp} className="text-2xl sm:text-3xl md:text-4xl font-bold font-sans text-zinc-900 leading-tight">
+                  <motion.div variants={fadeInUp} className="text-emerald-700 font-semibold tracking-[0.12em] text-[11px] uppercase">{content.vision.badge}</motion.div>
+                  <motion.h2 variants={fadeInUp} className="text-2xl sm:text-3xl md:text-[2.35rem] font-semibold font-serif text-zinc-900 tracking-tight leading-[1.2] text-balance">
                     {content.vision.title1} <span className="text-emerald-700">{content.vision.titleHighlight}</span> {content.vision.title2}
                   </motion.h2>
                 </div>
-                <motion.p variants={fadeInUp} className="text-sm sm:text-base md:text-lg text-zinc-600 leading-relaxed font-normal">
+                <motion.p variants={fadeInUp} className="text-sm sm:text-[15px] text-zinc-600 leading-relaxed font-normal">
                   {isId 
                     ? "Indonesia menyuplai 90% kebutuhan minyak nilam dunia. Komoditas ini merupakan bahan pengikat aroma parfum mewah. Valam hadir untuk menghubungkan petani langsung ke pasar ekspor dengan standar mutu terjamin."
                     : "Indonesia supplies 90% of global patchouli oil. This essential oil is the primary fixative for luxury perfumery. Valam connects local cooperatives directly with global buyers under fair pricing."}
                 </motion.p>
 
-                {/* Inline Mini Stats - Responsive grid & font sizes */}
-                <motion.div variants={fadeInUp} className="grid grid-cols-3 gap-3 sm:gap-6 pt-5 border-t border-zinc-100">
+                <motion.div variants={fadeInUp} className="grid grid-cols-3 gap-3 sm:gap-5 pt-5 border-t border-zinc-200/70">
                   <div>
-                    <div className="text-xl sm:text-2xl md:text-3xl font-extrabold text-emerald-700">90%</div>
-                    <div className="text-[11px] sm:text-xs text-zinc-500 mt-1 leading-normal">
+                    <div className="text-xl sm:text-2xl md:text-3xl font-bold text-emerald-700 tabular-nums tracking-tight">90%</div>
+                    <div className="text-[11px] sm:text-xs text-zinc-500 mt-1 leading-snug">
                       {isId ? "Pasokan Dunia dari Indonesia" : "World Supply from Indonesia"}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xl sm:text-2xl md:text-3xl font-extrabold text-emerald-700">28</div>
-                    <div className="text-[11px] sm:text-xs text-zinc-500 mt-1 leading-normal">
+                    <div className="text-xl sm:text-2xl md:text-3xl font-bold text-emerald-700 tabular-nums tracking-tight">28</div>
+                    <div className="text-[11px] sm:text-xs text-zinc-500 mt-1 leading-snug">
                       {isId ? "Negara Tujuan Ekspor" : "Export Destinations"}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xl sm:text-2xl md:text-3xl font-extrabold text-emerald-700">{isId ? "Rp 450k" : "IDR 450k"}</div>
-                    <div className="text-[11px] sm:text-xs text-zinc-500 mt-1 leading-normal">
+                    <div className="text-xl sm:text-2xl md:text-3xl font-bold text-emerald-700 tracking-tight">{isId ? "Rp 450k" : "IDR 450k"}</div>
+                    <div className="text-[11px] sm:text-xs text-zinc-500 mt-1 leading-snug">
                       {isId ? "Harga Grade A / Kg" : "Grade A Price / Kg"}
                     </div>
                   </div>
                 </motion.div>
 
                 <motion.div variants={fadeInUp} className="pt-1">
-                  <Link href={`/${locale}/marketplace`} className="inline-flex items-center gap-2 text-emerald-700 font-semibold hover:text-emerald-800 transition-colors group text-sm sm:text-base">
+                  <Link href={`/${locale}/marketplace`} className="inline-flex items-center gap-2 text-emerald-700 font-semibold hover:text-emerald-800 transition-colors group text-sm">
                     {content.vision.cta}
-                    <IconArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
+                    <IconArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </Link>
                 </motion.div>
               </motion.div>
               
               <motion.div 
-                initial={{ opacity: 0, x: 50 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }} viewport={{ once: true }}
+                initial={{ opacity: 0, x: 40 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.7 }} viewport={{ once: true }}
                 className="lg:col-span-7 relative"
               >
-                <div className="aspect-[4/3] rounded-3xl overflow-hidden shadow-xl relative">
+                <div className="aspect-[4/3] rounded-3xl overflow-hidden shadow-lg border border-zinc-200/60 relative">
                   <Image 
                     src="https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=800&h=600&fit=crop" 
                     alt="Patchouli Harvest" 
@@ -297,18 +289,17 @@ export default function Home() {
                     className="object-cover" 
                   />
                 </div>
-                {/* Repositioned Floating MCDM Card */}
-                <div className="absolute -bottom-6 -right-6 bg-white p-5 rounded-2xl shadow-lg border border-zinc-100/80 max-w-xs hidden md:block z-10">
-                  <div className="flex items-center gap-4 mb-3">
-                    <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
-                      <IconTrending className="w-5 h-5" />
+                <div className="absolute bottom-4 right-4 md:bottom-5 md:right-5 bg-white/95 backdrop-blur-sm p-4 rounded-2xl shadow-md border border-zinc-200/80 max-w-[240px] hidden md:block z-10">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-700 shrink-0 border border-emerald-100">
+                      <IconTrending className="w-4.5 h-4.5" />
                     </div>
                     <div>
-                      <div className="text-xs text-zinc-500">{isId ? "Sistem Cerdas" : "Smart Matching"}</div>
-                      <div className="font-bold text-sm text-zinc-900">{isId ? "Pencocokan Presisi" : "Precision Matching"}</div>
+                      <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">{isId ? "Sistem Cerdas" : "Smart Matching"}</div>
+                      <div className="font-semibold text-sm text-zinc-900 tracking-tight">{isId ? "Pencocokan Presisi" : "Precision Matching"}</div>
                     </div>
                   </div>
-                  <p className="text-xs text-zinc-500 leading-relaxed">
+                  <p className="text-[11px] text-zinc-500 leading-relaxed">
                     {isId 
                       ? "Rekomendasi supplier berdasarkan kecocokan volume, budget, dan kadar PA terbaik."
                       : "Recommendations based on optimal volume, budget, and PA matching."}
@@ -319,41 +310,39 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ENHANCED FEATURES SECTION - Redesigned Grid */}
-        <section className="py-14 sm:py-20 md:py-24 bg-zinc-50/70 border-t border-zinc-100 relative overflow-hidden">
+        {/* FEATURES SECTION */}
+        <section className="py-14 sm:py-20 md:py-24 border-t border-zinc-200/60 relative">
           <div className="container mx-auto px-4 sm:px-6 md:px-8 max-w-7xl relative z-10">
-            <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16 space-y-3 sm:space-y-4 px-2">
-              <motion.div variants={fadeInUp} className="inline-block px-3 py-1 rounded-full bg-emerald-100/80 border border-emerald-200 text-emerald-800 text-xs font-semibold tracking-wider uppercase">
+            <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-14 space-y-3 px-2">
+              <motion.div variants={fadeInUp} className="inline-block px-3 py-1 rounded-full bg-white/80 border border-emerald-200/80 text-emerald-800 text-[11px] font-semibold tracking-[0.1em] uppercase">
                 {content.features.badge}
               </motion.div>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold font-sans text-zinc-900 leading-tight">
+              <h2 className="text-2xl sm:text-3xl md:text-[2.5rem] font-semibold font-serif text-zinc-900 tracking-tight leading-[1.2] text-balance">
                 {content.features.title} <span className="text-emerald-700">{content.features.titleHighlight}</span>
               </h2>
-              <p className="text-sm sm:text-base md:text-lg text-zinc-600 leading-relaxed max-w-2xl mx-auto font-normal">
+              <p className="text-sm sm:text-[15px] text-zinc-600 leading-relaxed max-w-2xl mx-auto font-normal">
                 {content.features.desc}
               </p>
             </div>
 
-            <div className="space-y-6 md:space-y-8">
-              {/* Row 1: 2 Large Cards with Background Images */}
+            <div className="space-y-5 md:space-y-6">
               <motion.div 
                 initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={staggerContainer}
-                className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8"
+                className="grid grid-cols-1 md:grid-cols-2 gap-5 lg:gap-6"
               >
-                {/* Large Card 1: MCDM Smart Matching */}
-                <motion.div variants={fadeInUp} className="bg-white rounded-3xl overflow-hidden shadow-md hover:shadow-xl border border-zinc-100 hover:border-emerald-600/30 group hover:-translate-y-1.5 transition-all duration-300">
+                <motion.div variants={fadeInUp} className="bg-white/90 backdrop-blur-sm rounded-3xl overflow-hidden shadow-sm hover:shadow-md border border-zinc-200/80 hover:border-emerald-600/25 group transition-all duration-300">
                   <div className="relative h-44 sm:h-48 w-full overflow-hidden">
                     <Image src="/images/b2b_dashboard.png" alt="MCDM Smart Matching" fill className="object-cover group-hover:scale-[1.02] transition-transform duration-300 ease-out" />
                     <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/95 via-zinc-900/40 to-transparent" />
-                    <div className="absolute bottom-6 left-6 flex items-center gap-3 text-white">
-                       <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center shadow-lg border border-emerald-400">
-                         <IconTrending className="w-5 h-5 text-white" />
+                    <div className="absolute bottom-5 left-5 flex items-center gap-3 text-white">
+                       <div className="w-9 h-9 rounded-xl bg-emerald-500 flex items-center justify-center shadow-md border border-emerald-400/50">
+                         <IconTrending className="w-4.5 h-4.5 text-white" />
                        </div>
-                       <h3 className="text-xl sm:text-2xl font-bold">{isId ? "MCDM Smart Matching" : "MCDM Smart Matching"}</h3>
+                       <h3 className="text-lg sm:text-xl font-semibold tracking-tight">MCDM Smart Matching</h3>
                     </div>
                   </div>
-                  <div className="p-6 sm:p-8">
-                    <p className="text-zinc-600 leading-relaxed text-sm md:text-base">
+                  <div className="p-5 sm:p-6">
+                    <p className="text-zinc-600 leading-relaxed text-sm">
                       {isId 
                         ? "Sistem cerdas yang secara otomatis mencocokkan profil Volume, Budget, dan kadar PA% Anda dengan supplier paling ideal."
                         : "An intelligent system that automatically matches your volume, budget, and PA% requirements with the most ideal suppliers."}
@@ -361,20 +350,19 @@ export default function Home() {
                   </div>
                 </motion.div>
 
-                {/* Large Card 2: Lab-Verified CoA */}
-                <motion.div variants={fadeInUp} className="bg-white rounded-3xl overflow-hidden shadow-md hover:shadow-xl border border-zinc-100 hover:border-emerald-600/30 group hover:-translate-y-1.5 transition-all duration-300">
+                <motion.div variants={fadeInUp} className="bg-white/90 backdrop-blur-sm rounded-3xl overflow-hidden shadow-sm hover:shadow-md border border-zinc-200/80 hover:border-emerald-600/25 group transition-all duration-300">
                   <div className="relative h-44 sm:h-48 w-full overflow-hidden">
                     <Image src="/images/lab_test.png" alt="Lab-Verified CoA" fill className="object-cover group-hover:scale-[1.02] transition-transform duration-300 ease-out" />
                     <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/95 via-zinc-900/40 to-transparent" />
-                    <div className="absolute bottom-6 left-6 flex items-center gap-3 text-white">
-                       <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center shadow-lg border border-emerald-400">
-                         <IconShield className="w-5 h-5 text-white" />
+                    <div className="absolute bottom-5 left-5 flex items-center gap-3 text-white">
+                       <div className="w-9 h-9 rounded-xl bg-emerald-500 flex items-center justify-center shadow-md border border-emerald-400/50">
+                         <IconShield className="w-4.5 h-4.5 text-white" />
                        </div>
-                       <h3 className="text-xl sm:text-2xl font-bold">{isId ? "Lab-Verified CoA" : "Lab-Verified CoA"}</h3>
+                       <h3 className="text-lg sm:text-xl font-semibold tracking-tight">Lab-Verified CoA</h3>
                     </div>
                   </div>
-                  <div className="p-6 sm:p-8">
-                    <p className="text-zinc-600 leading-relaxed text-sm md:text-base">
+                  <div className="p-5 sm:p-6">
+                    <p className="text-zinc-600 leading-relaxed text-sm">
                       {isId 
                         ? "Setiap batch minyak nilam diuji di laboratorium terakreditasi. Anda menerima hasil nyata, bukan sekadar janji."
                         : "Every batch of patchouli oil is tested in an accredited laboratory. You receive real results, not just promises."}
@@ -383,18 +371,16 @@ export default function Home() {
                 </motion.div>
               </motion.div>
 
-              {/* Row 2: 3 Small Cards without Cover Images */}
               <motion.div 
                 initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={staggerContainer}
-                className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8"
+                className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6"
               >
-                {/* Small Card 1: Traceability */}
-                <motion.div variants={fadeInUp} className="bg-white rounded-3xl p-8 border border-zinc-100 hover:border-emerald-600/30 shadow-md hover:shadow-xl group hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between">
-                  <div className="space-y-4">
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-700 border border-emerald-100">
-                      <IconMap className="w-6 h-6" />
+                <motion.div variants={fadeInUp} className="bg-white/90 backdrop-blur-sm rounded-3xl p-6 border border-zinc-200/80 hover:border-emerald-600/25 shadow-sm hover:shadow-md group transition-all duration-300 flex flex-col justify-between">
+                  <div className="space-y-3.5">
+                    <div className="w-11 h-11 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-700 border border-emerald-100">
+                      <IconMap className="w-5 h-5" />
                     </div>
-                    <h3 className="text-lg md:text-xl font-bold text-zinc-900">{isId ? "Keterlacakan 100%" : "100% Traceability"}</h3>
+                    <h3 className="text-base md:text-lg font-semibold text-zinc-900 tracking-tight">{isId ? "Keterlacakan 100%" : "100% Traceability"}</h3>
                     <p className="text-zinc-600 text-sm leading-relaxed">
                       {isId
                         ? "Lacak perjalanan minyak nilam secara transparan dari kebun petani hingga pelabuhan."
@@ -403,13 +389,12 @@ export default function Home() {
                   </div>
                 </motion.div>
 
-                {/* Small Card 2: Live RFQ */}
-                <motion.div variants={fadeInUp} className="bg-white rounded-3xl p-8 border border-zinc-100 hover:border-emerald-600/30 shadow-md hover:shadow-xl group hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between">
-                  <div className="space-y-4">
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-700 border border-emerald-100">
-                      <IconGlobe className="w-6 h-6" />
+                <motion.div variants={fadeInUp} className="bg-white/90 backdrop-blur-sm rounded-3xl p-6 border border-zinc-200/80 hover:border-emerald-600/25 shadow-sm hover:shadow-md group transition-all duration-300 flex flex-col justify-between">
+                  <div className="space-y-3.5">
+                    <div className="w-11 h-11 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-700 border border-emerald-100">
+                      <IconGlobe className="w-5 h-5" />
                     </div>
-                    <h3 className="text-lg md:text-xl font-bold text-zinc-900">{isId ? "Negosiasi Live RFQ" : "Live RFQ Negotiation"}</h3>
+                    <h3 className="text-base md:text-lg font-semibold text-zinc-900 tracking-tight">{isId ? "Negosiasi Live RFQ" : "Live RFQ Negotiation"}</h3>
                     <p className="text-zinc-600 text-sm leading-relaxed">
                       {isId
                         ? "Kirim permintaan penawaran harga, tawar-menawar, dan kunci kontrak langsung di platform."
@@ -418,16 +403,15 @@ export default function Home() {
                   </div>
                 </motion.div>
 
-                {/* Small Card 3: Escrow (NEW) */}
-                <motion.div variants={fadeInUp} className="bg-white rounded-3xl p-8 border border-zinc-100 hover:border-emerald-600/30 shadow-md hover:shadow-xl group hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between relative overflow-hidden">
-                  <div className="absolute top-4 right-4 bg-emerald-600 text-white font-semibold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                <motion.div variants={fadeInUp} className="bg-white/90 backdrop-blur-sm rounded-3xl p-6 border border-zinc-200/80 hover:border-emerald-600/25 shadow-sm hover:shadow-md group transition-all duration-300 flex flex-col justify-between relative overflow-hidden">
+                  <div className="absolute top-4 right-4 bg-emerald-700 text-white font-semibold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                     {isId ? "Baru" : "New"}
                   </div>
-                  <div className="space-y-4">
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-700 border border-emerald-100">
-                      <IconShield className="w-6 h-6" />
+                  <div className="space-y-3.5">
+                    <div className="w-11 h-11 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-700 border border-emerald-100">
+                      <IconShield className="w-5 h-5" />
                     </div>
-                    <h3 className="text-lg md:text-xl font-bold text-zinc-900">{isId ? "Escrow & Pembayaran Aman" : "Secure Escrow Payment"}</h3>
+                    <h3 className="text-base md:text-lg font-semibold text-zinc-900 tracking-tight">{isId ? "Escrow & Pembayaran Aman" : "Secure Escrow Payment"}</h3>
                     <p className="text-zinc-600 text-sm leading-relaxed">
                       {isId
                         ? "Dana transaksi disimpan aman dalam rekening bersama dan cair setelah produk lolos pengujian lab QC."
@@ -473,29 +457,28 @@ export default function Home() {
         <InsightsTeaser />
 
         {/* CTA SECTION */}
-        <section className="py-16 sm:py-20 md:py-24 bg-white relative overflow-hidden">
-          <div className="absolute inset-0 bg-emerald-50/60" />
+        <section className="py-16 sm:py-20 md:py-24 relative">
           <div className="container relative mx-auto px-4 sm:px-6 md:px-8 max-w-3xl text-center">
             <motion.h2 
               initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-              className="text-3xl sm:text-4xl md:text-5xl font-bold text-zinc-900 mb-4 sm:mb-6 tracking-tight leading-tight"
+              className="text-3xl sm:text-4xl md:text-[2.75rem] font-semibold font-serif text-zinc-900 mb-4 sm:mb-5 tracking-tight leading-[1.2] text-balance"
             >
               {content.cta.title1} <span className="text-emerald-700">{content.cta.titleHighlight}</span> {content.cta.title2}
             </motion.h2>
             <motion.p 
               initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}
-              className="text-base sm:text-lg text-zinc-600 mb-8 sm:mb-10 font-normal leading-relaxed max-w-xl mx-auto"
+              className="text-sm sm:text-[15px] text-zinc-600 mb-8 sm:mb-9 font-normal leading-relaxed max-w-xl mx-auto"
             >
               {content.cta.desc}
             </motion.p>
             <motion.div 
               initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }}
-              className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 px-4 sm:px-0"
+              className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-3.5 px-4 sm:px-0"
             >
-              <Button asChild size="lg" className="w-full sm:w-auto h-12 sm:h-13 px-8 text-sm sm:text-base bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl shadow-lg shadow-emerald-950/20 border-0 font-medium">
+              <Button asChild size="lg" className="w-full sm:w-auto h-12 px-8 text-sm bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl shadow-md shadow-emerald-950/15 border-0 font-semibold">
                 <Link href="/register" prefetch={true}>{content.cta.supplierButton}</Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="w-full sm:w-auto h-12 sm:h-13 px-8 text-sm sm:text-base rounded-xl bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50 font-medium">
+              <Button asChild size="lg" variant="outline" className="w-full sm:w-auto h-12 px-8 text-sm rounded-xl bg-white/90 border-zinc-200 text-zinc-700 hover:bg-white font-medium">
                 <Link href="/register" prefetch={true}>{content.cta.buyerButton}</Link>
               </Button>
             </motion.div>

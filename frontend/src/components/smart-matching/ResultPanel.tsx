@@ -132,10 +132,10 @@ export function ResultPanel({
             {/* SVG Radar sweep animation wrapper */}
             <RadarAnimation />
             
-            <h3 className="text-lg font-bold text-emerald-950 mb-2 font-serif">
+            <h3 className="text-lg font-semibold text-emerald-950 mb-2 font-sans tracking-tight leading-snug">
               {translations.readyTitle}
             </h3>
-            <p className="text-zinc-500 text-xs max-w-sm leading-relaxed font-sans font-medium">
+            <p className="text-zinc-500 text-[13px] max-w-sm leading-relaxed font-sans font-normal">
               {translations.readyDesc}
             </p>
           </motion.div>
@@ -182,10 +182,10 @@ export function ResultPanel({
             className="text-center p-12 bg-white rounded-3xl border border-zinc-200 lg:flex-1 flex flex-col items-center justify-center shadow-sm"
           >
             <Info className="w-12 h-12 text-zinc-400 mx-auto mb-4" />
-            <h3 className="text-lg font-bold text-emerald-950 mb-2 font-serif">
+            <h3 className="text-lg font-semibold text-emerald-950 mb-2 font-sans tracking-tight leading-snug">
               {translations.emptyTitle}
             </h3>
-            <p className="text-zinc-500 text-xs max-w-md mx-auto leading-relaxed font-medium">
+            <p className="text-zinc-500 text-[13px] max-w-md mx-auto leading-relaxed font-sans font-normal">
               {translations.emptyDesc}
             </p>
           </motion.div>
@@ -202,10 +202,10 @@ export function ResultPanel({
           >
             <div className="flex items-center justify-between mb-1 px-1 shrink-0">
               <div>
-                <h3 className="font-bold text-emerald-950 text-base font-serif">
+                <h3 className="font-semibold text-emerald-950 text-base font-sans tracking-tight leading-snug">
                   {translations.title}
                 </h3>
-                <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider mt-0.5">
+                <p className="text-[11px] text-zinc-400 font-medium uppercase tracking-[0.12em] mt-0.5">
                   {translations.subtitle}
                 </p>
               </div>
@@ -245,16 +245,16 @@ export function ResultPanel({
             className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-xl"
           >
             <div className="glass shadow-2xl rounded-2xl border border-emerald-500/20 px-6 py-4 flex items-center justify-between gap-4 bg-emerald-950/90 text-white">
-              <div className="flex items-center gap-2 text-xs md:text-sm font-semibold truncate">
-                <span className="text-emerald-400 truncate font-serif">{selectedProducts[0].supplier_name}</span>
-                <span className="text-zinc-400 font-bold">vs</span>
-                <span className="text-emerald-400 truncate font-serif">{selectedProducts[1].supplier_name}</span>
+              <div className="flex items-center gap-2 text-xs md:text-sm font-medium truncate">
+                <span className="text-emerald-400 truncate font-sans font-semibold tracking-tight">{selectedProducts[0].supplier_name}</span>
+                <span className="text-zinc-400 font-medium">vs</span>
+                <span className="text-emerald-400 truncate font-sans font-semibold tracking-tight">{selectedProducts[1].supplier_name}</span>
               </div>
               
               <div className="flex items-center gap-3 shrink-0">
                 <button
                   onClick={handleOpenModal}
-                  className="px-4 py-2 bg-gradient-to-r from-gold-500 to-gold-300 hover:from-gold-400 hover:to-gold-200 text-forest-950 font-extrabold text-xs rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 border-none"
+                  className="px-4 py-2 bg-gradient-to-r from-gold-500 to-gold-300 hover:from-gold-400 hover:to-gold-200 text-forest-950 font-semibold text-xs tracking-tight rounded-xl shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 border-none"
                 >
                   <span>📊</span> {isEn ? 'Compare' : 'Bandingkan'}
                 </button>
@@ -284,10 +284,10 @@ export function ResultPanel({
               {/* Modal Header */}
               <div className="flex items-center justify-between pb-4 border-b border-zinc-150 mb-6 shrink-0">
                 <div>
-                  <h3 className="font-serif text-lg font-bold text-emerald-950">
+                  <h3 className="font-sans text-lg font-semibold text-emerald-950 tracking-tight leading-snug">
                     {isEn ? 'Comparison Analysis' : 'Analisis Perbandingan'}
                   </h3>
-                  <p className="text-xs text-zinc-400 font-semibold uppercase tracking-wider">
+                  <p className="text-[11px] text-zinc-400 font-medium uppercase tracking-[0.12em]">
                     {isEn ? 'MCDM Criteria Match' : 'Kesesuaian Kriteria MCDM'}
                   </p>
                 </div>
@@ -304,13 +304,13 @@ export function ResultPanel({
                 <table className="w-full border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-zinc-150">
-                      <th className="text-left font-serif font-bold text-zinc-400 pb-3 w-1/3">
+                      <th className="text-left font-sans text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-400 pb-3 w-1/3">
                         {isEn ? 'Specs / Feature' : 'Kriteria / Spesifikasi'}
                       </th>
-                      <th className="text-center font-serif font-bold text-emerald-950 pb-3 w-1/3">
+                      <th className="text-center font-sans text-sm font-semibold tracking-tight text-emerald-950 pb-3 w-1/3">
                         {selectedProducts[0].supplier_name}
                       </th>
-                      <th className="text-center font-serif font-bold text-emerald-950 pb-3 w-1/3">
+                      <th className="text-center font-sans text-sm font-semibold tracking-tight text-emerald-950 pb-3 w-1/3">
                         {selectedProducts[1].supplier_name}
                       </th>
                     </tr>
@@ -318,57 +318,57 @@ export function ResultPanel({
                   <tbody>
                     {/* Match Score */}
                     <tr className="border-b border-zinc-100 hover:bg-zinc-50/50">
-                      <td className="py-4 font-bold text-zinc-700">Match Score</td>
-                      <td className="py-4 text-center font-extrabold text-emerald-600 text-base">
+                      <td className="py-4 font-medium text-zinc-700 tracking-tight">Match Score</td>
+                      <td className="py-4 text-center font-semibold tabular-nums text-emerald-600 text-base">
                         {selectedProducts[0].match_score}%
                       </td>
-                      <td className="py-4 text-center font-extrabold text-emerald-600 text-base">
+                      <td className="py-4 text-center font-semibold tabular-nums text-emerald-600 text-base">
                         {selectedProducts[1].match_score}%
                       </td>
                     </tr>
                     
                     {/* Price per Kg */}
                     <tr className="border-b border-zinc-100 hover:bg-zinc-50/50">
-                      <td className="py-4 font-bold text-zinc-700">
+                      <td className="py-4 font-medium text-zinc-700 tracking-tight">
                         {isEn ? 'Price / Kg' : 'Harga / Kg'}
                       </td>
-                      <td className="py-4 text-center font-extrabold text-zinc-900">
+                      <td className="py-4 text-center font-semibold tabular-nums text-zinc-900">
                         {formatRupiah(selectedProducts[0].price_per_kg)}
                       </td>
-                      <td className="py-4 text-center font-extrabold text-zinc-900">
+                      <td className="py-4 text-center font-semibold tabular-nums text-zinc-900">
                         {formatRupiah(selectedProducts[1].price_per_kg)}
                       </td>
                     </tr>
 
                     {/* PA% Level */}
                     <tr className="border-b border-zinc-100 hover:bg-zinc-50/50">
-                      <td className="py-4 font-bold text-zinc-700">Kadar PA%</td>
-                      <td className="py-4 text-center font-bold text-zinc-800">
+                      <td className="py-4 font-medium text-zinc-700 tracking-tight">Kadar PA%</td>
+                      <td className="py-4 text-center font-semibold tabular-nums text-zinc-800">
                         {selectedProducts[0].pa_percentage}%
                       </td>
-                      <td className="py-4 text-center font-bold text-zinc-800">
+                      <td className="py-4 text-center font-semibold tabular-nums text-zinc-800">
                         {selectedProducts[1].pa_percentage}%
                       </td>
                     </tr>
 
                     {/* Moisture Level */}
                     <tr className="border-b border-zinc-100 hover:bg-zinc-50/50">
-                      <td className="py-4 font-bold text-zinc-700">Kadar Air%</td>
-                      <td className="py-4 text-center font-bold text-zinc-800">
+                      <td className="py-4 font-medium text-zinc-700 tracking-tight">Kadar Air%</td>
+                      <td className="py-4 text-center font-semibold tabular-nums text-zinc-800">
                         {selectedProducts[0].moisture}%
                       </td>
-                      <td className="py-4 text-center font-bold text-zinc-800">
+                      <td className="py-4 text-center font-semibold tabular-nums text-zinc-800">
                         {selectedProducts[1].moisture}%
                       </td>
                     </tr>
 
                     {/* Available volume */}
                     <tr className="border-b border-zinc-100 hover:bg-zinc-50/50">
-                      <td className="py-4 font-bold text-zinc-700">Stok Kargo</td>
-                      <td className="py-4 text-center font-bold text-zinc-800">
+                      <td className="py-4 font-medium text-zinc-700 tracking-tight">Stok Kargo</td>
+                      <td className="py-4 text-center font-semibold tabular-nums text-zinc-800">
                         {selectedProducts[0].available_volume_kg} kg
                       </td>
-                      <td className="py-4 text-center font-bold text-zinc-800">
+                      <td className="py-4 text-center font-semibold tabular-nums text-zinc-800">
                         {selectedProducts[1].available_volume_kg} kg
                       </td>
                     </tr>
@@ -380,7 +380,7 @@ export function ResultPanel({
               <div className="pt-4 border-t border-zinc-150 mt-6 shrink-0 text-right">
                 <button
                   onClick={handleCloseModal}
-                  className="px-6 py-2.5 bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-colors border-none"
+                  className="px-6 py-2.5 bg-emerald-800 hover:bg-emerald-900 text-white font-semibold text-[11px] uppercase tracking-[0.1em] rounded-xl transition-colors border-none"
                 >
                   {isEn ? 'Close' : 'Tutup'}
                 </button>
@@ -405,12 +405,12 @@ export function ResultPanel({
               </div>
               
               <div>
-                <h3 className="font-serif text-lg font-bold text-emerald-950">
+                <h3 className="font-sans text-lg font-semibold text-emerald-950 tracking-tight leading-snug">
                   {authModalType === 'guest'
                     ? (isEn ? 'Login Required' : 'Login Diperlukan')
                     : (isEn ? 'Restricted Access' : 'Akses Terbatas')}
                 </h3>
-                <p className="text-xs text-zinc-550 font-medium leading-relaxed mt-2">
+                <p className="text-[13px] text-zinc-550 font-normal leading-relaxed mt-2">
                   {authModalType === 'guest'
                     ? (isEn 
                         ? 'Login as a Buyer to submit a Request for Quotation (RFQ) to this supplier.' 
@@ -426,13 +426,13 @@ export function ResultPanel({
                   <>
                     <a
                       href={`/${locale}/login?redirect=/matching`}
-                      className="w-full py-3 bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-colors text-center shadow-md"
+                      className="w-full py-3 bg-emerald-800 hover:bg-emerald-900 text-white font-semibold text-[11px] uppercase tracking-[0.1em] rounded-xl transition-colors text-center shadow-md"
                     >
                       {isEn ? 'Login as Buyer' : 'Login sebagai Buyer'}
                     </a>
                     <a
                       href={`/${locale}/register`}
-                      className="w-full py-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 font-bold text-xs uppercase tracking-wider rounded-xl transition-colors text-center border border-zinc-200"
+                      className="w-full py-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 font-semibold text-[11px] uppercase tracking-[0.1em] rounded-xl transition-colors text-center border border-zinc-200"
                     >
                       {isEn ? 'Register New Account' : 'Daftar Akun Baru'}
                     </a>
@@ -441,7 +441,7 @@ export function ResultPanel({
                 
                 <button
                   onClick={() => setShowAuthModal(false)}
-                  className="w-full py-2.5 bg-zinc-50 hover:bg-zinc-100 text-zinc-500 font-bold text-xs uppercase tracking-wider rounded-xl transition-colors text-center border-none"
+                  className="w-full py-2.5 bg-zinc-50 hover:bg-zinc-100 text-zinc-500 font-semibold text-[11px] uppercase tracking-[0.1em] rounded-xl transition-colors text-center border-none"
                 >
                   {isEn ? 'Cancel' : 'Batal'}
                 </button>

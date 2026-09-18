@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaymentService } from '../payment/payment.service';
+import { ShipmentService } from '../shipment/shipment.service';
 
 type CheckoutLineItem = {
   product_id: string | null;
@@ -19,7 +20,8 @@ export class OrdersService {
 
   constructor(
     private prisma: PrismaService,
-    private paymentService: PaymentService
+    private paymentService: PaymentService,
+    private shipmentService: ShipmentService,
   ) {}
 
   /**
@@ -28,6 +30,7 @@ export class OrdersService {
    * - Buy Now (direct): single product from body, cart not required
    * - Stock is NOT decremented here — only after payment = paid
    * - Cart is NOT cleared here — cleared after payment = paid
+   * - Shipping: server re-quotes Biteship per supplier (never trusts client cost)
    */
   async checkout(userId: string, data: any) {
     const lineItems = await this.resolveCheckoutItems(userId, data);
@@ -41,10 +44,27 @@ export class OrdersService {
       await this.assertStockAvailable(item);
     }
 
-    const shippingCost = Number(data.shipping_cost) || 0;
-    const shippingAddress = data.shipping_address
-      ? { address: data.shipping_address }
-      : {};
+    const destination = data.destinationAddress || (
+      data.shipping_address
+        ? {
+            address: typeof data.shipping_address === 'string'
+              ? data.shipping_address
+              : data.shipping_address.address,
+            postal_code: data.destinationPostalCode || data.shipping_address?.postal_code,
+            area_id: data.destinationAreaId || data.shipping_address?.area_id,
+            contact_name: data.shipping_address?.contact_name,
+            phone: data.shipping_address?.phone,
+          }
+        : null
+    );
+
+    if (!destination?.address || (!destination.area_id && !destination.postal_code)) {
+      throw new BadRequestException(
+        'Alamat tujuan harus menyertakan alamat lengkap serta area_id atau kode pos.',
+      );
+    }
+
+    const selectedRates: Record<string, string> = data.selectedRates || {};
 
     // Group by supplier (schema: one supplier per order)
     const bySupplier = new Map<string, CheckoutLineItem[]>();
@@ -54,16 +74,30 @@ export class OrdersService {
       bySupplier.set(item.supplier_id, list);
     }
 
+    for (const supplierId of bySupplier.keys()) {
+      if (!selectedRates[supplierId]) {
+        throw new BadRequestException(
+          `Kurir belum dipilih untuk supplier ${supplierId}`,
+        );
+      }
+    }
+
     const buyer = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { profile: true },
     });
 
     const customerDetails = {
-      firstName: buyer?.profile?.contact_person || 'Buyer',
+      firstName:
+        destination.contact_name ||
+        buyer?.profile?.contact_person ||
+        'Buyer',
       lastName: '',
       email: buyer?.email,
-      phone: buyer?.profile?.phone || '08123456789',
+      phone:
+        destination.phone ||
+        buyer?.profile?.phone ||
+        '08123456789',
     };
 
     const createdOrders: Array<{
@@ -73,19 +107,37 @@ export class OrdersService {
       redirectUrl: string;
       supplierId: string;
       amount: number;
+      shippingCost: number;
     }> = [];
 
-    const supplierIds = [...bySupplier.keys()];
     let supplierIndex = 0;
 
     for (const [supplierId, items] of bySupplier) {
       const subtotal = items.reduce((s, i) => s + i.subtotal, 0);
-      // Split shipping equally across supplier orders (MVP)
-      const orderShipping =
-        supplierIds.length === 1
-          ? shippingCost
-          : Math.round(shippingCost / supplierIds.length);
 
+      // SERVER-SIDE RE-QUOTE — never trust client shipping_cost
+      const quote = await this.shipmentService.quoteRatesForItems({
+        supplierId,
+        destinationAddress: destination.address,
+        destinationPostalCode: destination.postal_code,
+        destinationAreaId: destination.area_id,
+        items: items.map((i) => ({
+          productId: i.product_id,
+          circularProductId: i.circular_product_id,
+          quantityKg: i.quantity_kg,
+        })),
+      });
+
+      const rate = quote.rates.find(
+        (r) => r.rateId === selectedRates[supplierId],
+      );
+      if (!rate) {
+        throw new BadRequestException(
+          'Tarif kurir sudah berubah/kadaluarsa. Silakan pilih ulang di Step 1.',
+        );
+      }
+
+      const orderShipping = rate.totalOngkir;
       const orderNumber = `ORD-${Date.now()}-${supplierIndex + 1}`;
       supplierIndex += 1;
 
@@ -97,14 +149,23 @@ export class OrdersService {
           total_amount: subtotal,
           shipping_cost: orderShipping,
           shipping_address: {
-            ...shippingAddress,
-            // Track cart item ids so webhook can clear only purchased lines
+            address: destination.address,
+            postal_code: destination.postal_code ?? null,
+            area_id: destination.area_id ?? null,
+            contact_name: destination.contact_name ?? null,
+            phone: destination.phone ?? null,
             cart_item_ids: items
               .map((i) => i.cart_item_id)
               .filter((id): id is string => Boolean(id)),
             checkout_mode: data.direct ? 'direct' : 'cart',
+            courier: {
+              rateId: rate.rateId,
+              kurirNama: rate.kurirNama,
+              serviceNama: rate.serviceNama,
+              estimasiHari: rate.estimasiHari,
+            },
           },
-          status: 'PENDING', // fulfillment queue (starts after paid)
+          status: 'PENDING',
           payment_status: 'pending',
           items: {
             create: items.map((item) => ({
@@ -118,23 +179,18 @@ export class OrdersService {
         },
       });
 
-      await this.prisma.shipment.create({
-        data: {
-          order_id: order.id,
-          shipment_type:
-            data.shipping_method === 'OCEAN_FREIGHT' ? 'EKSPOR' : 'DOMESTIK',
-          courier_name:
-            data.shipping_courier === 'jne_jtr'
-              ? 'JNE JTR'
-              : data.shipping_courier === 'sea_freight'
-                ? 'Sea Freight Cargo'
-                : 'Biteship Cargo (Truk)',
-          courier_code: data.shipping_courier || 'cargo_truck',
-          total_shipping_cost: orderShipping,
-          actual_weight: items.reduce((acc, item) => acc + item.quantity_kg, 0),
-          origin_address: {},
-          destination_address: {},
+      await this.shipmentService.createShipmentForCheckout({
+        orderId: order.id,
+        supplierId,
+        rate,
+        destination: {
+          address: destination.address,
+          postal_code: destination.postal_code,
+          area_id: destination.area_id,
+          contact_name: destination.contact_name || customerDetails.firstName,
+          phone: destination.phone || customerDetails.phone,
         },
+        weightKg: quote.weightKg,
       });
 
       const payment = await this.prisma.payment.create({
@@ -158,7 +214,7 @@ export class OrdersService {
           id: 'shipping-fee',
           price: orderShipping,
           quantity: 1,
-          name: 'Biaya Pengiriman Kargo',
+          name: `Ongkir ${rate.kurirNama} ${rate.serviceNama}`.trim(),
         });
       }
 
@@ -181,10 +237,11 @@ export class OrdersService {
         redirectUrl: snapResult.redirect_url,
         supplierId,
         amount: subtotal + orderShipping,
+        shippingCost: orderShipping,
       });
 
       this.logger.log(
-        `Checkout order created (awaiting payment): ${order.id} supplier=${supplierId}`,
+        `Checkout order created (awaiting payment): ${order.id} supplier=${supplierId} shipping=${orderShipping}`,
       );
     }
 

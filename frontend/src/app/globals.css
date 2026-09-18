@@ -268,52 +268,137 @@ a:active,
   transition-duration: 50ms !important;
 }
 
-/* ── Shared white pages: subtle agricultural tech grid ── */
+/* ── Shared white pages: agricultural tech grid (animated) ── */
 .valam-grid-bg,
 .valam-catalog-bg {
-  background-color: #fafafa; /* matches zinc-50 */
-  /* Soft radial depth: cleaner center, slightly richer edges */
+  --valam-grid-size: 64px;
+  position: relative;
+  isolation: isolate;
+  /* Clip horizontal bleed only — avoid overflow-y so sticky nav still works */
+  overflow-x: clip;
+  background-color: #fafafa;
+  /*
+    Base wash + STATIC light points baked into background
+    so they remain visible even if pseudo stacking fails.
+  */
   background-image:
+    radial-gradient(circle 180px at 10% 12%, rgba(52, 211, 153, 0.22) 0%, transparent 70%),
+    radial-gradient(circle 150px at 85% 20%, rgba(255, 255, 255, 0.7) 0%, rgba(167, 243, 208, 0.35) 30%, transparent 70%),
+    radial-gradient(circle 200px at 45% 55%, rgba(110, 231, 183, 0.16) 0%, transparent 72%),
+    radial-gradient(circle 160px at 18% 78%, rgba(52, 211, 153, 0.2) 0%, transparent 68%),
+    radial-gradient(circle 14px at 10% 12%, #fff 0%, rgba(167, 243, 208, 0.9) 45%, transparent 100%),
+    radial-gradient(circle 12px at 85% 20%, #fff 0%, rgba(110, 231, 183, 0.85) 45%, transparent 100%),
+    radial-gradient(circle 13px at 45% 55%, #fff 0%, rgba(167, 243, 208, 0.8) 45%, transparent 100%),
+    radial-gradient(circle 11px at 18% 78%, #fff 0%, rgba(110, 231, 183, 0.85) 45%, transparent 100%),
+    linear-gradient(125deg, transparent 42%, rgba(52, 211, 153, 0.2) 49%, rgba(255, 255, 255, 0.5) 50%, rgba(52, 211, 153, 0.2) 51%, transparent 58%),
+    linear-gradient(40deg, transparent 55%, rgba(255, 255, 255, 0.35) 60%, transparent 66%),
     radial-gradient(
-      ellipse 85% 65% at 50% 28%,
-      rgba(255, 255, 255, 0.92) 0%,
-      rgba(250, 250, 250, 0.5) 45%,
-      transparent 72%
-    ),
-    linear-gradient(
-      rgba(27, 94, 58, 0.11) 1px,
-      transparent 1px
-    ),
-    linear-gradient(
-      90deg,
-      rgba(27, 94, 58, 0.11) 1px,
-      transparent 1px
+      ellipse 80% 55% at 50% 20%,
+      rgba(255, 255, 255, 0.35) 0%,
+      transparent 70%
     );
+  background-repeat: no-repeat;
+  background-size: auto;
+  background-position: center top;
+}
+
+/* Animated grid lines — stay within bounds (no negative inset / transform drift) */
+.valam-grid-bg::before,
+.valam-catalog-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(27, 94, 58, 0.2) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(27, 94, 58, 0.2) 1px, transparent 1px);
   background-size:
-    auto,
-    64px 64px,
-    64px 64px;
-  background-position: center top, 0 0, 0 0;
-  background-attachment: scroll, scroll, scroll;
+    var(--valam-grid-size) var(--valam-grid-size),
+    var(--valam-grid-size) var(--valam-grid-size);
+  background-position: 0 0, 0 0;
+  animation:
+    valam-grid-drift 36s linear infinite,
+    valam-grid-breathe 9s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  will-change: background-position, opacity;
+}
+
+/* Animated lights / rays — opacity only (no translate/scale = no scroll bleed) */
+.valam-grid-bg::after,
+.valam-catalog-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle 190px at 72% 38%, rgba(52, 211, 153, 0.28) 0%, transparent 68%),
+    radial-gradient(circle 160px at 28% 42%, rgba(255, 255, 255, 0.55) 0%, rgba(167, 243, 208, 0.3) 35%, transparent 70%),
+    radial-gradient(circle 140px at 92% 72%, rgba(110, 231, 183, 0.24) 0%, transparent 68%),
+    radial-gradient(circle 15px at 72% 38%, #fff 0%, rgba(167, 243, 208, 0.9) 40%, transparent 100%),
+    radial-gradient(circle 12px at 28% 42%, #fff 0%, rgba(110, 231, 183, 0.85) 45%, transparent 100%),
+    radial-gradient(circle 11px at 92% 72%, #fff 0%, rgba(167, 243, 208, 0.85) 45%, transparent 100%),
+    linear-gradient(155deg, transparent 30%, rgba(110, 231, 183, 0.18) 38%, rgba(255, 255, 255, 0.45) 40%, rgba(110, 231, 183, 0.18) 42%, transparent 52%),
+    linear-gradient(70deg, transparent 48%, rgba(52, 211, 153, 0.16) 56%, rgba(255, 255, 255, 0.4) 58%, rgba(52, 211, 153, 0.16) 60%, transparent 68%);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  animation: valam-grid-twinkle 5s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  will-change: opacity, filter;
+}
+
+@keyframes valam-grid-drift {
+  from {
+    background-position: 0 0, 0 0;
+  }
+  to {
+    background-position:
+      var(--valam-grid-size) var(--valam-grid-size),
+      var(--valam-grid-size) var(--valam-grid-size);
+  }
+}
+
+@keyframes valam-grid-breathe {
+  0%, 100% { opacity: 0.75; }
+  50% { opacity: 1; }
+}
+
+@keyframes valam-grid-twinkle {
+  0%, 100% { opacity: 0.7; filter: brightness(1); }
+  25% { opacity: 1; filter: brightness(1.15); }
+  50% { opacity: 0.78; filter: brightness(1.05); }
+  75% { opacity: 1; filter: brightness(1.2); }
 }
 
 @media (min-width: 768px) {
   .valam-grid-bg,
   .valam-catalog-bg {
-    background-size:
-      auto,
-      72px 72px,
-      72px 72px;
+    --valam-grid-size: 72px;
   }
 }
 
 @media (max-width: 639px) {
   .valam-grid-bg,
   .valam-catalog-bg {
-    background-size:
-      auto,
-      48px 48px,
-      48px 48px;
+    --valam-grid-size: 48px;
+  }
+  .valam-grid-bg::before,
+  .valam-catalog-bg::before {
+    animation-duration: 48s, 12s;
+  }
+  .valam-grid-bg::after,
+  .valam-catalog-bg::after {
+    animation-duration: 6.5s;
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .valam-grid-bg::before,
+  .valam-catalog-bg::before,
+  .valam-grid-bg::after,
+  .valam-catalog-bg::after {
+    animation: none;
+    will-change: auto;
+    opacity: 0.95;
+    filter: none;
+  }
+}

@@ -30,7 +30,7 @@ export function TestimonialsSection() {
   };
 
   return (
-    <section className="py-14 sm:py-20 md:py-24 bg-white border-t border-zinc-100 relative overflow-hidden">
+    <section className="py-14 sm:py-20 md:py-24 border-t border-zinc-200/60 relative">
       <div className="container mx-auto px-4 sm:px-6 md:px-8 max-w-7xl">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 max-w-5xl mx-auto mb-12 sm:mb-16 border-b border-zinc-100 pb-8">
           <div className="flex items-center gap-3 sm:gap-4">

@@ -51,8 +51,8 @@ export function FAQSection() {
   };
 
   return (
-    <section className="pb-16 sm:pb-20 md:pb-24 pt-4 sm:pt-6 bg-white relative overflow-hidden">
-      <div className="absolute inset-0 bg-emerald-50/50" />
+    <section className="pb-16 sm:pb-20 md:pb-24 pt-4 sm:pt-6 relative">
+      <div className="absolute inset-0 bg-emerald-50/25 pointer-events-none" />
 
       <div className="container mx-auto px-4 sm:px-6 md:px-8 max-w-3xl relative z-10">
         

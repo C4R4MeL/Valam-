@@ -5,7 +5,7 @@ import { BiteshipService } from './biteship.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
-import { ConfirmOngkirDto, EksporShippingDto, ReportMasalahDto, ResolveMasalahDto, ConfirmPickupDto } from './dto/shipment.dto';
+import { ConfirmOngkirDto, EksporShippingDto, ReportMasalahDto, ResolveMasalahDto, ConfirmPickupDto, QuoteShipmentDto } from './dto/shipment.dto';
 
 @Controller('shipment')
 export class ShipmentController {
@@ -30,6 +30,14 @@ export class ShipmentController {
   @UseGuards(JwtAuthGuard)
   async searchAreas(@Query('q') query: string) {
     return this.biteshipService.searchArea(query);
+  }
+
+  // Buyer: multi-supplier quote before checkout (no orderId required)
+  @Post('quote')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('BUYER')
+  async quoteCheckout(@Request() req: any, @Body() body: QuoteShipmentDto) {
+    return this.shipmentService.quoteCheckoutGroups(req.user.userId, body);
   }
 
   // Buyer: get rates

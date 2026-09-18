@@ -1,4 +1,16 @@
-import { IsString, IsNotEmpty, IsOptional, IsEnum, IsNumber, Min } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsEnum,
+  IsNumber,
+  Min,
+  IsArray,
+  ValidateNested,
+  IsUUID,
+  ArrayMinSize,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 import { Incoterms } from '@prisma/client';
 
 export class ConfirmOngkirDto {
@@ -9,6 +21,51 @@ export class ConfirmOngkirDto {
   @IsString()
   @IsNotEmpty()
   selectedRateId: string;
+}
+
+export class QuoteGroupItemDto {
+  @IsOptional()
+  @IsUUID()
+  productId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  circularProductId?: string;
+
+  @IsNumber()
+  @Min(0.01)
+  quantityKg: number;
+}
+
+export class QuoteGroupDto {
+  @IsUUID()
+  supplierId: string;
+
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => QuoteGroupItemDto)
+  items: QuoteGroupItemDto[];
+}
+
+export class QuoteShipmentDto {
+  @IsString()
+  @IsNotEmpty()
+  destinationAddress: string;
+
+  @IsOptional()
+  @IsString()
+  destinationPostalCode?: string;
+
+  @IsOptional()
+  @IsString()
+  destinationAreaId?: string;
+
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => QuoteGroupDto)
+  groups: QuoteGroupDto[];
 }
 
 export class EksporShippingDto {

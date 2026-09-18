@@ -63,9 +63,9 @@ export function CircularProductSection() {
   };
 
   return (
-    <section className="py-14 sm:py-20 md:py-24 bg-white border-t border-b border-zinc-100 relative overflow-hidden">
+    <section className="py-14 sm:py-20 md:py-24 border-t border-zinc-200/60 relative overflow-x-clip">
       {/* Decorative leaf blur background element */}
-      <div className="absolute -top-40 -left-40 w-96 h-96 bg-emerald-100/30 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -top-40 -left-40 w-96 h-96 bg-emerald-100/20 rounded-full blur-3xl pointer-events-none" />
       
       <div className="container mx-auto px-4 sm:px-6 md:px-8 max-w-7xl relative z-10">
         

@@ -27,67 +27,118 @@ export class ShipmentService {
     private supabaseService: SupabaseService
   ) {}
 
-  async getOngkirOptions(orderId: string, userId: string) {
-    const order = await this.prisma.order.findUnique({
-      where: { id: orderId },
-      include: {
-        buyer: { include: { profile: true } },
-        supplier: { include: { profile: true, supplier_profile: true } },
-        items: { include: { product: true } }
-      }
+  /**
+   * Quote shipping rates for a supplier group WITHOUT requiring an existing order.
+   * Weight & item value are computed from DB product data (never trust client prices).
+   */
+  async quoteRatesForItems(params: {
+    supplierId: string;
+    destinationAddress: string;
+    destinationPostalCode?: string | null;
+    destinationAreaId?: string | null;
+    items: Array<{
+      productId?: string | null;
+      circularProductId?: string | null;
+      quantityKg: number;
+    }>;
+  }) {
+    const {
+      supplierId,
+      destinationAddress,
+      destinationPostalCode,
+      destinationAreaId,
+      items,
+    } = params;
+
+    if (!destinationAreaId && !destinationPostalCode) {
+      throw new BadRequestException(
+        'Alamat tujuan harus menyertakan area_id atau kode pos.',
+      );
+    }
+
+    const supplier = await this.prisma.user.findUnique({
+      where: { id: supplierId },
+      include: { supplier_profile: true },
     });
+    if (!supplier?.supplier_profile) {
+      throw new NotFoundException('Supplier tidak ditemukan');
+    }
 
-    if (!order) throw new NotFoundException('Order tidak ditemukan');
-    if (order.buyer_id !== userId) throw new ForbiddenException('Bukan pesanan Anda');
+    const sp = supplier.supplier_profile;
+    const originPostalCode = sp.postal_code;
+    const originAreaId = sp.area_id;
 
-    const totalWeight = order.items.reduce((sum, item) => sum + item.quantity_kg, 0);
+    if (!originPostalCode && !originAreaId) {
+      throw new BadRequestException(
+        `Supplier ${sp.nama_koperasi || supplierId} belum melengkapi kode pos / area pengiriman.`,
+      );
+    }
 
+    let totalWeight = 0;
+    let itemValue = 0;
+    let originProvince = sp.kabupaten || 'Aceh';
+
+    for (const line of items) {
+      if (line.productId) {
+        const product = await this.prisma.product.findUnique({
+          where: { id: line.productId },
+        });
+        if (!product || product.supplier_id !== supplierId) {
+          throw new BadRequestException(`Produk ${line.productId} tidak valid untuk supplier ini`);
+        }
+        totalWeight += line.quantityKg;
+        itemValue += line.quantityKg * product.price_per_kg;
+        if (product.origin_province) originProvince = product.origin_province;
+      } else if (line.circularProductId) {
+        const cp = await this.prisma.circularProduct.findUnique({
+          where: { id: line.circularProductId },
+        });
+        if (!cp || cp.supplier_id !== supplierId) {
+          throw new BadRequestException(
+            `Produk sirkular ${line.circularProductId} tidak valid untuk supplier ini`,
+          );
+        }
+        totalWeight += line.quantityKg;
+        itemValue += line.quantityKg * cp.price;
+      } else {
+        throw new BadRequestException('Setiap item harus punya productId atau circularProductId');
+      }
+    }
+
+    if (totalWeight <= 0) {
+      throw new BadRequestException('Berat pengiriman tidak valid');
+    }
     if (totalWeight > 500) {
-      throw new BadRequestException('Berat melebihi 500 kg. Harap hubungi tim Valam untuk armada khusus.');
+      throw new BadRequestException(
+        'Berat melebihi 500 kg. Harap hubungi tim Valam untuk armada khusus.',
+      );
     }
 
     const drumCount = Math.ceil(totalWeight / DRUM_CAPASITAS_KG);
     const weightInGrams = totalWeight * 1000;
-    const itemValue = order.total_amount;
-
-    const supplierProfile = order.supplier.supplier_profile;
-    const buyerProfile = order.buyer.profile;
-
-    // Validate real address data — no more hardcoded postal codes
-    const originPostalCode = supplierProfile?.postal_code;
-    const originAreaId = supplierProfile?.area_id;
-    const destPostalCode = buyerProfile?.postal_code;
-    const destAreaId = buyerProfile?.area_id;
-
-    if (!originPostalCode && !originAreaId) {
-      throw new BadRequestException(
-        'Supplier belum melengkapi data alamat (kode pos / area). Harap minta supplier melengkapi profil terlebih dahulu.'
-      );
-    }
-    if (!destPostalCode && !destAreaId) {
-      throw new BadRequestException(
-        'Alamat pengiriman Anda belum lengkap (kode pos / area). Harap lengkapi data alamat di halaman profil terlebih dahulu.'
-      );
-    }
+    const volWeight =
+      ((DRUM_PANJANG_CM * DRUM_LEBAR_CM * DRUM_TINGGI_CM) / DIVISOR_VOLUMETRIK) *
+      drumCount;
+    const billedWeight = Math.max(totalWeight, volWeight);
 
     const rawRates = await this.biteshipService.getRates({
       originPostalCode: originPostalCode || undefined,
       originAreaId: originAreaId || undefined,
-      destinationPostalCode: destPostalCode || undefined,
-      destinationAreaId: destAreaId || undefined,
+      destinationPostalCode: destinationPostalCode || undefined,
+      destinationAreaId: destinationAreaId || undefined,
       weightInGrams,
       itemValue,
       drumCount,
     });
 
-    const originProvince = order.items[0]?.product?.origin_province || 'Aceh';
-    const orderAddress = (order.shipping_address as any)?.address;
-    const destinationAddressStr = orderAddress || buyerProfile?.address || '';
-
-    return rawRates.map((rate) => {
-      // Calculate dynamic B2B shipping rate with floor protection
-      // Custom formula must not be lower than Biteship's actual rate
-      const baseCost = this.calculateBaseRate(rate.kurirKode, totalWeight, originProvince, destinationAddressStr, rate.ongkirDasar);
+    const rates = rawRates.map((rate) => {
+      const baseCost = this.calculateBaseRate(
+        rate.kurirKode,
+        totalWeight,
+        originProvince,
+        destinationAddress,
+        rate.ongkirDasar,
+      );
       const insurance = Math.ceil(itemValue * TARIF_ASURANSI);
       const packaging = drumCount * BIAYA_PENGEMASAN_PER_DRUM;
       const total = baseCost + insurance + packaging;
@@ -103,19 +154,207 @@ export class ShipmentService {
         biayaAsuransi: insurance,
         biayaPengemasan: packaging,
         totalOngkir: total,
-        tersedia: true
+        tersedia: true,
       };
     });
+
+    return {
+      supplierId,
+      supplierName: sp.nama_koperasi || sp.nama_pic || 'Supplier',
+      weightKg: totalWeight,
+      billedWeightKg: billedWeight,
+      drumCount,
+      itemValue,
+      origin: {
+        postal_code: originPostalCode,
+        area_id: originAreaId,
+        address: sp.alamat_lengkap,
+      },
+      rates,
+    };
+  }
+
+  /**
+   * Multi-supplier quote for pre-checkout Step 1.
+   */
+  async quoteCheckoutGroups(
+    userId: string,
+    body: {
+      destinationAddress: string;
+      destinationPostalCode?: string;
+      destinationAreaId?: string;
+      groups: Array<{
+        supplierId: string;
+        items: Array<{
+          productId?: string;
+          circularProductId?: string;
+          quantityKg: number;
+        }>;
+      }>;
+    },
+  ) {
+    const groups = [];
+    for (const group of body.groups) {
+      const quoted = await this.quoteRatesForItems({
+        supplierId: group.supplierId,
+        destinationAddress: body.destinationAddress,
+        destinationPostalCode: body.destinationPostalCode,
+        destinationAreaId: body.destinationAreaId,
+        items: group.items.map((i) => ({
+          productId: i.productId,
+          circularProductId: i.circularProductId,
+          quantityKg: i.quantityKg,
+        })),
+      });
+      groups.push(quoted);
+    }
+    return { groups };
+  }
+
+  /**
+   * Create/upsert Shipment from a re-quoted rate during checkout.
+   * Single path — same fields as confirmOngkir.
+   */
+  async createShipmentForCheckout(params: {
+    orderId: string;
+    supplierId: string;
+    rate: {
+      rateId: string;
+      kurirNama: string;
+      kurirKode: string;
+      serviceNama: string;
+      serviceKode: string;
+      estimasiHari: number;
+      ongkirDasar: number;
+      biayaAsuransi: number;
+      biayaPengemasan: number;
+      totalOngkir: number;
+    };
+    destination: {
+      address: string;
+      postal_code?: string | null;
+      area_id?: string | null;
+      contact_name?: string | null;
+      phone?: string | null;
+    };
+    weightKg: number;
+  }) {
+    const { orderId, supplierId, rate, destination, weightKg } = params;
+
+    const supplier = await this.prisma.user.findUnique({
+      where: { id: supplierId },
+      include: { supplier_profile: true, profile: true },
+    });
+    const sp = supplier?.supplier_profile;
+
+    const drumCount = Math.ceil(weightKg / DRUM_CAPASITAS_KG);
+    const volWeight =
+      ((DRUM_PANJANG_CM * DRUM_LEBAR_CM * DRUM_TINGGI_CM) / DIVISOR_VOLUMETRIK) *
+      drumCount;
+    const billedWeight = Math.max(weightKg, volWeight);
+
+    const originAddr = {
+      name: sp?.nama_koperasi || supplier?.profile?.company_name || 'Koperasi Produsen',
+      phone: sp?.whatsapp || supplier?.profile?.phone || '08123456789',
+      address: sp?.alamat_lengkap || `${sp?.desa || ''}, ${sp?.kecamatan || ''}, ${sp?.kabupaten || 'Aceh'}`.trim(),
+      postal_code: sp?.postal_code || null,
+      area_id: sp?.area_id || null,
+    };
+
+    const destAddr = {
+      name: destination.contact_name || 'Penerima',
+      phone: destination.phone || '08123456789',
+      address: destination.address,
+      postal_code: destination.postal_code || null,
+      area_id: destination.area_id || null,
+    };
+
+    return this.prisma.shipment.upsert({
+      where: { order_id: orderId },
+      create: {
+        order_id: orderId,
+        shipment_type: 'DOMESTIK',
+        biteship_rate_id: rate.rateId,
+        courier_name: rate.kurirNama,
+        courier_code: rate.kurirKode,
+        service_name: rate.serviceNama,
+        service_code: rate.serviceKode,
+        estimated_days: rate.estimasiHari,
+        base_shipping_cost: rate.ongkirDasar,
+        insurance_fee: rate.biayaAsuransi,
+        packaging_fee: rate.biayaPengemasan,
+        total_shipping_cost: rate.totalOngkir,
+        actual_weight: weightKg,
+        volumetric_weight: volWeight,
+        billed_weight: billedWeight,
+        drum_count: drumCount,
+        origin_address: originAddr,
+        destination_address: destAddr,
+        status: 'TERKONFIRMASI',
+      },
+      update: {
+        shipment_type: 'DOMESTIK',
+        biteship_rate_id: rate.rateId,
+        courier_name: rate.kurirNama,
+        courier_code: rate.kurirKode,
+        service_name: rate.serviceNama,
+        service_code: rate.serviceKode,
+        estimated_days: rate.estimasiHari,
+        base_shipping_cost: rate.ongkirDasar,
+        insurance_fee: rate.biayaAsuransi,
+        packaging_fee: rate.biayaPengemasan,
+        total_shipping_cost: rate.totalOngkir,
+        actual_weight: weightKg,
+        volumetric_weight: volWeight,
+        billed_weight: billedWeight,
+        drum_count: drumCount,
+        origin_address: originAddr,
+        destination_address: destAddr,
+        status: 'TERKONFIRMASI',
+      },
+    });
+  }
+
+  async getOngkirOptions(orderId: string, userId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        buyer: { include: { profile: true } },
+        supplier: { include: { profile: true, supplier_profile: true } },
+        items: { include: { product: true, circular_product: true } },
+      },
+    });
+
+    if (!order) throw new NotFoundException('Order tidak ditemukan');
+    if (order.buyer_id !== userId) throw new ForbiddenException('Bukan pesanan Anda');
+
+    const addr = order.shipping_address as any;
+    const buyerProfile = order.buyer.profile;
+
+    const destinationAddress =
+      addr?.address || buyerProfile?.address || '';
+    const destinationPostalCode =
+      addr?.postal_code || buyerProfile?.postal_code || null;
+    const destinationAreaId = addr?.area_id || buyerProfile?.area_id || null;
+
+    const quoted = await this.quoteRatesForItems({
+      supplierId: order.supplier_id,
+      destinationAddress,
+      destinationPostalCode,
+      destinationAreaId,
+      items: order.items.map((item) => ({
+        productId: item.product_id,
+        circularProductId: item.circular_product_id,
+        quantityKg: item.quantity_kg,
+      })),
+    });
+
+    return quoted.rates;
   }
 
   /**
    * Menghitung tarif dasar B2B shipping dengan formula custom VALAM.
-   * Formula ini memperhitungkan rute (Sumatra → Jawa) dan jenis kurir.
-   *
-   * FLOOR PROTECTION: Hasil formula custom TIDAK BOLEH lebih rendah dari
-   * harga real Biteship (biteshipRate). Ini mencegah VALAM menanggung
-   * selisih biaya kirim (nombok). Jika formula custom menghasilkan
-   * angka lebih rendah, dipakai harga Biteship sebagai base cost.
+   * Floor protection: never below Biteship real rate.
    */
   private calculateBaseRate(courier: string, weight: number, origin: string, destination: string, biteshipRate?: number): number {
     let ratePerKg = 1500;
@@ -160,78 +399,38 @@ export class ShipmentService {
 
     if (!order) throw new NotFoundException('Order tidak ditemukan');
     if (order.buyer_id !== userId) throw new ForbiddenException('Bukan pesanan Anda');
-    if (order.status !== 'UNPAID') throw new BadRequestException('Status pesanan harus UNPAID');
+    
+    // Allow confirm for unpaid orders (legacy UNPAID status or pending payment)
+    if (order.payment_status === 'paid' || order.payment_status === 'PAID') {
+      throw new BadRequestException('Pesanan sudah dibayar');
+    }
 
     const totalWeight = order.items.reduce((sum, item) => sum + item.quantity_kg, 0);
-    const drumCount = Math.ceil(totalWeight / DRUM_CAPASITAS_KG);
-    const volWeight = (DRUM_PANJANG_CM * DRUM_LEBAR_CM * DRUM_TINGGI_CM / DIVISOR_VOLUMETRIK) * drumCount;
-    const billedWeight = Math.max(totalWeight, volWeight);
 
     // Call getOngkirOptions and find chosen rateId
     const options = await this.getOngkirOptions(orderId, userId);
-    const rate = options.find((opt) => opt.rateId === selectedRateId) || options[0];
+    const rate = options.find((opt) => opt.rateId === selectedRateId);
+    if (!rate) {
+      throw new BadRequestException(
+        'Tarif kurir tidak ditemukan atau sudah berubah. Silakan muat ulang opsi ongkir.',
+      );
+    }
 
-    // Snapshot addresses — include postal_code and area_id for Biteship createOrder
-    const originAddr = {
-      name: order.supplier.supplier_profile?.nama_koperasi || 'Koperasi Produsen',
-      phone: order.supplier.supplier_profile?.whatsapp || '08123456789',
-      address: order.supplier.supplier_profile?.alamat_lengkap || 'Aceh',
-      postal_code: order.supplier.supplier_profile?.postal_code || null,
-      area_id: order.supplier.supplier_profile?.area_id || null,
+    const addr = order.shipping_address as any;
+    const destination = {
+      address: addr?.address || order.buyer.profile?.address || '',
+      postal_code: addr?.postal_code || order.buyer.profile?.postal_code || null,
+      area_id: addr?.area_id || order.buyer.profile?.area_id || null,
+      contact_name: addr?.contact_name || order.buyer.profile?.company_name || order.buyer.profile?.contact_person || null,
+      phone: addr?.phone || order.buyer.profile?.phone || null,
     };
 
-    const destAddr = {
-      name: order.buyer.profile?.company_name || 'Buyer Corp',
-      phone: order.buyer.profile?.phone || '08123456789',
-      address: order.buyer.profile?.address || 'Destination Port',
-      postal_code: order.buyer.profile?.postal_code || null,
-      area_id: order.buyer.profile?.area_id || null,
-    };
-
-    // Upsert Shipment record
-    const shipment = await this.prisma.shipment.upsert({
-      where: { order_id: orderId },
-      create: {
-        order_id: orderId,
-        shipment_type: 'DOMESTIK',
-        biteship_rate_id: rate.rateId,
-        courier_name: rate.kurirNama,
-        courier_code: rate.kurirKode,
-        service_name: rate.serviceNama,
-        service_code: rate.serviceKode,
-        estimated_days: rate.estimasiHari,
-        base_shipping_cost: rate.ongkirDasar,
-        insurance_fee: rate.biayaAsuransi,
-        packaging_fee: rate.biayaPengemasan,
-        total_shipping_cost: rate.totalOngkir,
-        actual_weight: totalWeight,
-        volumetric_weight: volWeight,
-        billed_weight: billedWeight,
-        drum_count: drumCount,
-        origin_address: originAddr,
-        destination_address: destAddr,
-        status: 'TERKONFIRMASI'
-      },
-      update: {
-        shipment_type: 'DOMESTIK',
-        biteship_rate_id: rate.rateId,
-        courier_name: rate.kurirNama,
-        courier_code: rate.kurirKode,
-        service_name: rate.serviceNama,
-        service_code: rate.serviceKode,
-        estimated_days: rate.estimasiHari,
-        base_shipping_cost: rate.ongkirDasar,
-        insurance_fee: rate.biayaAsuransi,
-        packaging_fee: rate.biayaPengemasan,
-        total_shipping_cost: rate.totalOngkir,
-        actual_weight: totalWeight,
-        volumetric_weight: volWeight,
-        billed_weight: billedWeight,
-        drum_count: drumCount,
-        origin_address: originAddr,
-        destination_address: destAddr,
-        status: 'TERKONFIRMASI'
-      }
+    const shipment = await this.createShipmentForCheckout({
+      orderId,
+      supplierId: order.supplier_id,
+      rate,
+      destination,
+      weightKg: totalWeight,
     });
 
     // Update order with shipping cost
@@ -239,8 +438,13 @@ export class ShipmentService {
       where: { id: orderId },
       data: {
         shipping_cost: rate.totalOngkir,
-        shipping_address: destAddr
-      }
+        shipping_address: {
+          ...(typeof order.shipping_address === 'object' && order.shipping_address
+            ? order.shipping_address
+            : {}),
+          ...destination,
+        },
+      },
     });
 
     await this.createSystemNotification(

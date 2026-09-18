@@ -76,7 +76,7 @@ export function MatchResultCard({
     >
       
       {/* Rank Indicator Badge */}
-      <div className={`absolute top-0 left-0 w-8 h-8 flex items-center justify-center font-black rounded-br-xl shadow-sm text-xs border-r border-b border-zinc-150
+      <div className={`absolute top-0 left-0 w-8 h-8 flex items-center justify-center font-bold tabular-nums rounded-br-xl shadow-sm text-xs border-r border-b border-zinc-150
         ${isBestRank ? 'bg-gradient-to-r from-gold-500 to-gold-400 text-forest-950' : 'bg-zinc-100 text-zinc-600'}
       `}>
         #{idx + 1}
@@ -84,7 +84,7 @@ export function MatchResultCard({
 
       {/* Best Recommendation Ribbon Badge */}
       {isBestRank && (
-        <div className="absolute top-0 right-0 bg-gradient-to-r from-gold-450 to-gold-350 text-forest-950 text-[10px] font-bold px-3.5 py-1.5 rounded-bl-xl shadow-sm flex items-center gap-1">
+        <div className="absolute top-0 right-0 bg-gradient-to-r from-gold-450 to-gold-350 text-forest-950 text-[10px] font-semibold tracking-wide px-3.5 py-1.5 rounded-bl-xl shadow-sm flex items-center gap-1">
           <span>🏆</span> {translations.bestMatch}
         </div>
       )}
@@ -112,18 +112,18 @@ export function MatchResultCard({
       <div className={`flex-shrink-0 flex items-center justify-center w-20 h-20 rounded-full border shadow-inner
         ${isBestRank ? 'bg-gold-50/50 border-gold-200' : 'bg-forest-50/50 border-forest-100'}`}>
         <div className="text-center">
-          <span className={`block text-2xl font-black leading-none ${isBestRank ? 'text-gold-700' : 'text-forest-700'}`}>{product.match_score}%</span>
-          <span className="block text-[8px] uppercase font-bold text-warm-700 tracking-wider mt-0.5">{translations.matchScore}</span>
+          <span className={`block text-2xl font-bold tabular-nums tracking-tight leading-none ${isBestRank ? 'text-gold-700' : 'text-forest-700'}`}>{product.match_score}%</span>
+          <span className="block text-[9px] uppercase font-semibold text-warm-700 tracking-[0.08em] mt-0.5">{translations.matchScore}</span>
         </div>
       </div>
 
       {/* Info & Score Bar */}
       <div className="flex-1 text-center md:text-left w-full space-y-2">
-        <h3 className="text-lg font-bold text-forest-950 flex flex-wrap items-center justify-center md:justify-start gap-1.5">
+        <h3 className="text-base md:text-lg font-semibold text-forest-950 tracking-tight leading-snug flex flex-wrap items-center justify-center md:justify-start gap-1.5">
           {product.supplier_name}
           <ShieldCheck className="w-4 h-4 text-forest-500 shrink-0" />
           {product.origin_district && (
-            <span className="inline-flex items-center gap-1 bg-terracotta-100 text-terracotta-700 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border border-terracotta-200/50 ml-1">
+            <span className="inline-flex items-center gap-1 bg-terracotta-100 text-terracotta-700 text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full border border-terracotta-200/50 ml-1">
               <span className="w-1 h-1 rounded-full bg-terracotta-500 animate-pulse" />
               {product.origin_district}
             </span>
@@ -131,18 +131,18 @@ export function MatchResultCard({
         </h3>
         
         {/* Specs detail row */}
-        <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-4 gap-y-1.5 text-xs text-warm-700 font-medium">
+        <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-4 gap-y-1.5 text-[12px] text-warm-700 font-normal leading-snug">
           <div className="flex items-center gap-1.5">
             <CheckCircle2 className="w-3.5 h-3.5 text-forest-500 shrink-0" />
-            {translations.stock}: <strong className="text-forest-950 font-bold">{product.available_volume_kg} kg</strong>
+            {translations.stock}: <strong className="text-forest-950 font-semibold tabular-nums">{product.available_volume_kg} kg</strong>
           </div>
           <div className="flex items-center gap-1.5">
             <CheckCircle2 className="w-3.5 h-3.5 text-forest-500 shrink-0" />
-            {translations.pa}: <strong className="text-forest-950 font-bold">{product.pa_percentage}%</strong>
+            {translations.pa}: <strong className="text-forest-950 font-semibold tabular-nums">{product.pa_percentage}%</strong>
           </div>
           <div className="flex items-center gap-1.5">
             <CheckCircle2 className="w-3.5 h-3.5 text-forest-500 shrink-0" />
-            {translations.moisture}: <strong className="text-forest-950 font-bold">{product.moisture}%</strong>
+            {translations.moisture}: <strong className="text-forest-950 font-semibold tabular-nums">{product.moisture}%</strong>
           </div>
         </div>
 
@@ -162,16 +162,16 @@ export function MatchResultCard({
       {/* Action panel & Price */}
       <div className="flex flex-col items-end gap-2.5 min-w-[180px] w-full md:w-auto border-t md:border-t-0 border-zinc-100 pt-4 md:pt-0 shrink-0">
         <div className="text-center md:text-right w-full">
-          <p className="text-[10px] text-zinc-400 mb-0.5">{translations.priceLabel}</p>
-          <p className={`text-lg font-extrabold leading-none ${isBestRank ? 'text-gold-700' : 'text-forest-700'}`}>
+          <p className="text-[10px] text-zinc-400 font-medium uppercase tracking-[0.08em] mb-0.5">{translations.priceLabel}</p>
+          <p className={`text-lg font-bold tabular-nums tracking-tight leading-none ${isBestRank ? 'text-gold-700' : 'text-forest-700'}`}>
             {formatRupiah(product.price_per_kg)}
-            <span className="text-xs font-normal text-zinc-450">/kg</span>
+            <span className="text-xs font-normal text-zinc-450 tracking-normal">/kg</span>
           </p>
         </div>
         
         <div className="flex items-center gap-2 w-full">
           <Link href={`/katalog/${product.id}?from=matching&match_score=${product.match_score}`} className="flex-1">
-            <Button variant="outline" className="w-full border-forest-200 text-forest-700 hover:bg-forest-50 hover:text-forest-800 h-9 text-xs font-bold rounded-lg px-2 transition-all">
+            <Button variant="outline" className="w-full border-forest-200 text-forest-700 hover:bg-forest-50 hover:text-forest-800 h-9 text-xs font-semibold tracking-tight rounded-lg px-2 transition-all">
               {translations.btnDetail}
             </Button>
           </Link>
@@ -179,7 +179,7 @@ export function MatchResultCard({
             <button
               disabled
               title={locale === 'en' ? 'This feature is only for Buyer accounts' : 'Fitur ini khusus untuk akun Buyer'}
-              className="flex-1 w-full bg-zinc-100 border border-zinc-200 text-zinc-400 font-bold h-9 text-xs rounded-lg px-2 opacity-50 cursor-not-allowed text-center"
+              className="flex-1 w-full bg-zinc-100 border border-zinc-200 text-zinc-400 font-semibold h-9 text-xs rounded-lg px-2 opacity-50 cursor-not-allowed text-center"
             >
               {translations.btnRfq}
             </button>
@@ -189,7 +189,7 @@ export function MatchResultCard({
               className="flex-1" 
               onClick={onRfqClick}
             >
-              <Button className="w-full bg-forest-700 hover:bg-forest-600 text-white font-bold h-9 text-xs rounded-lg px-2 border border-forest-800/40 transition-colors">
+              <Button className="w-full bg-forest-700 hover:bg-forest-600 text-white font-semibold tracking-tight h-9 text-xs rounded-lg px-2 border border-forest-800/40 transition-colors">
                 {translations.btnRfq}
               </Button>
             </Link>

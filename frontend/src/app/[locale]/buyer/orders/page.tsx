@@ -93,58 +93,6 @@ export default function BuyerOrdersPage() {
   const locale = useLocale() as 'id' | 'en'
   const t = contentMap[locale] || contentMap.id
 
-  const calculateShippingCost = (courier: string, address: string, weight: number, originProvince: string) => {
-    let ratePerKg = 1500; // default for cargo_truck
-    let minFee = 100000;
-    
-    if (courier === 'jne_jtr') {
-      ratePerKg = 2500;
-      minFee = 150000;
-    } else if (courier === 'sea_freight') {
-      ratePerKg = 5000;
-      minFee = 300000;
-    }
-
-    let cost = weight * ratePerKg;
-    if (cost < minFee) cost = minFee;
-
-    const lowerOrigin = (originProvince || 'Aceh').toLowerCase();
-    const lowerDest = (address || '').toLowerCase();
-    
-    let multiplier = 1.0;
-
-    // Check if shipment is domestic / cross-island
-    const isOriginSumatra = lowerOrigin.includes('aceh') || lowerOrigin.includes('sumatra') || lowerOrigin.includes('utara');
-    const isOriginJava = lowerOrigin.includes('jawa') || lowerOrigin.includes('jakarta') || lowerOrigin.includes('banten');
-    const isOriginSulawesi = lowerOrigin.includes('sulawesi');
-
-    const isDestSumatra = lowerDest.includes('sumatra') || lowerDest.includes('sumatera') || lowerDest.includes('aceh');
-    const isDestJavaCentralEast = lowerDest.includes('jawa tengah') || lowerDest.includes('jateng') || lowerDest.includes('jawa timur') || lowerDest.includes('jatim');
-    const isDestJavaWest = lowerDest.includes('jawa barat') || lowerDest.includes('jabar') || lowerDest.includes('jakarta') || lowerDest.includes('banten') || lowerDest.includes('cikarang') || lowerDest.includes('tanjung priok') || lowerDest.includes('karawang') || lowerDest.includes('deltamas');
-    const isDestSulawesi = lowerDest.includes('sulawesi');
-
-    if (isOriginSumatra) {
-      if (isDestJavaWest) multiplier = 1.4;
-      else if (isDestJavaCentralEast) multiplier = 1.6;
-      else if (isDestSulawesi) multiplier = 2.2;
-      else if (isDestSumatra) multiplier = 1.0; // Same island local cargo
-      else multiplier = 2.0;
-    } else if (isOriginSulawesi) {
-      if (isDestJavaWest) multiplier = 1.8;
-      else if (isDestJavaCentralEast) multiplier = 1.6;
-      else if (isDestSulawesi) multiplier = 1.0; // Local
-      else multiplier = 2.4;
-    } else if (isOriginJava) {
-      if (isDestJavaWest) multiplier = 1.0; // Local Jabodetabek / West Java
-      else if (isDestJavaCentralEast) multiplier = 1.2;
-      else if (isDestSumatra) multiplier = 1.5;
-      else if (isDestSulawesi) multiplier = 1.8;
-      else multiplier = 2.0;
-    }
-
-    return Math.round(cost * multiplier);
-  }
-
   useEffect(() => {
     if (!shippingOrder || !shippingAddress || shipmentType !== 'DOMESTIK') return;
 
@@ -687,7 +635,14 @@ export default function BuyerOrdersPage() {
                         <p className="text-[10px] text-amber-600 font-bold mt-1">⚠️ Atur kargo terlebih dahulu untuk membayar</p>
                       )}
                       {isAwaitingPayment(order) && order.shipping_address?.address && (
-                        <p className="text-[10px] text-emerald-700 font-bold mt-1">✓ Kargo diatur: {order.shipping_cost === 150000 ? 'Land Cargo' : order.shipping_cost === 250000 ? 'JNE JTR' : 'Sea Container'}</p>
+                        <p className="text-[10px] text-emerald-700 font-bold mt-1">
+                          ✓ Kargo diatur
+                          {order.shipping_address?.courier?.kurirNama
+                            ? `: ${order.shipping_address.courier.kurirNama}${order.shipping_address.courier.serviceNama ? ` — ${order.shipping_address.courier.serviceNama}` : ''}`
+                            : order.shipping_cost > 0
+                              ? `: ${formatRupiah(order.shipping_cost)}`
+                              : ''}
+                        </p>
                       )}
                     </div>
                     <div className="flex gap-3">
@@ -699,7 +654,7 @@ export default function BuyerOrdersPage() {
                             onClick={() => {
                               setShippingOrder(order)
                               setShippingAddress(order.shipping_address?.address || '')
-                              setShippingCourier(order.shipping_cost === 150000 ? 'cargo_truck' : order.shipping_cost === 250000 ? 'jne_jtr' : 'sea_freight')
+                              setShippingCourier('cargo_truck')
                             }}
                           >
                             Atur Pengiriman

@@ -47,7 +47,7 @@ export function InsightsTeaser() {
   ];
 
   return (
-    <section className="py-14 sm:py-20 md:py-24 bg-zinc-50/80 relative overflow-hidden border-t border-zinc-100">
+    <section className="py-14 sm:py-20 md:py-24 relative border-t border-zinc-200/60">
       <div className="container mx-auto px-4 sm:px-6 md:px-8 max-w-7xl relative z-10">
         
         {/* Section Header */}

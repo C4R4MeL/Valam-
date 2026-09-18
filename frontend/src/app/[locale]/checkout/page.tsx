@@ -2,9 +2,10 @@
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { Link, useRouter } from '@/i18n/routing'
-import { ArrowLeft, CheckCircle2, ShieldCheck, MapPin, Factory, AlertCircle, Package, Clock, XCircle, RefreshCw, Loader2 } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, ShieldCheck, MapPin, Factory, AlertCircle, Clock, XCircle, RefreshCw, Loader2, Truck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from '@/hooks/use-toast'
 import { useLocale } from 'next-intl'
 import { useSearchParams } from 'next/navigation'
@@ -18,6 +19,27 @@ export default function CheckoutPage() {
   
   // Step 1 States
   const [address, setAddress] = useState('')
+  const [contactName, setContactName] = useState('')
+  const [contactPhone, setContactPhone] = useState('')
+  
+  // Emsifa API States
+  const [provinces, setProvinces] = useState<{ id: string, name: string }[]>([])
+  const [cities, setCities] = useState<{ id: string, province_id: string, name: string }[]>([])
+  const [districts, setDistricts] = useState<{ id: string, regency_id: string, name: string }[]>([])
+
+  const [selectedProvince, setSelectedProvince] = useState<{ id: string, name: string } | null>(null)
+  const [selectedCity, setSelectedCity] = useState<{ id: string, name: string } | null>(null)
+  const [selectedDistrict, setSelectedDistrict] = useState<{ id: string, name: string } | null>(null)
+
+  const [biteshipAreaId, setBiteshipAreaId] = useState<string | null>(null)
+  const [postalCode, setPostalCode] = useState<string>('')
+  const [searchingArea, setSearchingArea] = useState(false)
+
+  const [quoting, setQuoting] = useState(false)
+  const [quoteError, setQuoteError] = useState('')
+  const [quoteGroups, setQuoteGroups] = useState<Record<string, any>>({})
+  const [selectedRates, setSelectedRates] = useState<Record<string, string>>({})
+  const [selectedRateDetails, setSelectedRateDetails] = useState<Record<string, any>>({})
   const [supplierNotes, setSupplierNotes] = useState<Record<string, string>>({})
   
   // Step 2 States
@@ -163,9 +185,18 @@ export default function CheckoutPage() {
     }, {} as Record<string, { supplierName: string, items: any[], totalSubtotal: number, totalKg: number }>)
   }, [itemsToCheckout, isCircular])
 
-  const grandTotal = useMemo(() => {
+  const shippingTotal = useMemo(() => {
+    return Object.values(selectedRateDetails).reduce(
+      (sum: number, rate: any) => sum + (Number(rate?.totalOngkir) || 0),
+      0,
+    )
+  }, [selectedRateDetails])
+
+  const itemsSubtotal = useMemo(() => {
     return Object.values(groupedItems).reduce((sum: number, grp: any) => sum + grp.totalSubtotal, 0)
   }, [groupedItems])
+
+  const grandTotal = itemsSubtotal + shippingTotal
 
   // Redirect if cart empty on load (only if not already submitted and not in direct mode)
   useEffect(() => {
@@ -176,9 +207,174 @@ export default function CheckoutPage() {
     }
   }, [loading, itemsToCheckout, step, router, toast, isDirect])
 
+  // Fetch Provinces on mount
+  useEffect(() => {
+    fetch('https://www.emsifa.com/api-wilayah-indonesia/api/provinces.json')
+      .then(res => res.json())
+      .then(data => setProvinces(data))
+      .catch(console.error)
+  }, [])
+
+  // Fetch Cities when Province changes
+  useEffect(() => {
+    if (!selectedProvince) {
+      setCities([])
+      setSelectedCity(null)
+      return
+    }
+    fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/regencies/${selectedProvince.id}.json`)
+      .then(res => res.json())
+      .then(data => setCities(data))
+      .catch(console.error)
+  }, [selectedProvince])
+
+  // Fetch Districts when City changes
+  useEffect(() => {
+    if (!selectedCity) {
+      setDistricts([])
+      setSelectedDistrict(null)
+      return
+    }
+    fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/districts/${selectedCity.id}.json`)
+      .then(res => res.json())
+      .then(data => setDistricts(data))
+      .catch(console.error)
+  }, [selectedCity])
+
+  // Fetch Biteship Area ID when District changes
+  useEffect(() => {
+    if (!selectedDistrict || !selectedCity) {
+      setBiteshipAreaId(null)
+      setPostalCode('')
+      setQuoteGroups({})
+      setSelectedRates({})
+      setSelectedRateDetails({})
+      return
+    }
+    
+    setSearchingArea(true)
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api'
+    const token = localStorage.getItem('valam_token')
+    
+    const query = `${selectedDistrict.name} ${selectedCity.name}`
+    fetch(`${API_URL}/shipment/areas/search?q=${encodeURIComponent(query)}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        const areas = Array.isArray(data) ? data : data?.areas || []
+        if (areas.length > 0) {
+          setBiteshipAreaId(areas[0].id)
+          setPostalCode(String(areas[0].postal_code || ''))
+        } else {
+          setBiteshipAreaId(null)
+        }
+      })
+      .catch(console.error)
+      .finally(() => setSearchingArea(false))
+  }, [selectedDistrict, selectedCity])
+
+  const fetchQuotes = useCallback(async () => {
+    const supplierIds = Object.keys(groupedItems)
+    if (!supplierIds.length || !biteshipAreaId) return
+
+    setQuoting(true)
+    setQuoteError('')
+    setQuoteGroups({})
+    setSelectedRates({})
+    setSelectedRateDetails({})
+
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api'
+      const token = localStorage.getItem('valam_token')
+      if (!token) {
+        toast({ title: isId ? 'Sesi Berakhir' : 'Session Expired', description: isId ? 'Silakan login kembali.' : 'Please log in again.', variant: 'destructive' })
+        router.push('/login')
+        return
+      }
+
+      const groups = supplierIds.map((supplierId) => {
+        const group = groupedItems[supplierId]
+        return {
+          supplierId,
+          items: group.items.map((item: any) => {
+            const isCirc = !!(item.is_circular || isCircular || item.circular_product_id)
+            return {
+              productId: isCirc ? undefined : (item.product_id || item.product?.id),
+              circularProductId: isCirc
+                ? (item.circular_product_id || item.product_id || item.product?.id)
+                : undefined,
+              quantityKg: item.quantity_kg,
+            }
+          }),
+        }
+      })
+
+      const res = await fetch(`${API_URL}/shipment/quote`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          destinationAddress: address.trim() || `${selectedDistrict?.name}, ${selectedCity?.name}, ${selectedProvince?.name}`,
+          destinationPostalCode: String(postalCode || ''),
+          destinationAreaId: biteshipAreaId,
+          groups,
+        }),
+      })
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        throw new Error(
+          Array.isArray(errData.message)
+            ? errData.message.join(', ')
+            : errData.message || `Gagal memuat ongkir (${res.status})`,
+        )
+      }
+
+      const data = await res.json()
+      const nextGroups: Record<string, any> = {}
+      const nextRates: Record<string, string> = {}
+      const nextDetails: Record<string, any> = {}
+
+      for (const g of data.groups || []) {
+        nextGroups[g.supplierId] = g
+        if (g.rates?.length) {
+          nextRates[g.supplierId] = g.rates[0].rateId
+          nextDetails[g.supplierId] = g.rates[0]
+        }
+      }
+
+      setQuoteGroups(nextGroups)
+      setSelectedRates(nextRates)
+      setSelectedRateDetails(nextDetails)
+    } catch (err: any) {
+      setQuoteError(err.message || (isId ? 'Gagal memuat ongkir.' : 'Failed to load shipping rates.'))
+    } finally {
+      setQuoting(false)
+    }
+  }, [groupedItems, address, isCircular, isId, toast, router])
+
+
+  const handleSelectRate = (supplierId: string, rate: any) => {
+    setSelectedRates((prev) => ({ ...prev, [supplierId]: rate.rateId }))
+    setSelectedRateDetails((prev) => ({ ...prev, [supplierId]: rate }))
+  }
+
   const handleNextToReview = () => {
-    if (!address.trim()) {
-      toast({ title: 'Alamat Wajib Diisi', description: 'Silakan isi alamat pengiriman Anda.', variant: 'destructive' })
+    if (!contactName.trim() || !contactPhone.trim() || !address.trim() || !selectedProvince || !selectedCity || !selectedDistrict) {
+      toast({ title: isId ? 'Data Belum Lengkap' : 'Data Incomplete', description: isId ? 'Mohon isi semua field pengiriman.' : 'Please fill all shipping fields.', variant: 'destructive' })
+      return
+    }
+    if (!biteshipAreaId) {
+      toast({ title: isId ? 'Area Tidak Didukung' : 'Area Not Supported', description: isId ? 'Area pengiriman tidak terdaftar di sistem ongkir Biteship.' : 'Shipping area is not supported for quotes.', variant: 'destructive' })
+      return
+    }
+    const supplierIds = Object.keys(groupedItems)
+    const missing = supplierIds.filter((id) => !selectedRates[id])
+    if (missing.length || quoting) {
+      toast({ title: isId ? 'Kurir Belum Lengkap' : 'Courier Incomplete', description: isId ? 'Pilih layanan kurir untuk setiap pemasok sebelum lanjut.' : 'Select a courier for every supplier before continuing.', variant: 'destructive' })
       return
     }
     setStep(2)
@@ -229,10 +425,17 @@ export default function CheckoutPage() {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          shipping_address: address,
-          shipping_cost: 0,
-          shipping_method: 'DOMESTIK',
-          shipping_courier: 'cargo_truck',
+          destinationAddress: {
+            address: address.trim(),
+            province: selectedProvince?.name,
+            city: selectedCity?.name,
+            district: selectedDistrict?.name,
+            postal_code: postalCode || undefined,
+            area_id: biteshipAreaId || undefined,
+            contact_name: contactName.trim() || undefined,
+            phone: contactPhone.trim() || undefined,
+          },
+          selectedRates,
           payment_method: isCircular ? 'DIRECT_TRANSFER' : 'ESCROW',
           ...(isDirect && directProduct ? {
             direct: true,
@@ -274,8 +477,23 @@ export default function CheckoutPage() {
         status: 'PENDING',
         payment_status: 'pending',
         total_amount: group.totalSubtotal,
-        shipping_cost: 0,
-        shipping_address: { address: address },
+        shipping_cost: selectedRateDetails[supplierId]?.totalOngkir || 0,
+        shipping_address: {
+          address,
+          province: selectedProvince?.name,
+          city: selectedCity?.name,
+          district: selectedDistrict?.name,
+          postal_code: postalCode || null,
+          area_id: biteshipAreaId || null,
+          courier: selectedRateDetails[supplierId]
+            ? {
+                rateId: selectedRateDetails[supplierId].rateId,
+                kurirNama: selectedRateDetails[supplierId].kurirNama,
+                serviceNama: selectedRateDetails[supplierId].serviceNama,
+                estimasiHari: selectedRateDetails[supplierId].estimasiHari,
+              }
+            : null,
+        },
         created_at: new Date().toISOString(),
         supplier: { profile: { company_name: group.supplierName } },
         items: group.items.map((it: any) => ({
@@ -530,7 +748,7 @@ export default function CheckoutPage() {
             <div>
               <h2 className="text-2xl font-serif font-black">{isId ? 'Informasi Pengiriman' : 'Shipping Information'}</h2>
               <p className="text-xs text-zinc-500 mt-1">
-                {isId ? 'Tentukan alamat tujuan penerima untuk pengiriman kargo.' : 'Specify recipient destination address for cargo delivery.'}
+                {isId ? 'Pilih area tujuan, lalu tentukan kurir/ongkir per pemasok sebelum bayar.' : 'Choose destination area, then pick courier/rates per supplier before paying.'}
               </p>
             </div>
             
@@ -540,16 +758,213 @@ export default function CheckoutPage() {
                 <MapPin className="w-5 h-5" />
                 <h3>{isId ? 'Alamat Tujuan' : 'Destination Address'}</h3>
               </div>
+
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-zinc-700">{isId ? 'Nama Penerima' : 'Recipient Name'}</label>
+                  <input
+                    value={contactName}
+                    onChange={(e) => setContactName(e.target.value)}
+                    placeholder={isId ? 'Nama PIC / gudang' : 'PIC / warehouse name'}
+                    className="w-full h-11 rounded-xl border border-zinc-200 px-3 text-sm focus:border-[#1B5E3A] focus:ring-[#1B5E3A]/20 outline-none"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-zinc-700">{isId ? 'No. Telepon' : 'Phone'}</label>
+                  <input
+                    value={contactPhone}
+                    onChange={(e) => setContactPhone(e.target.value)}
+                    placeholder="08xxxxxxxxxx"
+                    className="w-full h-11 rounded-xl border border-zinc-200 px-3 text-sm focus:border-[#1B5E3A] focus:ring-[#1B5E3A]/20 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 relative">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-zinc-700">{isId ? 'Provinsi' : 'Province'}</label>
+                  <Select 
+                    value={selectedProvince?.id || ''} 
+                    onValueChange={(val) => {
+                      const p = provinces.find(x => x.id === val)
+                      setSelectedProvince(p || null)
+                      setSelectedCity(null)
+                      setSelectedDistrict(null)
+                    }}
+                  >
+                    <SelectTrigger className="w-full h-11 rounded-xl border border-zinc-200 px-3 text-sm focus:ring-[#1B5E3A]/20">
+                      <SelectValue placeholder={isId ? 'Pilih Provinsi' : 'Select Province'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {provinces.map(p => (
+                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-zinc-700">{isId ? 'Kota/Kabupaten' : 'City/Regency'}</label>
+                  <Select 
+                    value={selectedCity?.id || ''} 
+                    onValueChange={(val) => {
+                      const c = cities.find(x => x.id === val)
+                      setSelectedCity(c || null)
+                      setSelectedDistrict(null)
+                    }}
+                    disabled={!selectedProvince}
+                  >
+                    <SelectTrigger className="w-full h-11 rounded-xl border border-zinc-200 px-3 text-sm focus:ring-[#1B5E3A]/20">
+                      <SelectValue placeholder={isId ? 'Pilih Kota/Kab.' : 'Select City'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {cities.map(c => (
+                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-zinc-700">{isId ? 'Kecamatan' : 'District'}</label>
+                  <Select 
+                    value={selectedDistrict?.id || ''} 
+                    onValueChange={(val) => {
+                      const d = districts.find(x => x.id === val)
+                      setSelectedDistrict(d || null)
+                    }}
+                    disabled={!selectedCity}
+                  >
+                    <SelectTrigger className="w-full h-11 rounded-xl border border-zinc-200 px-3 text-sm focus:ring-[#1B5E3A]/20">
+                      <SelectValue placeholder={isId ? 'Pilih Kecamatan' : 'Select District'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {districts.map(d => (
+                        <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {searchingArea && (
+                <p className="text-[11px] text-zinc-500 flex items-center gap-1.5">
+                  <Loader2 className="w-3 h-3 animate-spin" /> {isId ? 'Mencari area pengiriman...' : 'Configuring shipping area...'}
+                </p>
+              )}
+              {biteshipAreaId && !searchingArea && (
+                <p className="text-[11px] text-emerald-700 font-semibold">
+                  ✓ {isId ? 'Area pengiriman tersedia' : 'Shipping area available'}
+                </p>
+              )}
+
               <Textarea 
                 value={address}
                 onChange={e => setAddress(e.target.value)}
-                placeholder={isId ? 'Masukkan alamat lengkap penerima/gudang (Nama jalan, nomor, RT/RW, kecamatan, kota/kabupaten, provinsi, kode pos)...' : 'Enter complete recipient/warehouse address (Street name, district, city, province, postal code)...'}
-                className="min-h-[120px] rounded-xl border-zinc-200 focus:border-[#1B5E3A] focus:ring-[#1B5E3A]/20 resize-none text-sm"
+                placeholder={isId ? 'Alamat lengkap: nama jalan, nomor, RT/RW, patokan...' : 'Full address: street, number, landmarks...'}
+                className="min-h-[100px] rounded-xl border-zinc-200 focus:border-[#1B5E3A] focus:ring-[#1B5E3A]/20 resize-none text-sm"
               />
               <p className="text-[11px] text-zinc-500 flex items-center gap-1.5">
                 <AlertCircle className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                {isId ? 'Pengiriman kargo akan dikoordinasikan langsung ke alamat ini.' : 'Cargo dispatch will be coordinated directly to this address.'}
+                {isId ? 'Area digunakan untuk hitung ongkir Biteship; alamat detail untuk kurir.' : 'Area is used for Biteship quoting; detailed address is for the courier.'}
               </p>
+            </div>
+
+            {/* Kurir per supplier */}
+            <div className="bg-white p-6 rounded-3xl border border-zinc-200 shadow-sm space-y-5">
+              <div className="flex items-center gap-2 text-[#1B5E3A] font-bold border-b border-zinc-100 pb-3">
+                <Truck className="w-5 h-5" />
+                <h3>{isId ? 'Kurir & Ongkir per Pemasok' : 'Courier & Rates per Supplier'}</h3>
+              </div>
+
+              {!biteshipAreaId && (
+                <p className="text-xs text-zinc-500 bg-zinc-50 border border-zinc-100 rounded-xl p-4">
+                  {isId ? 'Pilih Kecamatan di atas untuk memuat pilihan kurir.' : 'Select a District above to load courier options.'}
+                </p>
+              )}
+
+              {quoting && (
+                <div className="flex items-center gap-2 text-xs text-emerald-800 font-semibold py-4 justify-center">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  {isId ? 'Menghitung ongkir Biteship...' : 'Calculating Biteship rates...'}
+                </div>
+              )}
+
+              {quoteError && (
+                <div className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-3">
+                  {quoteError}
+                  {biteshipAreaId && (
+                    <button
+                      type="button"
+                      onClick={() => fetchQuotes()}
+                      className="ml-2 font-bold underline"
+                    >
+                      {isId ? 'Coba lagi' : 'Retry'}
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {biteshipAreaId && !quoting && !quoteError && (
+                <div className="space-y-4">
+                  {Object.entries(groupedItems).map(([supplierId, group]: [string, any]) => {
+                    const quote = quoteGroups[supplierId]
+                const rates = quote?.rates || []
+                return (
+                  <div key={supplierId} className="space-y-3 border border-zinc-100 rounded-2xl p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <p className="font-bold text-sm text-zinc-900">{group.supplierName}</p>
+                        <p className="text-[11px] text-zinc-500">
+                          {group.totalKg} {isCircular ? 'unit' : 'kg'} · {formatRupiah(group.totalSubtotal)}
+                          {quote?.weightKg ? ` · billable ${quote.billedWeightKg?.toFixed?.(1) || quote.weightKg} kg` : ''}
+                        </p>
+                      </div>
+                    </div>
+
+                    {rates.length > 0 ? (
+                      <div className="space-y-2">
+                        {rates.map((rate: any) => {
+                          const isSelected = selectedRates[supplierId] === rate.rateId
+                          return (
+                            <button
+                              key={rate.rateId}
+                              type="button"
+                              onClick={() => handleSelectRate(supplierId, rate)}
+                              className={`w-full text-left p-3 rounded-xl border-2 transition-all ${
+                                isSelected
+                                  ? 'border-[#1B5E3A] bg-emerald-50/60'
+                                  : 'border-zinc-200 hover:border-zinc-300 bg-white'
+                              }`}
+                            >
+                              <div className="flex justify-between items-start gap-3">
+                                <div>
+                                  <p className="font-bold text-xs text-zinc-800">{rate.kurirNama} — {rate.serviceNama}</p>
+                                  <p className="text-[10px] text-zinc-500 mt-0.5">
+                                    {isId ? 'Estimasi' : 'ETA'}: {rate.estimasiHari} {isId ? 'hari' : 'days'}
+                                  </p>
+                                </div>
+                                <p className="font-black text-sm text-[#1B5E3A] shrink-0">{formatRupiah(rate.totalOngkir)}</p>
+                              </div>
+                              <div className="mt-2 pt-2 border-t border-zinc-100 flex flex-wrap gap-x-3 gap-y-1 text-[9px] text-zinc-500 font-medium">
+                                <span>{isId ? 'Dasar' : 'Base'}: {formatRupiah(rate.ongkirDasar)}</span>
+                                <span>{isId ? 'Asuransi' : 'Insurance'}: {formatRupiah(rate.biayaAsuransi)}</span>
+                                <span>{isId ? 'Packing' : 'Packaging'}: {formatRupiah(rate.biayaPengemasan)}</span>
+                              </div>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    ) : biteshipAreaId && !quoting && !quoteError ? (
+                      <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded-lg p-2">
+                        {isId ? 'Tidak ada layanan kurir untuk rute ini.' : 'No courier services for this route.'}
+                      </p>
+                    ) : null}
+                  </div>
+                )
+              })}
+              </div>
+            )}
             </div>
 
             {/* Catatan Per Pemasok */}
@@ -576,7 +991,8 @@ export default function CheckoutPage() {
 
             <Button 
               onClick={handleNextToReview}
-              className="w-full h-14 rounded-2xl bg-[#1B5E3A] hover:bg-[#123320] text-white font-bold text-base shadow-md shadow-[#1B5E3A]/20 transition-transform hover:scale-[1.01] cursor-pointer"
+              disabled={quoting}
+              className="w-full h-14 rounded-2xl bg-[#1B5E3A] hover:bg-[#123320] text-white font-bold text-base shadow-md shadow-[#1B5E3A]/20 transition-transform hover:scale-[1.01] cursor-pointer disabled:opacity-60"
             >
               {isId ? 'Lanjut ke Review & Pembayaran' : 'Proceed to Review & Payment'}
             </Button>
@@ -604,12 +1020,24 @@ export default function CheckoutPage() {
                     {isId ? 'Ubah' : 'Change'}
                   </button>
                 </div>
+                {(contactName || contactPhone) && (
+                  <p className="text-xs font-bold text-zinc-800">
+                    {[contactName, contactPhone].filter(Boolean).join(' · ')}
+                  </p>
+                )}
                 <p className="text-xs text-zinc-700 font-medium leading-relaxed">{address}</p>
+                {(selectedProvince || selectedCity || selectedDistrict) && (
+                  <p className="text-[10px] text-zinc-500">
+                    {[selectedDistrict?.name, selectedCity?.name, selectedProvince?.name, postalCode].filter(Boolean).join(', ')}
+                  </p>
+                )}
               </div>
               
               {/* Ringkasan per Supplier */}
               <div className="space-y-4">
-                {Object.entries(groupedItems).map(([supplierId, group]: [string, any]) => (
+                {Object.entries(groupedItems).map(([supplierId, group]: [string, any]) => {
+                  const rate = selectedRateDetails[supplierId]
+                  return (
                   <div key={supplierId} className="bg-white rounded-2xl border border-zinc-200 p-5 space-y-3 shadow-xs">
                     <div className="flex items-center gap-2 pb-3 border-b border-zinc-100 justify-between">
                       <div className="flex items-center gap-2">
@@ -644,12 +1072,30 @@ export default function CheckoutPage() {
                       ))}
                     </div>
 
+                    {rate && (
+                      <div className="pt-3 border-t border-zinc-100 space-y-1.5">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="font-bold text-zinc-500 flex items-center gap-1.5">
+                            <Truck className="w-3.5 h-3.5" />
+                            {rate.kurirNama} — {rate.serviceNama}
+                          </span>
+                          <span className="font-bold text-zinc-800">{formatRupiah(rate.totalOngkir)}</span>
+                        </div>
+                        <p className="text-[10px] text-zinc-400">
+                          ETA {rate.estimasiHari} {isId ? 'hari' : 'days'} · {isId ? 'Dasar' : 'Base'} {formatRupiah(rate.ongkirDasar)} + {isId ? 'asuransi' : 'insurance'} + packing
+                        </p>
+                      </div>
+                    )}
+
                     <div className="pt-3 border-t border-zinc-100 flex justify-between items-center text-xs">
                       <span className="font-bold text-zinc-500">{isId ? `Subtotal ${group.supplierName}` : `${group.supplierName} Subtotal`}</span> 
-                      <span className={`font-black ${isCircular ? 'text-[#C8922A]' : 'text-[#1B5E3A]'}`}>{formatRupiah(group.totalSubtotal)}</span>
+                      <span className={`font-black ${isCircular ? 'text-[#C8922A]' : 'text-[#1B5E3A]'}`}>
+                        {formatRupiah(group.totalSubtotal + (rate?.totalOngkir || 0))}
+                      </span>
                     </div>
                   </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
 
@@ -659,6 +1105,17 @@ export default function CheckoutPage() {
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-zinc-200 to-transparent"></div>
                 <h3 className="font-bold text-xl font-serif border-b border-zinc-100/80 pb-4">{isId ? 'Rincian Pembayaran' : 'Payment Summary'}</h3>
                 
+                <div className="space-y-2 pb-2 border-b border-zinc-100">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-zinc-500 font-medium">{isId ? 'Subtotal Produk' : 'Items Subtotal'}</span>
+                    <span className="font-bold text-zinc-800">{formatRupiah(itemsSubtotal)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-zinc-500 font-medium">{isId ? 'Total Ongkir' : 'Shipping Total'}</span>
+                    <span className="font-bold text-zinc-800">{formatRupiah(shippingTotal)}</span>
+                  </div>
+                </div>
+
                 <div className="flex justify-between items-end">
                   <span className="text-sm font-bold text-zinc-500">{isId ? 'Total Tagihan' : 'Grand Total'}</span>
                   <span className={`text-4xl font-black ${isCircular ? 'bg-gradient-to-br from-[#C8922A] to-amber-500' : 'bg-gradient-to-br from-[#1B5E3A] to-emerald-500'} bg-clip-text text-transparent`}>

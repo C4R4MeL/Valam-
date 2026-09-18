@@ -57,7 +57,7 @@ export function PriceSection() {
   ];
 
   return (
-    <section className="py-14 sm:py-20 md:py-24 bg-white border-t border-zinc-100 relative overflow-hidden">
+    <section className="py-14 sm:py-20 md:py-24 border-t border-zinc-200/60 relative">
       <div className="container mx-auto px-4 sm:px-6 md:px-8 max-w-7xl">
         <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14 space-y-3 sm:space-y-4">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold font-sans text-zinc-900 leading-tight inline-flex items-center justify-center gap-2 sm:gap-3 flex-wrap w-full">

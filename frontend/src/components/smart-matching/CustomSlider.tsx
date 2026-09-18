@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import * as React from 'react';
 
@@ -33,7 +33,7 @@ export function CustomSlider({
     <div className="relative pt-6 pb-2 select-none touch-none w-full">
       {/* Floating Tooltip above the thumb */}
       <div
-        className="absolute top-0 -translate-x-1/2 bg-[#1B5E3A] text-white text-[10px] font-bold py-0.5 px-2 rounded-md shadow-sm pointer-events-none transition-all duration-75 after:content-[''] after:absolute after:top-full after:left-1/2 after:-translate-x-1/2 after:border-4 after:border-transparent after:border-t-[#1B5E3A]"
+        className="absolute top-0 -translate-x-1/2 bg-[#1B5E3A] text-white text-[10px] font-semibold tabular-nums tracking-tight py-0.5 px-2 rounded-md shadow-sm pointer-events-none transition-all duration-75 after:content-[''] after:absolute after:top-full after:left-1/2 after:-translate-x-1/2 after:border-4 after:border-transparent after:border-t-[#1B5E3A]"
         style={{ left: `${percentage}%` }}
       >
         {displayVal}
