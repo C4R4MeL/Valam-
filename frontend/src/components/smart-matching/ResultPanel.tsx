@@ -279,7 +279,7 @@ export function ResultPanel({
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-3xl border border-zinc-200/80 max-w-2xl w-full p-6 shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]"
+              className="bg-white rounded-3xl border border-zinc-200/80 max-w-2xl w-full p-4 sm:p-6 shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]"
             >
               {/* Modal Header */}
               <div className="flex items-center justify-between pb-4 border-b border-zinc-150 mb-6 shrink-0">
@@ -300,8 +300,8 @@ export function ResultPanel({
               </div>
 
               {/* Compare Table */}
-              <div className="overflow-y-auto pr-1 flex-1 font-sans">
-                <table className="w-full border-collapse text-sm">
+              <div className="overflow-auto pr-1 flex-1 font-sans">
+                <table className="w-full min-w-[360px] border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-zinc-150">
                       <th className="text-left font-sans text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-400 pb-3 w-1/3">

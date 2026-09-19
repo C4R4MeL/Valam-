@@ -690,7 +690,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen valam-grid-bg flex flex-col font-sans text-zinc-900 pb-20">
+    <div className="min-h-screen valam-grid-bg flex flex-col font-sans text-zinc-900 pb-12 md:pb-16">
       {/* Header Minimalis */}
       <header className="bg-white border-b border-zinc-200 sticky top-0 z-50 shadow-xs">
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">

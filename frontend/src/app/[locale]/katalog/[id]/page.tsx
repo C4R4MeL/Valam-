@@ -12,9 +12,7 @@ import { Button } from '@/components/ui/button'
 import { formatRupiah, getPatchouliTier, isGcmsVerified, validateOrderQuantity } from '@/lib/utils'
 import { RadarChart } from '@/components/marketplace/RadarChart'
 import { Navbar } from '@/components/layout/Navbar'
-import { MobileHeader } from '@/components/layout/MobileHeader'
 import { Footer } from '@/components/layout/Footer'
-import { BottomNavigation } from '@/components/layout/BottomNavigation'
 import { useCart } from '@/components/providers/CartProvider'
 import { useToast } from '@/hooks/use-toast'
 import { useAuthContext } from '@/components/providers/AuthProvider'
@@ -331,27 +329,12 @@ export default function BatchDetailPage() {
   return (
     <div className="min-h-screen valam-grid-bg flex flex-col selection:bg-[#1B5E3A]/10 selection:text-[#1B5E3A]">
       
-      {/* ─── DESKTOP HEADER NAVBAR ──────────────────────────────────────── */}
-      <div className="hidden md:block">
-        <Navbar />
-      </div>
+      {/* ─── NAVBAR (DESKTOP + MOBILE) ──────────────────────────────────────── */}
+      <Navbar />
 
       {/* ─── MOBILE FIXED HEADER ────────────────────────────────────────── */}
-      <MobileHeader 
-        title={isId ? 'Detail Batch' : 'Batch Details'} 
-        showFilter={false}
-        rightAction={
-          <button 
-            onClick={handleShare}
-            className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 flex items-center justify-center transition-colors text-white shrink-0"
-          >
-            <Share2 className="w-4 h-4" />
-          </button>
-        }
-      />
-
       {/* ─── MAIN CONTENT CONTAINER ─────────────────────────────────────── */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 md:px-6 pt-2 pb-28 md:pt-4 md:pb-12 mt-14">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 md:px-6 pt-2 pb-12 md:pt-4 mt-14">
         
         {/* Breadcrumb - Desktop & Mobile */}
         <div className="mb-6 text-xs text-zinc-500 font-medium flex items-center gap-2">
@@ -564,8 +547,8 @@ export default function BatchDetailPage() {
                 </button>
               </div>
 
-              <div className="overflow-hidden border border-zinc-150 rounded-2xl">
-                <table className="w-full text-left border-collapse text-xs">
+              <div className="overflow-x-auto border border-zinc-150 rounded-2xl">
+                <table className="w-full min-w-[500px] text-left border-collapse text-xs">
                   <thead>
                     <tr className="bg-zinc-50 border-b border-zinc-200 text-zinc-400 font-bold uppercase tracking-wider">
                       <th className="py-3 px-4">{isId ? 'Parameter Uji' : 'Parameter'}</th>
@@ -1142,13 +1125,8 @@ export default function BatchDetailPage() {
 
       </main>
 
-      {/* ─── DESKTOP FOOTER ─────────────────────────────────────────────── */}
-      <div className="hidden md:block">
-        <Footer />
-      </div>
-
-      {/* ─── MOBILE BOTTOM NAVIGATION BAR ────────────────────────────────── */}
-      <BottomNavigation />
+      {/* ─── FOOTER ─────────────────────────────────────────────── */}
+      <Footer />
 
       {/* Testing Methods Modal */}
       {isModalOpen && (

@@ -287,7 +287,7 @@ export function NilaChatWidget() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-[9998] w-[400px] h-[520px] max-w-[calc(100vw-2rem)] max-h-[calc(100vh-10rem)] sm:max-h-[calc(100vh-4rem)] flex flex-col rounded-2xl shadow-2xl shadow-emerald-950/20 border border-zinc-200 bg-white overflow-hidden"
+            className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-[9998] w-[calc(100vw-1.5rem)] sm:w-[400px] h-[500px] max-h-[calc(100vh-5rem)] flex flex-col rounded-2xl shadow-2xl shadow-emerald-950/20 border border-zinc-200 bg-white overflow-hidden"
           >
             {/* ── Header ──────────────────────────────────────────── */}
             <div className="flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-emerald-800 to-emerald-950 text-white flex-shrink-0">

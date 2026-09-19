@@ -795,8 +795,8 @@ export default function ProductDetailPage() {
                       
                       {/* Right: Comparative Parameters Table */}
                       <div className="lg:col-span-7">
-                        <div className="bg-white border border-zinc-200 rounded-2xl shadow-xs overflow-hidden">
-                          <table className="w-full text-left border-collapse text-xs">
+                        <div className="bg-white border border-zinc-200 rounded-2xl shadow-xs overflow-x-auto">
+                          <table className="w-full min-w-[480px] text-left border-collapse text-xs">
                             <thead>
                               <tr className="bg-zinc-50 border-b border-zinc-200 text-zinc-400 font-bold uppercase tracking-wider">
                                 <th className="py-3 px-4 font-semibold">{locale === 'id' ? 'Parameter Uji' : 'Test Parameter'}</th>
@@ -915,8 +915,8 @@ export default function ProductDetailPage() {
                           </div>
 
                           {/* Chemical Test Results Block */}
-                          <div className="relative z-10 mb-8 border border-zinc-300 rounded-lg overflow-hidden bg-white/70">
-                            <table className="w-full text-left text-xs font-sans">
+                          <div className="relative z-10 mb-8 border border-zinc-300 rounded-lg overflow-x-auto bg-white/70">
+                            <table className="w-full min-w-[420px] text-left text-xs font-sans">
                               <thead>
                                 <tr className="bg-zinc-50 border-b border-zinc-300 text-zinc-500 font-bold uppercase tracking-wider text-[9px]">
                                   <th className="py-2.5 px-3 font-semibold">{locale === 'id' ? 'Spesifikasi Analisis' : 'Analysis Specification'}</th>

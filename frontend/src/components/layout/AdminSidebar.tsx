@@ -1,11 +1,17 @@
 'use client'
 
-import { LayoutDashboard, Beaker, Users, Settings, LogOut, Leaf, BookOpen, Recycle } from 'lucide-react'
+import { LayoutDashboard, Beaker, Users, Settings, LogOut, Leaf, BookOpen, Recycle, X } from 'lucide-react'
 import { Link, usePathname } from '@/i18n/routing'
 import { useTranslations } from 'next-intl'
 import { useAuthContext } from '@/components/providers/AuthProvider'
+import { useEffect } from 'react'
 
-export function AdminSidebar() {
+interface AdminSidebarProps {
+  isOpen?: boolean
+  onClose?: () => void
+}
+
+export function AdminSidebar({ isOpen = false, onClose }: AdminSidebarProps) {
   const pathname = usePathname()
   const t = useTranslations('Navbar')
   const { email, logout } = useAuthContext()
@@ -19,6 +25,21 @@ export function AdminSidebar() {
     if (email) return email.charAt(0).toUpperCase()
     return 'A'
   }
+
+  // Auto-close mobile drawer on route change
+  useEffect(() => {
+    if (onClose) onClose()
+  }, [pathname]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Lock body scroll when mobile drawer is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => { document.body.style.overflow = '' }
+  }, [isOpen])
 
   const navItems = [
     {
@@ -49,8 +70,9 @@ export function AdminSidebar() {
     }
   ]
 
-  return (
-    <aside className="w-72 bg-emerald-950 border-r border-emerald-900 flex flex-col h-screen sticky top-0 shadow-lg z-10 flex-shrink-0 text-white">
+  /* ── Shared sidebar content (used by both desktop & mobile) ── */
+  const sidebarContent = (
+    <>
       {/* Branding Logo */}
       <div className="p-6 border-b border-emerald-900/50">
         <Link className="flex items-center gap-3 group w-fit" href="/">
@@ -121,6 +143,49 @@ export function AdminSidebar() {
           </button>
         </div>
       </div>
-    </aside>
+    </>
+  )
+
+  return (
+    <>
+      {/* ═══════════════════════════════════════════════════ */}
+      {/* ── DESKTOP SIDEBAR (hidden on mobile) ── */}
+      {/* ═══════════════════════════════════════════════════ */}
+      <aside className="hidden lg:flex w-72 bg-emerald-950 border-r border-emerald-900 flex-col h-screen sticky top-0 shadow-lg z-10 flex-shrink-0 text-white">
+        {sidebarContent}
+      </aside>
+
+      {/* ═══════════════════════════════════════════════════ */}
+      {/* ── MOBILE DRAWER OVERLAY (visible on mobile only) ── */}
+      {/* ═══════════════════════════════════════════════════ */}
+      
+      {/* Backdrop */}
+      <div
+        className={`fixed inset-0 z-50 bg-black/60 backdrop-blur-sm lg:hidden transition-opacity duration-200 ${
+          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={onClose}
+        aria-hidden={!isOpen}
+      />
+
+      {/* Drawer Panel */}
+      <div
+        className={`fixed top-0 left-0 bottom-0 z-50 w-72 bg-emerald-950 lg:hidden shadow-[10px_0_40px_rgba(0,0,0,0.4)] flex flex-col text-white ${
+          isOpen ? 'translate-x-0 pointer-events-auto' : '-translate-x-full pointer-events-none'
+        }`}
+        style={{ transition: 'transform 220ms cubic-bezier(0.32, 0.72, 0, 1)' }}
+        aria-hidden={!isOpen}
+      >
+        {/* Close button overlaid on top-right of drawer */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 z-10 h-8 w-8 rounded-lg bg-white/[0.08] hover:bg-white/[0.15] text-white/60 hover:text-white flex items-center justify-center transition-all"
+        >
+          <X className="w-4 h-4" />
+        </button>
+
+        {sidebarContent}
+      </div>
+    </>
   )
 }

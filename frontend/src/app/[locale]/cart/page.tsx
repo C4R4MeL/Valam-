@@ -114,12 +114,9 @@ export default function CartPage() {
 
   return (
     <div className="min-h-screen valam-grid-bg flex flex-col selection:bg-[#1B5E3A]/10 selection:text-[#1B5E3A] font-sans pb-28 lg:pb-12">
-      <div className="hidden md:block">
-        <Navbar />
-      </div>
-      <MobileHeader title={isId ? 'Keranjang Belanja' : 'Cart'} showFilter={false} />
+      <Navbar />
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full mt-4 md:mt-20">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full mt-16 md:mt-20">
         
         {/* Breadcrumb */}
         <div className="text-xs font-semibold text-zinc-500 mb-6 flex items-center gap-1.5">
@@ -306,19 +303,19 @@ export default function CartPage() {
                                         }
                                       }}
                                       title={item.quantity_kg <= 1 ? (isId ? 'Hapus item' : 'Remove') : (isId ? 'Kurangi' : 'Decrease')}
-                                      className={`w-8 h-8 flex items-center justify-center transition-colors ${item.quantity_kg <= 1 ? 'text-red-500 hover:bg-red-50' : 'text-zinc-600 hover:bg-zinc-100'}`}
+                                      className={`w-9 h-9 flex items-center justify-center transition-colors ${item.quantity_kg <= 1 ? 'text-red-500 hover:bg-red-50' : 'text-zinc-600 hover:bg-zinc-100'}`}
                                     >
-                                      {item.quantity_kg <= 1 ? <Trash2 className="w-3.5 h-3.5" /> : <Minus className="w-3.5 h-3.5" />}
+                                      {item.quantity_kg <= 1 ? <Trash2 className="w-4 h-4" /> : <Minus className="w-4 h-4" />}
                                     </button>
-                                    <div className="px-3 text-center text-xs font-bold text-zinc-900 border-x border-zinc-200 h-8 flex items-center justify-center min-w-[54px]">
+                                    <div className="px-3 text-center text-xs font-bold text-zinc-900 border-x border-zinc-200 h-9 flex items-center justify-center min-w-[54px]">
                                       {item.quantity_kg} {unit}
                                     </div>
                                     <button 
                                       onClick={() => updateQuantity(item.id, item.quantity_kg + 1)}
                                       title={isId ? 'Tambah' : 'Increase'}
-                                      className="w-8 h-8 flex items-center justify-center text-zinc-600 hover:bg-zinc-100 transition-colors"
+                                      className="w-9 h-9 flex items-center justify-center text-zinc-600 hover:bg-zinc-100 transition-colors"
                                     >
-                                      <Plus className="w-3.5 h-3.5" />
+                                      <Plus className="w-4 h-4" />
                                     </button>
                                   </div>
                                   {errorMsg && (
@@ -448,9 +445,7 @@ export default function CartPage() {
         </div>
       )}
 
-      <div className="hidden md:block">
-        <Footer />
-      </div>
+      <Footer />
     </div>
   )
 }

@@ -1,14 +1,13 @@
 'use client'
 
 import { useState, useEffect, Suspense, useRef } from 'react'
-import { Search, Layers, X, ShieldCheck, Beaker, Leaf } from 'lucide-react'
+import { Search, Layers, X, ShieldCheck, Beaker, Leaf, SlidersHorizontal } from 'lucide-react'
 import { FilterSidebar } from '@/components/marketplace/FilterSidebar'
 import { ProductCard } from '@/components/marketplace/ProductCard'
 import { Button } from '@/components/ui/button'
 import { Navbar } from '@/components/layout/Navbar'
 import { Footer } from '@/components/layout/Footer'
-import { MobileHeader } from '@/components/layout/MobileHeader'
-import { BottomNavigation } from '@/components/layout/BottomNavigation'
+
 import { useLocale } from 'next-intl'
 import { useSearchParams } from 'next/navigation'
 import { getLatestMarketPrices } from '@/lib/valam-insights/insights-api'
@@ -397,7 +396,7 @@ function MarketplaceContent({ isFilterOpen, setIsFilterOpen }: { isFilterOpen: b
   }, [])
 
   return (
-    <div className="flex-1 flex w-full max-w-7xl mx-auto md:px-6 pt-2 pb-20 md:pt-4 md:pb-6 mt-16 md:mt-14">
+    <div className="flex-1 flex w-full max-w-7xl mx-auto md:px-6 pt-2 pb-8 md:pt-4 md:pb-6 mt-16 md:mt-14">
       <FilterSidebar 
         isOpen={isFilterOpen} 
         onClose={() => setIsFilterOpen(false)} 
@@ -428,7 +427,8 @@ function MarketplaceContent({ isFilterOpen, setIsFilterOpen }: { isFilterOpen: b
             <p className="text-sm text-zinc-500 mt-1">{t.subtitle}</p>
           </div>
 
-          {/* Search Bar */}
+          {/* Search Bar + Mobile Filter */}
+          <div className="flex items-center gap-2 w-full lg:w-auto">
           <div className="relative w-full lg:w-80 shrink-0">
             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none">
               <Search className="w-4 h-4" />
@@ -448,6 +448,16 @@ function MarketplaceContent({ isFilterOpen, setIsFilterOpen }: { isFilterOpen: b
                 <X className="w-4 h-4" />
               </button>
             )}
+          </div>
+
+          {/* Mobile Filter Toggle */}
+          <button
+            onClick={() => setIsFilterOpen(true)}
+            className="flex md:hidden items-center gap-1.5 h-11 px-4 bg-[#1B5E3A] text-white rounded-xl text-xs font-bold shadow-sm hover:bg-[#123320] transition-colors shrink-0"
+          >
+            <SlidersHorizontal className="w-4 h-4" />
+            {isId ? 'Filter' : 'Filters'}
+          </button>
           </div>
         </div>
 
@@ -592,7 +602,6 @@ export default function MarketplacePage() {
   return (
     <div className="min-h-screen valam-grid-bg flex flex-col relative selection:bg-[#1B5E3A]/10 selection:text-[#1B5E3A]">
       <div className="relative z-10 flex flex-col min-h-screen">
-        <MobileHeader onFilterClick={() => setIsFilterOpen(true)} showFilter={true} />
         <Navbar />
         
         <main className="flex-1 flex flex-col">
@@ -601,10 +610,9 @@ export default function MarketplacePage() {
           </Suspense>
         </main>
         
-        <div className="relative z-10 mt-auto hidden md:block">
+        <div className="relative z-10 mt-auto">
           <Footer />
         </div>
-        <BottomNavigation />
       </div>
     </div>
   )

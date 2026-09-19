@@ -53,6 +53,7 @@ const NAV_PREFETCH_ROUTES = [
 export function Navbar() {
   const t = useTranslations('Navbar')
   const locale = useLocale()
+  const isId = locale === 'id'
   const pathname = usePathname()
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -137,36 +138,73 @@ export function Navbar() {
   }
 
   // Build nav items array
-  const navItems: NavItem[] = role === 'supplier' ? [] : [
-    ...(role !== 'buyer' ? [{
-      label: t('Beranda'),
+  // Build nav items array
+  const navItems: NavItem[] = role === 'supplier' ? [
+    {
+      label: isId ? 'Dashboard Supplier' : 'Supplier Dashboard',
+      href: '/dashboard/supplier',
+      icon: <Home className="w-4 h-4" />,
+    },
+    {
+      label: t('Katalog') || (isId ? 'Katalog' : 'Catalog'),
+      href: '/marketplace',
+      icon: <ShoppingBag className="w-4 h-4" />,
+    },
+    {
+      label: t('Chatbot') || (isId ? 'Tanya Nila' : 'Ask Nila'),
+      href: '/chat',
+      icon: <MessageCircle className="w-4 h-4" />,
+    },
+    {
+      label: 'Insights',
+      href: '/insights',
+      icon: <BarChart3 className="w-4 h-4" />,
+    },
+  ] : [
+    {
+      label: t('Beranda') || (isId ? 'Beranda' : 'Home'),
       href: '/',
-      icon: <Home className="w-3.5 h-3.5" />,
+      icon: <Home className="w-4 h-4" />,
       exact: true,
       condition: !isAdminPage,
-    }] : []),
+    },
     {
-      label: t('Katalog') || 'Katalog',
+      label: t('Katalog') || (isId ? 'Katalog' : 'Catalog'),
       href: '/marketplace',
-      icon: <ShoppingBag className="w-3.5 h-3.5" />,
+      icon: <ShoppingBag className="w-4 h-4" />,
       condition: !isAdminPage,
     },
-    ...(!role || role === 'buyer' ? [{
-      label: t('SmartMatching'),
+    {
+      label: t('SmartMatching') || 'Smart Matching',
       href: '/matching',
-      icon: <Sparkles className="w-3.5 h-3.5" />,
+      icon: <Sparkles className="w-4 h-4" />,
+      condition: !isAdminPage,
+    },
+    ...(role !== 'supplier' ? [{
+      label: isId ? 'Keranjang' : 'Cart',
+      href: '/cart',
+      icon: (
+        <div className="relative">
+          <ShoppingCart className="w-4 h-4" />
+          {totalItems > 0 && (
+            <span className="absolute -top-1.5 -right-2 min-w-[15px] h-3.5 px-0.5 rounded-full bg-valam-gold text-[#1B5E3A] text-[8px] font-black flex items-center justify-center">
+              {totalItems}
+            </span>
+          )}
+        </div>
+      ),
       condition: !isAdminPage,
     }] : []),
     {
-      label: t('Chatbot') || 'Tanya Nila',
+      label: t('Chatbot') || (isId ? 'Tanya Nila' : 'Ask Nila'),
       href: '/chat',
-      icon: <MessageCircle className="w-3.5 h-3.5" />,
+      icon: <MessageCircle className="w-4 h-4" />,
       condition: !isAdminPage,
     },
     {
       label: 'Insights',
       href: '/insights',
-      icon: <BarChart3 className="w-3.5 h-3.5" />,
+      icon: <BarChart3 className="w-4 h-4" />,
       condition: !isAdminPage,
     },
   ].filter(item => item.condition !== false)
@@ -584,24 +622,86 @@ export function Navbar() {
         </nav>
 
 
-        {/* User Auth in Drawer */}
-        <div className="px-3 py-4">
+        {/* User Auth & Account Links in Drawer */}
+        <div className="px-3 py-3 border-t border-white/[0.06] space-y-2">
           {role ? (
-            <div className="space-y-2">
-              <div className="flex items-center gap-3 px-3 py-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-valam-gold to-valam-gold-300 flex items-center justify-center text-[#1B5E3A] font-bold text-sm">
+            <div className="space-y-1.5">
+              {/* User info badge */}
+              <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-valam-gold to-valam-gold-300 flex items-center justify-center text-[#1B5E3A] font-bold text-xs shrink-0">
                   {getInitial()}
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-xs font-medium text-white/80 truncate max-w-[150px]">{email}</span>
-                  <span className="text-[10px] text-valam-gold uppercase tracking-wider font-semibold">{role}</span>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-xs font-medium text-white/90 truncate max-w-[170px]">{email}</span>
+                  <span className="text-[9px] text-valam-gold uppercase tracking-wider font-semibold">{role}</span>
                 </div>
               </div>
+
+              {/* Specific role navigation items */}
+              {role === 'buyer' ? (
+                <>
+                  <Link
+                    href="/buyer/orders"
+                    prefetch={true}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-white/80 hover:text-white hover:bg-white/[0.06] transition-all"
+                  >
+                    <span className="w-7 h-7 rounded-lg bg-white/[0.06] flex items-center justify-center text-valam-gold">
+                      <ShoppingBag className="w-3.5 h-3.5" />
+                    </span>
+                    <span>{locale === 'id' ? 'Pesanan Saya' : 'My Orders'}</span>
+                    <ChevronRight className="ml-auto w-3.5 h-3.5 text-white/40" />
+                  </Link>
+
+                  <Link
+                    href="/profile"
+                    prefetch={true}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-white/80 hover:text-white hover:bg-white/[0.06] transition-all"
+                  >
+                    <span className="w-7 h-7 rounded-lg bg-white/[0.06] flex items-center justify-center text-valam-gold">
+                      <User className="w-3.5 h-3.5" />
+                    </span>
+                    <span>{locale === 'id' ? 'Pengaturan Profil' : 'Profile Settings'}</span>
+                    <ChevronRight className="ml-auto w-3.5 h-3.5 text-white/40" />
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href={`/dashboard/${role}`}
+                    prefetch={true}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-white/80 hover:text-white hover:bg-white/[0.06] transition-all"
+                  >
+                    <span className="w-7 h-7 rounded-lg bg-white/[0.06] flex items-center justify-center text-valam-gold">
+                      <Home className="w-3.5 h-3.5" />
+                    </span>
+                    <span>{role === 'supplier' ? t('SupplierDashboard') : t('AdminDashboard')}</span>
+                    <ChevronRight className="ml-auto w-3.5 h-3.5 text-white/40" />
+                  </Link>
+
+                  <Link
+                    href="/profile"
+                    prefetch={true}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-white/80 hover:text-white hover:bg-white/[0.06] transition-all"
+                  >
+                    <span className="w-7 h-7 rounded-lg bg-white/[0.06] flex items-center justify-center text-valam-gold">
+                      <Settings className="w-3.5 h-3.5" />
+                    </span>
+                    <span>{t('PengaturanProfil')}</span>
+                    <ChevronRight className="ml-auto w-3.5 h-3.5 text-white/40" />
+                  </Link>
+                </>
+              )}
+
+              {/* Sign out button */}
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 transition-all border border-transparent hover:border-red-500/10"
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-rose-400 hover:bg-rose-500/10 transition-all"
               >
-                <span className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center">
+                <span className="w-7 h-7 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-400">
                   <LogOut className="w-3.5 h-3.5" />
                 </span>
                 {t('KeluarAkun')}
@@ -615,11 +715,38 @@ export function Navbar() {
               onClick={(e) => handleNavClick(e, '/login')}
               className="block"
             >
-              <Button className="w-full h-10 rounded-xl text-sm font-semibold bg-gradient-to-r from-valam-gold to-valam-gold-300 text-[#1B5E3A] shadow-[0_2px_12px_rgba(182,154,29,0.25)] hover:shadow-[0_4px_20px_rgba(182,154,29,0.35)] transition-all">
+              <Button className="w-full h-10 rounded-xl text-xs font-semibold bg-gradient-to-r from-valam-gold to-valam-gold-300 text-[#1B5E3A] shadow-[0_2px_12px_rgba(182,154,29,0.25)] hover:shadow-[0_4px_20px_rgba(182,154,29,0.35)] transition-all">
                 {t('Masuk')}
               </Button>
             </Link>
           )}
+
+          {/* Mobile Language Switcher in Drawer */}
+          <div className="pt-2 flex items-center justify-between border-t border-white/[0.06] px-1">
+            <span className="text-[11px] text-white/40 flex items-center gap-1.5">
+              <Globe className="w-3.5 h-3.5 text-valam-gold" /> Bahasa
+            </span>
+            <div className="flex items-center gap-1 bg-white/[0.06] p-0.5 rounded-lg border border-white/[0.06]">
+              <button
+                onClick={() => switchLocale('id')}
+                disabled={locale === 'id'}
+                className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
+                  locale === 'id' ? 'bg-valam-gold text-[#1B5E3A]' : 'text-white/60 hover:text-white'
+                }`}
+              >
+                ID
+              </button>
+              <button
+                onClick={() => switchLocale('en')}
+                disabled={locale === 'en'}
+                className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
+                  locale === 'en' ? 'bg-valam-gold text-[#1B5E3A]' : 'text-white/60 hover:text-white'
+                }`}
+              >
+                EN
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

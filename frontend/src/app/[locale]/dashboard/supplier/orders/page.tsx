@@ -1444,8 +1444,8 @@ export default function SupplierOrdersPage() {
                   </div>
 
                   {/* Table */}
-                  <div className="border border-zinc-200 rounded-xl overflow-hidden">
-                    <table className="w-full text-left border-collapse">
+                  <div className="border border-zinc-200 rounded-xl overflow-x-auto">
+                    <table className="w-full min-w-[500px] text-left border-collapse">
                       <thead>
                         <tr className="bg-zinc-50 border-b border-zinc-200 text-zinc-650 text-[10px] font-bold uppercase tracking-wider">
                           <th className="py-2.5 px-4">{locale === 'id' ? 'Deskripsi Produk' : 'Product Description'}</th>
@@ -1611,8 +1611,8 @@ export default function SupplierOrdersPage() {
                   </div>
 
                   {/* QC Parameter Results Table */}
-                  <div className="border border-zinc-200 rounded-xl overflow-hidden">
-                    <table className="w-full text-left border-collapse text-[11px]">
+                  <div className="border border-zinc-200 rounded-xl overflow-x-auto">
+                    <table className="w-full min-w-[480px] text-left border-collapse text-[11px]">
                       <thead>
                         <tr className="bg-zinc-50 border-b border-zinc-200 text-zinc-650 text-[10px] font-bold uppercase tracking-wider">
                           <th className="py-2.5 px-4">{locale === 'id' ? 'Parameter Pengujian' : 'Test Parameter'}</th>

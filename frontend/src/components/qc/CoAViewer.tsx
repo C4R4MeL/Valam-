@@ -119,8 +119,8 @@ export function CoAViewer({ batch }: { batch: any }) {
         </div>
 
         {/* Results Table */}
-        <div className="mb-12 relative z-10">
-          <table className="w-full text-sm text-left">
+        <div className="mb-12 relative z-10 overflow-x-auto rounded-xl border border-zinc-200">
+          <table className="w-full min-w-[500px] text-sm text-left">
             <thead className="bg-emerald-950 text-white">
               <tr>
                 <th className="py-3 px-4 font-semibold uppercase tracking-wider">Parameter</th>
