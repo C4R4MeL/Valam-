@@ -74,7 +74,7 @@ GAYA KOMUNIKASI:
 
 export const CHAT_CONFIG = {
   /** Gemini model to use */
-  MODEL_NAME: 'gemini-2.5-flash',
+  MODEL_NAME: process.env.GEMINI_MODEL || 'gemini-3.6-flash',
 
   /** Maximum characters per user message */
   MAX_MESSAGE_LENGTH: 1000,
