@@ -18,6 +18,11 @@ const CircularOrderModal = dynamic(
   { ssr: false }
 );
 
+const NilaChatMount = dynamic(
+  () => import('@/components/chat/NilaChatMount').then((m) => m.NilaChatMount),
+  { ssr: false }
+);
+
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
@@ -75,6 +80,7 @@ export default async function RootLayout({
               <RoleGuard />
               {children}
               <CircularOrderModal />
+              <NilaChatMount />
               <Toaster />
             </CartProvider>
           </AuthProvider>

@@ -1,11 +1,29 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { MessageCircle, Send, Leaf, AlertCircle, Trash2, HelpCircle, ArrowRight, User, Sparkles, Info } from 'lucide-react'
+import Image from 'next/image'
+import { Send, AlertCircle, Trash2, ArrowRight, User, Info } from 'lucide-react'
 import { useLocale } from 'next-intl'
 import { Navbar } from '@/components/layout/Navbar'
 import { Footer } from '@/components/layout/Footer'
+
+function NilaAvatar({ size = 32, className = '' }: { size?: number; className?: string }) {
+  return (
+    <div
+      className={`relative shrink-0 overflow-hidden rounded-full bg-white shadow-xs ring-1 ring-zinc-200/80 ${className}`}
+      style={{ width: size, height: size }}
+    >
+      <Image
+        src="/images/Icon.png"
+        alt="Nila"
+        fill
+        sizes={`${size}px`}
+        className="object-contain p-0.5"
+        priority={size >= 48}
+      />
+    </div>
+  )
+}
 
 // ─── Types ──────────────────────────────────────────────────────────
 interface ChatMessage {
@@ -294,9 +312,7 @@ export function ChatHub() {
               {/* 4. Nila Profile Card */}
               <div className="bg-white rounded-2xl border border-zinc-200/80 shadow-xs p-5 md:p-6 transition-all hover:shadow-sm">
                 <div className="flex items-center gap-3.5">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#1B5E3A] to-[#123320] flex items-center justify-center shadow-xs text-white shrink-0">
-                    <Leaf className="w-6 h-6 text-amber-300" />
-                  </div>
+                  <NilaAvatar size={48} className="rounded-2xl ring-[#1B5E3A]/15" />
                   <div>
                     <h3 className="font-serif font-bold text-lg text-zinc-900 leading-snug">{t.title}</h3>
                     <p className="text-zinc-500 text-xs font-medium">{t.subtitle}</p>
@@ -358,13 +374,13 @@ export function ChatHub() {
                       <div className={`flex gap-3 max-w-[88%] sm:max-w-[80%] ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
                         
                         {/* Avatar */}
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs shrink-0 font-bold shadow-xs ${
-                          isUser 
-                            ? 'bg-zinc-200 text-zinc-700' 
-                            : 'bg-[#1B5E3A] text-white'
-                        }`}>
-                          {isUser ? <User className="w-4 h-4" /> : <Leaf className="w-4 h-4 text-amber-300" />}
-                        </div>
+                        {isUser ? (
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs shrink-0 font-bold shadow-xs bg-zinc-200 text-zinc-700">
+                            <User className="w-4 h-4" />
+                          </div>
+                        ) : (
+                          <NilaAvatar size={32} />
+                        )}
 
                         {/* Bubble */}
                         <div
@@ -396,9 +412,7 @@ export function ChatHub() {
                 {isLoading && (
                   <div className="flex justify-start">
                     <div className="flex gap-3 items-start max-w-[80%]">
-                      <div className="w-8 h-8 rounded-full bg-[#1B5E3A] text-white flex items-center justify-center shrink-0 shadow-xs">
-                        <Leaf className="w-4 h-4 text-amber-300" />
-                      </div>
+                      <NilaAvatar size={32} />
                       <div className="bg-white border border-zinc-200/70 shadow-xs rounded-2xl rounded-tl-none px-4 py-3">
                         <div className="flex items-center gap-3">
                           <div className="flex gap-1">

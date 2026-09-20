@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { MessageCircle, X, Send, Leaf, AlertCircle } from 'lucide-react'
+import Image from 'next/image'
+import { X, Send, AlertCircle } from 'lucide-react'
 import { useLocale } from 'next-intl'
 
 // ─── Types ──────────────────────────────────────────────────────────
@@ -277,7 +278,45 @@ export function NilaChatWidget() {
 
   return (
     <>
+      {/* ── Greeting bubble ─────────────────────────────────────── */}
+      <AnimatePresence>
+        {showGreeting && !isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 8, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.95 }}
+            className="fixed bottom-[5.5rem] right-4 md:bottom-24 md:right-6 z-[9997] max-w-[220px] rounded-2xl rounded-br-md border border-zinc-200 bg-white px-3.5 py-2.5 text-xs text-zinc-700 shadow-lg shadow-emerald-950/10"
+          >
+            {locale === 'id' ? 'Halo! Ada yang bisa Nila bantu?' : 'Hi! How can Nila help you?'}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
+      {/* ── FAB (bottom-right) ──────────────────────────────────── */}
+      <AnimatePresence>
+        {!isOpen && (
+          <motion.button
+            type="button"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            whileHover={{ scale: 1.06 }}
+            whileTap={{ scale: 0.96 }}
+            onClick={() => setIsOpen(true)}
+            className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-[9998] flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-xl shadow-emerald-950/20 ring-1 ring-zinc-200/80 transition-shadow hover:shadow-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1B5E3A]/40 cursor-pointer"
+            aria-label={locale === 'id' ? 'Buka Tanya Nila' : 'Open Ask Nila'}
+          >
+            <Image
+              src="/images/Icon.png"
+              alt="Nila"
+              width={52}
+              height={52}
+              className="object-contain drop-shadow-sm"
+              priority
+            />
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       {/* ── Chat Panel ───────────────────────────────────────────── */}
       <AnimatePresence>
@@ -291,8 +330,14 @@ export function NilaChatWidget() {
           >
             {/* ── Header ──────────────────────────────────────────── */}
             <div className="flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-emerald-800 to-emerald-950 text-white flex-shrink-0">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center shadow-md flex-shrink-0">
-                <Leaf className="w-5 h-5 text-emerald-950" />
+              <div className="relative w-10 h-10 rounded-full bg-white shadow-md flex-shrink-0 overflow-hidden ring-1 ring-white/20">
+                <Image
+                  src="/images/Icon.png"
+                  alt="Nila"
+                  fill
+                  sizes="40px"
+                  className="object-contain p-0.5"
+                />
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-serif font-bold text-base leading-tight">{t.title}</h3>
