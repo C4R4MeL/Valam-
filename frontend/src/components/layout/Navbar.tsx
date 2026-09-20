@@ -180,21 +180,7 @@ export function Navbar() {
       icon: <Sparkles className="w-4 h-4" />,
       condition: !isAdminPage,
     },
-    ...(role !== 'supplier' ? [{
-      label: isId ? 'Keranjang' : 'Cart',
-      href: '/cart',
-      icon: (
-        <div className="relative">
-          <ShoppingCart className="w-4 h-4" />
-          {totalItems > 0 && (
-            <span className="absolute -top-1.5 -right-2 min-w-[15px] h-3.5 px-0.5 rounded-full bg-valam-gold text-[#1B5E3A] text-[8px] font-black flex items-center justify-center">
-              {totalItems}
-            </span>
-          )}
-        </div>
-      ),
-      condition: !isAdminPage,
-    }] : []),
+    // Cart nav item removed by request (was next to Smart Matching)
     {
       label: t('Chatbot') || (isId ? 'Tanya Nila' : 'Ask Nila'),
       href: '/chat',
