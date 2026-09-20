@@ -48,6 +48,9 @@ export const metadata: Metadata = {
     "CoA",
     "traceability",
   ],
+  icons: {
+    icon: '/favicon.ico?v=' + Date.now(),
+  },
 };
 
 const PREFETCH_PATHS = ['marketplace', 'matching', 'chat', 'insights', 'cart', 'login'] as const;
