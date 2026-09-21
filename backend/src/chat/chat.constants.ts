@@ -74,7 +74,7 @@ GAYA KOMUNIKASI:
 
 export const CHAT_CONFIG = {
   /** Grok (xAI) model — override with GROK_MODEL */
-  MODEL_NAME: process.env.GROK_MODEL || 'grok-4.6',
+  MODEL_NAME: process.env.GROK_MODEL || 'grok-4-1-fast-non-reasoning',
 
   /** Maximum characters per user message */
   MAX_MESSAGE_LENGTH: 1000,

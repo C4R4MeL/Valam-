@@ -67,12 +67,14 @@ export class ChatService {
 
       return responseText;
     } catch (error: any) {
-      this.logger.error(`[Nila Chat] Error: ${error.message}`, error.stack);
-
-      // OpenAI / xAI-style errors expose HTTP status (401, 429, 400, …)
       const status: number | undefined =
         error?.status ?? error?.response?.status ?? error?.statusCode;
+      const apiMessage =
+        error?.error?.message || error?.message || 'Unknown error';
 
+      this.logger.error(`[Nila Chat] Error (status=${status}): ${apiMessage}`, error?.stack);
+
+      // OpenAI / xAI-style HTTP errors
       if (status === 401 || error?.code === 'invalid_api_key') {
         throw new InternalServerErrorException(
           'Layanan chat sedang mengalami masalah konfigurasi. Silakan coba lagi nanti.',
@@ -85,8 +87,11 @@ export class ChatService {
         );
       }
 
+      // 400 = bad request (invalid model, malformed body, etc.) — not a content refusal
       if (status === 400) {
-        return 'Maaf, saya tidak bisa menjawab pertanyaan tersebut. Silakan ajukan pertanyaan lain seputar platform Valam dan minyak nilam. 😊';
+        throw new InternalServerErrorException(
+          'Layanan chat menolak permintaan. Periksa GROK_API_KEY dan GROK_MODEL di .env.',
+        );
       }
 
       throw new InternalServerErrorException(
