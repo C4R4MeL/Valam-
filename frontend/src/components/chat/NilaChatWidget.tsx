@@ -9,13 +9,13 @@ import { useLocale } from 'next-intl'
 // ─── Types ──────────────────────────────────────────────────────────
 interface ChatMessage {
   id: string
-  role: 'user' | 'model'
+  role: 'user' | 'assistant'
   content: string
   timestamp: Date
 }
 
 interface HistoryItem {
-  role: 'user' | 'model'
+  role: 'user' | 'assistant'
   content: string
 }
 
@@ -165,7 +165,7 @@ export function NilaChatWidget() {
         // Add welcome message
         setMessages([{
           id: 'welcome',
-          role: 'model',
+          role: 'assistant',
           content: t.welcome,
           timestamp: new Date(),
         }])
@@ -242,7 +242,7 @@ export function NilaChatWidget() {
 
       const botMessage: ChatMessage = {
         id: `bot-${Date.now()}`,
-        role: 'model',
+        role: 'assistant',
         content: data.reply,
         timestamp: new Date(data.timestamp),
       }

@@ -165,9 +165,9 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl relative z-10 pt-16 pb-10">
         
-        {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
-        {/* â”€â”€â”€ MAIN FOOTER GRID â”€â”€â”€ */}
-        {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+        {/* ┌─────────────────────────────────────────────────────────────────────────────┐ */}
+        {/* │                          MAIN FOOTER GRID                                   │ */}
+        {/* └─────────────────────────────────────────────────────────────────────────────┘ */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 lg:gap-8 mb-12">
           
           {/* Column 1 â€” Brand Identity (4 cols) */}
@@ -435,9 +435,9 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
 
         </div>
 
-        {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
-        {/* â”€â”€â”€ LIVE MARKET PRICE TICKER STRIP â”€â”€â”€ */}
-        {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+        {/* ┌─────────────────────────────────────────────────────────────────────────────┐ */}
+        {/* │                          LIVE MARKET PRICE TICKER STRIP                     │ */}
+        {/* └─────────────────────────────────────────────────────────────────────────────┘ */}
         <div className="border border-emerald-900/40 bg-emerald-950/20 backdrop-blur-md rounded-2xl p-4 sm:px-6 mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-inner">
           <div className="flex items-center gap-2.5 shrink-0">
             <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
@@ -471,58 +471,29 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
         {/* Hairline Divider */}
         <div className="w-full h-px bg-gradient-to-r from-transparent via-emerald-900/40 to-transparent mb-6" />
 
-        {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
-        {/* â”€â”€â”€ BOTTOM LEGAL & LANGUAGE BAR â”€â”€â”€ */}
-        {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-400">
-          
-          {/* Copyrights */}
-          <div className="text-center sm:text-left">
-            Â© {new Date().getFullYear()} <strong className="text-zinc-300 font-semibold">VALAM Indonesia</strong>. {isId ? 'Seluruh hak cipta dilindungi.' : 'All rights reserved.'}
-          </div>
+        {/* ┌─────────────────────────────────────────────────────────────────────────────┐ */}
+        {/* │                          BOTTOM LEGAL & LANGUAGE BAR                       │ */}
+        {/* └─────────────────────────────────────────────────────────────────────────────┘ */}
+        <div className="w-full border-t border-emerald-900/40 bg-[#021b17] py-4 sm:py-5">
+          <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 text-[12px] text-zinc-300 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+            <div className="text-center sm:text-left">
+              © {new Date().getFullYear()} <strong className="font-semibold text-zinc-100">VALAM Indonesia</strong>. {isId ? 'Seluruh hak cipta dilindungi.' : 'All rights reserved.'}
+            </div>
 
-          {/* Legal Links */}
-          <div className="flex items-center gap-5 text-[11px]">
-            <Link href="/insights" className="hover:text-zinc-200 transition-colors">
-              {isId ? 'Syarat & Ketentuan' : 'Terms & Conditions'}
-            </Link>
-            <span className="text-zinc-700">â€¢</span>
-            <Link href="/insights" className="hover:text-zinc-200 transition-colors">
-              {isId ? 'Kebijakan Privasi' : 'Privacy Policy'}
-            </Link>
-            <span className="text-zinc-700">â€¢</span>
-            <Link href="/insights" className="hover:text-zinc-200 transition-colors">
-              {isId ? 'Sertifikasi & Kepatuhan' : 'Certifications'}
-            </Link>
+            <div className="flex flex-wrap items-center justify-center gap-4 text-[11px] text-zinc-300 sm:justify-end">
+              <Link href="/insights" className="transition-colors hover:text-white">
+                {isId ? 'Syarat & Ketentuan' : 'Terms & Conditions'}
+              </Link>
+              <span className="text-zinc-600">•</span>
+              <Link href="/insights" className="transition-colors hover:text-white">
+                {isId ? 'Kebijakan Privasi' : 'Privacy Policy'}
+              </Link>
+              <span className="text-zinc-600">•</span>
+              <Link href="/insights" className="transition-colors hover:text-white">
+                {isId ? 'Sertifikasi & Kepatuhan' : 'Certifications'}
+              </Link>
+            </div>
           </div>
-
-          {/* Language Selector Pill */}
-          <div className="inline-flex items-center gap-1 bg-zinc-900/90 border border-zinc-800 rounded-full px-2.5 py-1 text-xs">
-            <Globe className="w-3.5 h-3.5 text-zinc-400 mr-1" />
-            <button
-              onClick={() => handleLocaleChange('id')}
-              className={`px-2 py-0.5 rounded-full text-[11px] transition-all cursor-pointer ${
-                isId 
-                  ? 'bg-emerald-950 text-[#C8922A] font-bold border border-emerald-800/40 shadow-2xs' 
-                  : 'text-zinc-400 hover:text-zinc-200'
-              }`}
-              disabled={isPending}
-            >
-              ID
-            </button>
-            <button
-              onClick={() => handleLocaleChange('en')}
-              className={`px-2 py-0.5 rounded-full text-[11px] transition-all cursor-pointer ${
-                !isId 
-                  ? 'bg-emerald-950 text-[#C8922A] font-bold border border-emerald-800/40 shadow-2xs' 
-                  : 'text-zinc-400 hover:text-zinc-200'
-              }`}
-              disabled={isPending}
-            >
-              EN
-            </button>
-          </div>
-
         </div>
 
       </div>

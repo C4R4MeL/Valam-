@@ -3,10 +3,10 @@ import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class ChatHistoryItemDto {
-  @ApiProperty({ enum: ['user', 'model'], description: 'Role of the message sender' })
+  @ApiProperty({ enum: ['user', 'assistant'], description: 'Role of the message sender' })
   @IsString()
-  @IsIn(['user', 'model'])
-  role: 'user' | 'model';
+  @IsIn(['user', 'assistant'])
+  role: 'user' | 'assistant';
 
   @ApiProperty({ description: 'Message content' })
   @IsString()

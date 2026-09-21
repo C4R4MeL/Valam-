@@ -28,13 +28,13 @@ function NilaAvatar({ size = 32, className = '' }: { size?: number; className?: 
 // ─── Types ──────────────────────────────────────────────────────────
 interface ChatMessage {
   id: string
-  role: 'user' | 'model'
+  role: 'user' | 'assistant'
   content: string
   timestamp: Date
 }
 
 interface HistoryItem {
-  role: 'user' | 'model'
+  role: 'user' | 'assistant'
   content: string
 }
 
@@ -163,7 +163,7 @@ export function ChatHub() {
     } else {
       setMessages([{
         id: 'welcome',
-        role: 'model',
+        role: 'assistant',
         content: t.welcome,
         timestamp: new Date(),
       }])
@@ -231,7 +231,7 @@ export function ChatHub() {
 
       const botMessage: ChatMessage = {
         id: `bot-${Date.now()}`,
-        role: 'model',
+        role: 'assistant',
         content: data.reply,
         timestamp: new Date(data.timestamp),
       }
@@ -258,7 +258,7 @@ export function ChatHub() {
     if (window.confirm(t.clearConfirm)) {
       setMessages([{
         id: 'welcome',
-        role: 'model',
+        role: 'assistant',
         content: t.welcome,
         timestamp: new Date(),
       }])

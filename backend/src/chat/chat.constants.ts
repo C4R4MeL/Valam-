@@ -73,16 +73,16 @@ GAYA KOMUNIKASI:
 - Tutup percakapan dengan menawarkan bantuan lanjutan: "Ada yang lain yang bisa saya bantu?"`;
 
 export const CHAT_CONFIG = {
-  /** Gemini model to use */
-  MODEL_NAME: process.env.GEMINI_MODEL || 'gemini-3.6-flash',
+  /** Grok (xAI) model — override with GROK_MODEL */
+  MODEL_NAME: process.env.GROK_MODEL || 'grok-4.6',
 
   /** Maximum characters per user message */
   MAX_MESSAGE_LENGTH: 1000,
 
-  /** Maximum number of history exchanges sent to Gemini */
+  /** Maximum number of history exchanges sent to Grok */
   MAX_HISTORY_LENGTH: 10,
 
-  /** Maximum tokens for Gemini response */
+  /** Maximum tokens for Grok response */
   MAX_OUTPUT_TOKENS: 1024,
 
   /** Temperature — lower = more deterministic/focused */

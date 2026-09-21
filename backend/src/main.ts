@@ -16,7 +16,7 @@ function validateEnvironment() {
   const required: { key: string; label: string }[] = [
     { key: 'DATABASE_URL', label: 'Database (Supabase)' },
     { key: 'JWT_SECRET', label: 'JWT Authentication' },
-    { key: 'GEMINI_API_KEY', label: 'Nila AI Chatbot (Gemini)' },
+    { key: 'GROK_API_KEY', label: 'Nila AI Chatbot (Grok / xAI)' },
     { key: 'MIDTRANS_SERVER_KEY', label: 'Payment Gateway (Midtrans)' },
     { key: 'BITESHIP_API_KEY', label: 'Shipping API (Biteship)' },
   ];

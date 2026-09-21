@@ -173,7 +173,7 @@ export function CriteriaPanel({
           <div className="flex justify-between items-center text-xs">
             <span className="font-semibold text-zinc-700 tracking-tight">{translations.minPa}</span>
             <span className="font-mono text-[11px] font-semibold tabular-nums text-[#1B5E3A] bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
-              â‰¥ {criteria.min_pa}%
+              ≥ {criteria.min_pa}%
             </span>
           </div>
           <p className="text-[11px] text-zinc-400 font-normal leading-snug">
@@ -217,19 +217,19 @@ export function CriteriaPanel({
           <div className="flex justify-between items-center text-xs">
             <span className="font-semibold text-zinc-700 tracking-tight">{translations.maxMoisture}</span>
             <span className="font-mono text-[11px] font-semibold tabular-nums text-[#1B5E3A] bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
-              â‰¤ {criteria.max_moisture}%
+              ≤ {criteria.max_moisture}%
             </span>
           </div>
           <p className="text-[11px] text-zinc-400 font-normal leading-snug">
-            {isEn ? 'Purity level (Lower is better, ISO standard â‰¤ 3%)' : 'Tingkat kemurnian minyak (Standar mutu â‰¤ 3%)'}
+            {isEn ? 'Purity level (Lower is better, ISO standard ≤ 3%)' : 'Tingkat kemurnian minyak (Standar mutu ≤ 3%)'}
           </p>
 
           {/* Quick moisture buttons */}
           <div className="flex gap-1.5 pt-0.5">
             {[
-              { label: 'â‰¤ 2% (Murni)', val: 2 },
-              { label: 'â‰¤ 3% (Standar)', val: 3 },
-              { label: 'â‰¤ 5% (Umum)', val: 5 }
+              { label: '≤ 2% (Murni)', val: 2 },
+              { label: '≤ 3% (Standar)', val: 3 },
+              { label: '≤ 5% (Umum)', val: 5 }
             ].map((m) => (
               <button
                 key={m.val}

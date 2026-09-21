@@ -1,27 +1,31 @@
 import { Injectable, Logger, InternalServerErrorException } from '@nestjs/common';
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
+import OpenAI from 'openai';
 import { NILA_SYSTEM_PROMPT, CHAT_CONFIG } from './chat.constants';
 import { ChatHistoryItemDto } from './dto/chat.dto';
 
 @Injectable()
 export class ChatService {
   private readonly logger = new Logger(ChatService.name);
-  private genAI: GoogleGenerativeAI;
+  private readonly client: OpenAI;
 
   constructor() {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.GROK_API_KEY?.trim();
     if (!apiKey) {
-      this.logger.warn('GEMINI_API_KEY is not set — chat endpoint will return errors');
+      this.logger.warn('GROK_API_KEY is not set — chat endpoint will return errors');
     }
-    this.genAI = new GoogleGenerativeAI(apiKey || '');
+    // OpenAI SDK throws on empty apiKey — placeholder lets Nest boot without the key
+    this.client = new OpenAI({
+      apiKey: apiKey || 'missing-grok-api-key',
+      baseURL: 'https://api.x.ai/v1',
+    });
   }
 
   /**
-   * Send a message to Gemini with conversation history and system prompt.
+   * Send a message to Grok (xAI) with conversation history and system prompt.
    * Returns the model's response text.
    */
   async chat(message: string, history?: ChatHistoryItemDto[]): Promise<string> {
-    if (!process.env.GEMINI_API_KEY) {
+    if (!process.env.GROK_API_KEY) {
       throw new InternalServerErrorException(
         'Layanan chat belum dikonfigurasi. Silakan hubungi administrator.',
       );
@@ -34,32 +38,27 @@ export class ChatService {
       // Trim history to max allowed length
       const trimmedHistory = this.trimHistory(history);
 
-      // Build Gemini model with system instruction
-      const model = this.genAI.getGenerativeModel({
+      // OpenAI-compatible messages: system + history + current user turn
+      const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+        { role: 'system', content: NILA_SYSTEM_PROMPT },
+        ...trimmedHistory.map((item) => ({
+          role: item.role as 'user' | 'assistant',
+          content: item.content,
+        })),
+        { role: 'user', content: sanitizedMessage },
+      ];
+
+      const response = await this.client.chat.completions.create({
         model: CHAT_CONFIG.MODEL_NAME,
-        systemInstruction: NILA_SYSTEM_PROMPT,
-        generationConfig: {
-          maxOutputTokens: CHAT_CONFIG.MAX_OUTPUT_TOKENS,
-          temperature: CHAT_CONFIG.TEMPERATURE,
-        },
-        safetySettings: [
-          { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-          { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-          { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-          { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-        ],
+        messages,
+        max_tokens: CHAT_CONFIG.MAX_OUTPUT_TOKENS,
+        temperature: CHAT_CONFIG.TEMPERATURE,
       });
 
-      // Build conversation history for Gemini format
-      const geminiHistory = trimmedHistory.map((item) => ({
-        role: item.role,
-        parts: [{ text: item.content }],
-      }));
-
-      // Start chat with history and send current message
-      const chat = model.startChat({ history: geminiHistory });
-      const result = await chat.sendMessage(sanitizedMessage);
-      const responseText = result.response.text();
+      const responseText = response.choices[0]?.message?.content?.trim();
+      if (!responseText) {
+        throw new Error('Empty response from Grok API');
+      }
 
       // Log for observability
       this.logger.log(
@@ -70,20 +69,23 @@ export class ChatService {
     } catch (error: any) {
       this.logger.error(`[Nila Chat] Error: ${error.message}`, error.stack);
 
-      // Provide user-friendly error messages
-      if (error.message?.includes('API_KEY_INVALID') || error.message?.includes('API key')) {
+      // OpenAI / xAI-style errors expose HTTP status (401, 429, 400, …)
+      const status: number | undefined =
+        error?.status ?? error?.response?.status ?? error?.statusCode;
+
+      if (status === 401 || error?.code === 'invalid_api_key') {
         throw new InternalServerErrorException(
           'Layanan chat sedang mengalami masalah konfigurasi. Silakan coba lagi nanti.',
         );
       }
 
-      if (error.message?.includes('RESOURCE_EXHAUSTED') || error.message?.includes('429')) {
+      if (status === 429) {
         throw new InternalServerErrorException(
           'Layanan chat sedang sibuk. Silakan tunggu beberapa saat dan coba lagi.',
         );
       }
 
-      if (error.message?.includes('SAFETY')) {
+      if (status === 400) {
         return 'Maaf, saya tidak bisa menjawab pertanyaan tersebut. Silakan ajukan pertanyaan lain seputar platform Valam dan minyak nilam. 😊';
       }
 
@@ -105,19 +107,13 @@ export class ChatService {
 
   /**
    * Trim conversation history to the most recent exchanges.
+   * Grok/xAI Chat Completions has no role-order constraint (unlike Gemini),
+   * so we only enforce MAX_HISTORY_LENGTH.
    */
   private trimHistory(history?: ChatHistoryItemDto[]): ChatHistoryItemDto[] {
     if (!history || history.length === 0) return [];
 
-    // Take only the last N items
     const maxItems = CHAT_CONFIG.MAX_HISTORY_LENGTH;
-    const trimmed = history.slice(-maxItems);
-
-    // Ensure history starts with a 'user' message (Gemini requirement)
-    if (trimmed.length > 0 && trimmed[0].role !== 'user') {
-      trimmed.shift();
-    }
-
-    return trimmed;
+    return history.slice(-maxItems);
   }
 }
