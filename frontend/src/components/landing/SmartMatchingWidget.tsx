@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { Search, Sparkles, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ParticleNetwork } from '@/components/smart-matching/ParticleNetwork';
+import { GRADE_SPECS } from '@/lib/market-grades';
 
 export function SmartMatchingWidget() {
   const locale = useLocale();
@@ -19,7 +20,7 @@ export function SmartMatchingWidget() {
 
   const handleSearchRedirect = () => {
     // Map Grades to corresponding target minimum PA percentages
-    const minPa = grade === 'A' ? 30 : grade === 'B' ? 26 : 22;
+    const minPa = GRADE_SPECS[grade].paMin;
     const cleanBudget = budget.replace(/[^0-9]/g, '') || '850000';
 
     // Redirect to smart matching workspace with preset query parameters
@@ -152,7 +153,7 @@ export function SmartMatchingWidget() {
                       >
                         {isId ? `Grade ${g}` : `Grade ${g}`}
                         <span className="block text-[9px] opacity-75 font-normal tracking-wide mt-0.5">
-                          {g === 'A' ? 'PA ≥ 30%' : g === 'B' ? 'PA 26-29%' : 'PA < 26%'}
+                          {`PA ${GRADE_SPECS[g].pa}`}
                         </span>
                       </button>
                     ))}

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useTransition } from 'react';
 import { Link, usePathname, useRouter } from '@/i18n/routing';
@@ -18,6 +18,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { GRADE_SPECS, mergeMarketPrices, normalizeGrade } from '@/lib/market-grades';
 
 interface FooterProps {
   marketPrices?: Array<{ grade: string; price_per_kg: number }>;
@@ -34,9 +35,9 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
 
   // Local state for dynamic database stats
   const [prices, setPrices] = useState<any[]>(marketPrices || [
-    { grade: 'GRADE_A', price_per_kg: 850000 },
-    { grade: 'GRADE_B', price_per_kg: 780000 },
-    { grade: 'GRADE_C', price_per_kg: 680000 }
+    { grade: 'A', price_per_kg: 850000 },
+    { grade: 'B', price_per_kg: 780000 },
+    { grade: 'C', price_per_kg: 680000 }
   ]);
   const [activeKoperasiCount, setActiveKoperasiCount] = useState<number>(supplierCount || 5);
   const [activeKabupatenCount, setActiveKabupatenCount] = useState<number>(kabupatenCount || 5);
@@ -73,7 +74,7 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
           .order('grade', { ascending: true });
         
         if (priceData && priceData.length > 0 && !priceErr) {
-          setPrices(priceData);
+          setPrices(mergeMarketPrices(priceData as any));
         }
 
         // 2. Fetch unique kabupaten and supplier count
@@ -147,10 +148,9 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
   };
 
   const getGradeName = (gradeStr: string) => {
-    if (gradeStr === 'GRADE_A') return 'Grade A (PA 30%+)';
-    if (gradeStr === 'GRADE_B') return 'Grade B (PA 26%+)';
-    if (gradeStr === 'GRADE_C') return 'Grade C (PA 22%+)';
-    return gradeStr.replace('GRADE_', 'Grade ');
+    const grade = normalizeGrade(gradeStr);
+    if (!grade) return gradeStr;
+    return `Grade ${grade} (PA ${GRADE_SPECS[grade].pa})`;
   };
 
   return (

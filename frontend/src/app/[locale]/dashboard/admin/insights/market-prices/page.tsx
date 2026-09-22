@@ -14,7 +14,7 @@ import type { InsightMarketPrice, InsightMarketPriceHistory } from '@/lib/valam-
 
 const gradeInfo: Record<string, { label: string; description: string; color: string }> = {
   A: { label: 'Grade A', description: 'PA ≥ 32%, premium quality', color: 'emerald' },
-  B: { label: 'Grade B', description: 'PA 28-32%, standard quality', color: 'blue' },
+  B: { label: 'Grade B', description: 'PA 28–31%, standard quality', color: 'blue' },
   C: { label: 'Grade C', description: 'PA < 28%, basic quality', color: 'amber' },
 };
 

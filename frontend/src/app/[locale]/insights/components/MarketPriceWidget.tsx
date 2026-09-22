@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { getLatestMarketPrices } from '@/lib/valam-insights/insights-api';
 import { formatPrice } from '@/lib/valam-insights/utils';
+import { mergeMarketPrices } from '@/lib/market-grades';
 import type { InsightMarketPrice } from '@/lib/valam-insights/types';
 
 interface MarketPriceWidgetProps {
@@ -23,8 +24,8 @@ export function MarketPriceWidget({ locale }: MarketPriceWidgetProps) {
 
   useEffect(() => {
     getLatestMarketPrices()
-      .then(setPrices)
-      .catch(console.error)
+      .then((live) => setPrices(mergeMarketPrices(live)))
+      .catch(() => setPrices(mergeMarketPrices([])))
       .finally(() => setLoading(false));
   }, []);
 

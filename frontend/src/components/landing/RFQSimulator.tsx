@@ -12,8 +12,8 @@ export function RFQSimulator() {
   const isId = locale === "id";
 
   const [status, setStatus] = useState<"counter_offer" | "deal" | "rejected_input">("counter_offer");
-  const [supplierPrice, setSupplierPrice] = useState(500000);
-  const [customCounter, setCustomCounter] = useState("475000");
+  const [supplierPrice, setSupplierPrice] = useState(880000);
+  const [customCounter, setCustomCounter] = useState("825000");
   const [isShaking, setIsShaking] = useState(false);
 
   const content = {
@@ -183,7 +183,7 @@ export function RFQSimulator() {
                 <div className="flex justify-between items-center text-sm md:text-base">
                   <span className="text-zinc-400">{content.cardBudgetLabel}</span>
                   <span className="font-semibold text-white font-mono">
-                    {formatCurrency(450000)}
+                    {formatCurrency(850000)}
                   </span>
                 </div>
 

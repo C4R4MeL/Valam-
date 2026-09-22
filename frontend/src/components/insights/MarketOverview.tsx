@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, ArrowUpRight, ArrowDownRight, Minus, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { getLatestMarketPrices, getMarketPriceHistory } from '@/lib/valam-insights/insights-api';
 import { formatPrice } from '@/lib/valam-insights/utils';
 import type { InsightMarketPrice } from '@/lib/valam-insights/types';
@@ -44,7 +45,9 @@ function formatChange(pct: number | null, isEn: boolean) {
 export function MarketOverview({ locale, variant = 'section' }: MarketOverviewProps) {
   const isEn = locale === 'en';
   const [snapshot, setSnapshot] = useState<PriceSnapshot | null>(null);
+  const [allPrices, setAllPrices] = useState<InsightMarketPrice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,6 +55,7 @@ export function MarketOverview({ locale, variant = 'section' }: MarketOverviewPr
     async function load() {
       try {
         const prices = await getLatestMarketPrices();
+        if (!cancelled) setAllPrices(prices);
         const gradeA = prices.find((p) => p.grade === 'A') || prices[0] || null;
 
         let weeklyChangePct: number | null = null;
@@ -238,15 +242,41 @@ export function MarketOverview({ locale, variant = 'section' }: MarketOverviewPr
               ? 'Explore grades, PA levels, and what moves patchouli prices week to week.'
               : 'Pelajari grade, kadar PA, dan faktor yang menggerakkan harga nilam dari minggu ke minggu.'}
           </p>
-          <Button
-            asChild
-            className="w-full sm:w-auto h-11 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl font-medium shadow-md shadow-emerald-950/10"
-          >
-            <Link href={`/${locale}/insights?focus=harga`}>
-              {isEn ? 'View price details' : 'Lihat Detail Harga'}
-              <ArrowRight className="w-4 h-4 ml-1.5" />
-            </Link>
-          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button
+                className="w-full sm:w-auto h-11 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl font-medium shadow-md shadow-emerald-950/10"
+              >
+                {isEn ? 'View price details' : 'Lihat Detail Harga'}
+                <ArrowRight className="w-4 h-4 ml-1.5" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>{isEn ? 'Market Price Details' : 'Detail Harga Pasar'}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                {allPrices.map((p) => (
+                  <div key={p.id} className="flex justify-between items-center p-4 border border-zinc-200 rounded-xl bg-zinc-50">
+                    <div>
+                      <h4 className="font-bold text-zinc-900">Grade {p.grade}</h4>
+                      <p className="text-sm text-zinc-500">{isEn ? 'per kg' : 'per Kg'}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-emerald-800 tabular-nums">
+                        {formatPrice(p.price_per_kg, p.currency)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+                {allPrices.length === 0 && (
+                  <p className="text-center text-zinc-500 text-sm">
+                    {isEn ? 'No price data available.' : 'Data harga belum tersedia.'}
+                  </p>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </section>

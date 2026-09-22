@@ -16,8 +16,8 @@ export const formatRupiah = (number: number) => {
 
 // B2B Domain Utilities
 export const getPatchouliTier = (paPercentage: number): "Premium" | "Standard" | "Basic" => {
-  if (paPercentage >= 34) return "Premium";
-  if (paPercentage >= 30) return "Standard";
+  if (paPercentage >= 32) return "Premium";
+  if (paPercentage >= 28) return "Standard";
   return "Basic";
 };
 

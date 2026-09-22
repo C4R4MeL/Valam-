@@ -18,6 +18,9 @@ import { SmartMatchingWidget } from "@/components/landing/SmartMatchingWidget";
 import { CircularProductSection } from "@/components/landing/CircularProductSection";
 import { InsightsTeaser } from "@/components/landing/InsightsTeaser";
 import { FAQSection } from "@/components/landing/FAQSection";
+import { getLatestMarketPrices } from "@/lib/valam-insights/insights-api";
+import { mergeMarketPrices } from "@/lib/market-grades";
+import { formatPrice } from "@/lib/valam-insights/utils";
 
 /* ── Animated counter hook ── */
 function useCounter(target: number, duration: number = 2000) {
@@ -68,6 +71,27 @@ export default function Home() {
   
   const router = useRouter();
   const { isAuthenticated, role, isLoading } = useAuthContext();
+  
+  // State untuk Grade A price
+  const [gradeAPrice, setGradeAPrice] = useState<string>(isId ? "Rp 850k" : "IDR 850k");
+
+  // Fetch Grade A price saat mount
+  useEffect(() => {
+    async function loadGradeAPrice() {
+      try {
+        const prices = await getLatestMarketPrices();
+        const merged = mergeMarketPrices(prices);
+        const gradeAData = merged.find((p: any) => p.grade === "A");
+        if (gradeAData) {
+          setGradeAPrice(formatPrice(Number(gradeAData.price_per_kg), gradeAData.currency));
+        }
+      } catch (error) {
+        console.error("Failed to load Grade A price:", error);
+        // Keep default fallback price
+      }
+    }
+    loadGradeAPrice();
+  }, [isId]);
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
@@ -262,7 +286,7 @@ export default function Home() {
                     </div>
                   </div>
                   <div>
-                    <div className="text-xl sm:text-2xl md:text-3xl font-bold text-emerald-700 tracking-tight">{isId ? "Rp 450k" : "IDR 450k"}</div>
+                    <div className="text-xl sm:text-2xl md:text-3xl font-bold text-emerald-700 tracking-tight">{gradeAPrice}</div>
                     <div className="text-[11px] sm:text-xs text-zinc-500 mt-1 leading-snug">
                       {isId ? "Harga Grade A / Kg" : "Grade A Price / Kg"}
                     </div>
