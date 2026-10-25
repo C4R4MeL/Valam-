@@ -3,6 +3,7 @@
 import { Search } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { MarketOverview } from './MarketOverview';
+import { Link } from '@/i18n/routing';
 
 interface InsightsHeroProps {
   locale: string;
@@ -51,6 +52,12 @@ export function InsightsHero({
               ? 'Market information, pricing, quality, and industry trends to help you make better patchouli decisions.'
               : 'Informasi pasar, harga, kualitas, dan tren industri minyak nilam untuk membantu Anda mengambil keputusan yang lebih tepat.'}
           </p>
+          <Link
+            href="/insights/about-us"
+            className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-lg border border-emerald-800/15 bg-white/80 px-4 py-2 text-sm font-semibold text-emerald-800 transition-colors hover:border-emerald-700/40 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2"
+          >
+            About Us <span aria-hidden="true">&rarr;</span>
+          </Link>
         </motion.div>
 
         <motion.div

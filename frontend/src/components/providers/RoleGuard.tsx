@@ -20,6 +20,7 @@ export function RoleGuard() {
 
   useEffect(() => {
     if (isLoading) return
+    if (pathname === '/insights/about-us') return
     
     if (role === 'supplier') {
       const isBuyerRoute = BUYER_ONLY_ROUTES.some(route => 

@@ -286,6 +286,10 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
                   <span className="w-1 h-1 rounded-full bg-emerald-500/60" />
                   Valam Insights & Harga
                 </Link>
+                <Link href="/insights/about-us" className="mt-2.5 ml-2.5 flex min-h-6 items-center gap-1.5 text-xs text-zinc-400 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400">
+                  <span className="h-1 w-1 rounded-full bg-[#C8922A]" />
+                  About Us
+                </Link>
               </li>
               <li>
                 <Link href="/traceability/VAL-ACEH-001" className="text-xs text-zinc-400 hover:text-white transition-colors flex items-center gap-1.5">
