@@ -213,7 +213,7 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
                 </svg>
               </a>
               <a
-                href="https://instagram.com/valam.atsiri"
+                href="https://instagram.com/valam.id"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Instagram"
