@@ -50,7 +50,7 @@ export default function CheckoutPage() {
   
   // Step 3 / Payment States
   const [orderResults, setOrderResults] = useState<{ supplier: string, orderId: string }[]>([])
-  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success' | 'pending' | 'error' | 'closed'>('idle')
+  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success' | 'pending' | 'review' | 'error' | 'closed'>('idle')
   const [currentOrderId, setCurrentOrderId] = useState<string>('')
   const [isPolling, setIsPolling] = useState(false)
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -550,7 +550,7 @@ export default function CheckoutPage() {
       if (snapToken && typeof window !== 'undefined' && window.snap) {
         window.snap.pay(snapToken, {
           onSuccess: (result) => {
-            setPaymentStatus('success')
+            setPaymentStatus('pending')
             setStep(3)
             setIsSubmitting(false)
             // Verify with backend (don't trust frontend callback alone)
@@ -633,12 +633,12 @@ export default function CheckoutPage() {
           const statusData = await res.json()
           const ps = String(statusData.paymentStatus || '').toLowerCase()
           if (ps === 'paid' || ps === 'completed') {
-            setPaymentStatus('success')
+            setPaymentStatus(statusData.orderStatus === 'PAYMENT_REVIEW' ? 'review' : 'success')
             if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)
             setIsPolling(false)
             // Refresh cart after paid (backend clears purchased items)
             fetchCart().catch(() => {})
-          } else if (ps === 'failed' || ps === 'cancelled') {
+          } else if (ps === 'failed' || ps === 'cancelled' || ps === 'expired') {
             setPaymentStatus('error')
             if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)
             setIsPolling(false)
@@ -648,7 +648,7 @@ export default function CheckoutPage() {
         // Silently continue polling
       }
     }, 5000)
-  }, [])
+  }, [fetchCart])
 
   // Cleanup polling on unmount
   useEffect(() => {
@@ -675,7 +675,10 @@ export default function CheckoutPage() {
         }
       })
 
-      if (!res.ok) throw new Error('Failed to get payment token')
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}))
+        throw new Error(error.message || (isId ? 'Gagal mendapatkan token pembayaran.' : 'Failed to get payment token.'))
+      }
 
       const data = await res.json()
       const snapToken = data.snapToken
@@ -683,7 +686,7 @@ export default function CheckoutPage() {
       if (snapToken && window.snap) {
         window.snap.pay(snapToken, {
           onSuccess: () => {
-            setPaymentStatus('success')
+            setPaymentStatus('pending')
             setIsSubmitting(false)
             startPolling(currentOrderId)
           },
@@ -701,6 +704,13 @@ export default function CheckoutPage() {
             setIsSubmitting(false)
           },
         })
+      } else if (data.redirectUrl) {
+        window.open(data.redirectUrl, '_blank', 'noopener,noreferrer')
+        setPaymentStatus('pending')
+        setIsSubmitting(false)
+        startPolling(currentOrderId)
+      } else {
+        throw new Error(isId ? 'Midtrans Snap tidak dapat dimuat. Muat ulang halaman untuk melanjutkan pembayaran.' : 'Midtrans Snap could not be loaded. Reload the page to continue payment.')
       }
     } catch (err: any) {
       toast({
@@ -1245,7 +1255,7 @@ export default function CheckoutPage() {
               )}
 
               {/* PAYMENT PENDING */}
-              {paymentStatus === 'pending' && (
+              {(paymentStatus === 'pending' || paymentStatus === 'review') && (
                 <>
                   <div className="relative w-28 h-28 mx-auto mb-8">
                     <div className="absolute inset-0 bg-amber-400 rounded-full animate-pulse opacity-20"></div>
@@ -1254,12 +1264,14 @@ export default function CheckoutPage() {
                     </div>
                   </div>
                   <h2 className="text-3xl sm:text-4xl font-serif font-black bg-gradient-to-r from-zinc-900 to-zinc-600 bg-clip-text text-transparent mb-4">
-                    {isId ? 'Menunggu Pembayaran' : 'Awaiting Payment'}
+                    {paymentStatus === 'review'
+                      ? (isId ? 'Pembayaran Perlu Ditinjau' : 'Payment Requires Review')
+                      : (isId ? 'Menunggu Pembayaran' : 'Awaiting Payment')}
                   </h2>
                   <p className="text-sm sm:text-base text-zinc-500 mb-6 max-w-sm mx-auto leading-relaxed font-medium">
-                    {isId 
-                      ? 'Selesaikan pembayaran sesuai instruksi dari Midtrans. Status akan otomatis diperbarui.' 
-                      : 'Complete your payment according to the Midtrans instructions. Status will update automatically.'}
+                    {paymentStatus === 'review'
+                      ? (isId ? 'Pembayaran diterima setelah reservasi stok berakhir atau pesanan berubah. Hubungi admin untuk rekonsiliasi pesanan.' : 'Payment was received after stock reservation expired or the order changed. Contact the administrator for order reconciliation.')
+                      : (isId ? 'Selesaikan pembayaran sesuai instruksi dari Midtrans. Status akan otomatis diperbarui.' : 'Complete your payment according to the Midtrans instructions. Status will update automatically.')}
                   </p>
                   {isPolling && (
                     <div className="flex items-center justify-center gap-2 text-xs text-amber-700 font-bold mb-8 bg-amber-50 py-2.5 px-5 rounded-full w-max mx-auto shadow-sm border border-amber-100">

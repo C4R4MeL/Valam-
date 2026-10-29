@@ -1,4 +1,4 @@
-import { Injectable, Logger, ForbiddenException, UnauthorizedException, BadRequestException, ServiceUnavailableException } from '@nestjs/common';
+import { Injectable, Logger, ForbiddenException, UnauthorizedException, BadRequestException, ServiceUnavailableException, HttpException, BadGatewayException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as crypto from 'crypto';
 import { MidtransGateway } from './midtrans.gateway';
@@ -16,6 +16,14 @@ export class PaymentService {
     this.serverKey = process.env.MIDTRANS_SERVER_KEY || '';
 
     this.snap = this.gateway;
+  }
+
+  /**
+   * Check local configuration before checkout reserves any stock or writes orders.
+   * No gateway request or payment transaction is made by this check.
+   */
+  assertConfigured() {
+    this.gateway.assertConfigured();
   }
 
   /**
@@ -50,7 +58,11 @@ export class PaymentService {
     };
 
     try {
+      this.assertConfigured();
       const transaction = await this.snap.createTransaction(parameter);
+      if (!transaction || typeof transaction.token !== 'string' || !transaction.token.trim()) {
+        throw new BadGatewayException('Midtrans tidak mengembalikan token pembayaran. Periksa daftar pesanan sebelum mencoba kembali.');
+      }
       this.logger.log(`Snap token created for order ${orderId}`);
       return {
         token: transaction.token,
@@ -58,9 +70,13 @@ export class PaymentService {
       };
     } catch (e: any) {
       this.logger.error(
-        `Midtrans createTransaction failed for order ${orderId}: ${e.message}`,
+        `Midtrans createTransaction failed for order ${orderId} (HTTP ${e.httpStatusCode || (e instanceof HttpException ? e.getStatus() : 'unavailable')})`,
       );
-      throw new Error(`Payment gateway error: ${e.message}`);
+      if (e instanceof HttpException) throw e;
+      if (e.httpStatusCode === 401 || e.httpStatusCode === 403) {
+        throw new ServiceUnavailableException('Midtrans menolak akses pembayaran. Periksa Server Key, mode sandbox/production, dan aktivasi akun merchant.');
+      }
+      throw new BadGatewayException('Gagal menghubungi Midtrans untuk membuat sesi pembayaran. Periksa daftar pesanan sebelum mencoba kembali.');
     }
   }
 

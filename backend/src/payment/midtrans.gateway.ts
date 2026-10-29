@@ -11,15 +11,24 @@ export class MidtransGateway {
     clientKey: process.env.MIDTRANS_CLIENT_KEY || '',
   });
 
-  private assertConfigured() {
-    if (
-      !this.serverKey ||
-      (!this.production && !this.serverKey.startsWith('SB-')) ||
-      (this.production && process.env.NODE_ENV === 'test')
-    ) {
+  assertConfigured() {
+    if (!this.serverKey.trim()) {
       throw new ServiceUnavailableException(
-        'Payment gateway belum dikonfigurasi untuk lingkungan yang benar',
+        'MIDTRANS_SERVER_KEY belum diisi. Konfigurasikan key Midtrans sesuai mode pembayaran sebelum checkout.',
       );
+    }
+    if (!this.production && !this.serverKey.startsWith('SB-Mid-server-')) {
+      throw new ServiceUnavailableException(
+        'Mode pembayaran sandbox membutuhkan MIDTRANS_SERVER_KEY Sandbox (SB-Mid-server-...). Ambil key dari dashboard Sandbox Midtrans, lalu restart backend.',
+      );
+    }
+    if (this.production && !this.serverKey.startsWith('Mid-server-')) {
+      throw new ServiceUnavailableException(
+        'Mode pembayaran production membutuhkan Server Key Production Midtrans. Pastikan mode frontend dan backend sesuai.',
+      );
+    }
+    if (this.production && process.env.NODE_ENV === 'test') {
+      throw new ServiceUnavailableException('Pembayaran production tidak diizinkan dalam lingkungan pengujian.');
     }
   }
 

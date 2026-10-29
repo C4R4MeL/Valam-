@@ -115,3 +115,62 @@ pengiriman, atau pembayaran dalam pemeriksaan ini. **10 tes terarah** lulus:
 5 quote checkout, 1 form pengaturan, dan 4 validasi/penyimpanan asal supplier.
 Pemeriksaan tipe frontend serta build backend dan frontend lulus. Tidak ada
 perubahan schema database yang diperlukan untuk perbaikan ini.
+
+## Tindak lanjut pembayaran localhost (sandbox)
+
+Pengguna memilih sandbox. Pemeriksaan konfigurasi lokal mengonfirmasi kedua
+mode bernilai false, tetapi server/client key yang tersedia berformat production.
+Ini direproduksi melalui MidtransGateway hasil build tanpa mengirim permintaan
+gateway. Kunci rahasia pada .env tidak diubah, ditampilkan, atau dipush.
+Order lama pada log telah EXPIRED dan stock_state RELEASED; pemeriksaan hanya
+read-only, tanpa pembatalan, perubahan saldo, atau pembayaran nyata.
+
+Perbaikan kode:
+
+- Checkout memeriksa konfigurasi gateway sebelum membaca keranjang, membuat
+  order/pengiriman/payment, atau mereservasi stok. Retry RFQ juga diperiksa
+  sebelum mengubah referensi gateway.
+- Mode/key yang berbeda menghasilkan HTTP 503 dengan petunjuk spesifik.
+  Penolakan kredensial provider dilaporkan tanpa isi respons sensitif;
+  kegagalan transport/token menjadi HTTP 502, bukan exception HTTP 500 generik.
+- Callback Snap onSuccess tidak langsung menyatakan pembayaran sukses.
+  Halaman menunggu status paid dari backend; PAYMENT_REVIEW menampilkan
+  kebutuhan rekonsiliasi. Polling juga berhenti pada expired.
+- Retry menampilkan error backend dan keluar dari status processing jika
+  Snap tidak tersedia. Redirect yang diberikan backend dapat dipakai sebagai
+  fallback. Template backend/.env.example kini konsisten memakai sandbox.
+
+Validasi: **56 unit backend** dan **9 tes halaman checkout** lulus, termasuk
+preflight tanpa efek tulis, penolakan mode yang salah, error HTTP, token kosong,
+konfirmasi backend, pembayaran yang perlu ditinjau, dan kegagalan Snap/retry.
+Pemeriksaan tipe frontend serta build backend dan frontend lulus. Uji provider sandbox
+belum dilakukan karena key Sandbox yang benar belum tersedia.
+
+Untuk mengaktifkan pengujian, ambil pasangan key dari dashboard Midtrans dengan
+environment **Sandbox → Settings → Access Keys**. Isi pada mesin lokal:
+
+```dotenv
+# backend/.env
+MIDTRANS_IS_PRODUCTION=false
+MIDTRANS_SERVER_KEY=SB-Mid-server-<key-sandbox-anda>
+MIDTRANS_CLIENT_KEY=SB-Mid-client-<key-sandbox-anda>
+
+# frontend/.env
+NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION=false
+NEXT_PUBLIC_MIDTRANS_CLIENT_KEY=SB-Mid-client-<client-key-sandbox-yang-sama>
+```
+
+Restart backend dengan npm run start:dev dan frontend dengan npm run dev.
+Runner demo:start sengaja mengosongkan key pembayaran sehingga tidak cocok
+untuk pengujian provider sandbox langsung.
+
+Pembayaran sampai status paid juga memerlukan notifikasi server yang dapat
+dijangkau Midtrans. Route proyek adalah POST /api/payment/notification. Untuk
+localhost, gunakan URL tunnel publik ke backend sandbox atau backend publik
+yang memakai key sandbox dan database yang sama; jangan mengasumsikan nilai
+environment deployment Railway mengikuti .env lokal. Atur Payment Notification
+URL pada dashboard Sandbox. Tidak ada tunnel atau setting akun Midtrans yang
+diubah otomatis.
+
+Referensi: [mode dan key Midtrans](https://docs.midtrans.com/docs/switching-to-production-mode)
+dan [notifikasi pembayaran](https://docs.midtrans.com/docs/https-notification-webhooks).

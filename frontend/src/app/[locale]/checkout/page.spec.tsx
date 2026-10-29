@@ -5,9 +5,13 @@ import CheckoutPage from './page';
 const mockRouter = { push: jest.fn(), back: jest.fn() };
 const mockToast = jest.fn();
 const mockQuote = jest.fn();
+const mockCheckout = jest.fn();
+const mockRetry = jest.fn();
+const mockPaymentStatus = jest.fn();
+const mockSnapPay = jest.fn();
 const mockCart = {
   patchouliItems: [{ id: 'cart-fixture', product_id: 'product-fixture', quantity_kg: 1,
-    product: { supplier_id: 'supplier-fixture', supplier_name: 'Supplier fixture', price_per_kg: 960000 } }],
+    product: { supplier_id: 'supplier-fixture', supplier_name: 'Supplier fixture', batch_code: 'BATCH-FIXTURE', price_per_kg: 960000, moq_kg: 1, available_volume_kg: 10 } }],
   circularItems: [], loading: false, removeItem: jest.fn(), clearCart: jest.fn(), fetchCart: jest.fn(),
 };
 jest.mock('@/i18n/routing', () => ({
@@ -53,11 +57,31 @@ async function selectDestination(district = 'district-a') {
   fireEvent.change(screen.getByRole('combobox', { name: 'Select District' }), { target: { value: district } });
 }
 
+async function reviewCheckout() {
+  fireEvent.change(screen.getByPlaceholderText('PIC / warehouse name'), { target: { value: 'Buyer fixture' } });
+  fireEvent.change(screen.getByPlaceholderText('08xxxxxxxxxx'), { target: { value: '08000000000' } });
+  fireEvent.change(screen.getByPlaceholderText('Full address: street, number, landmarks...'), { target: { value: 'Test fixture address' } });
+  await selectDestination();
+  await screen.findByText('Courier area-a — Cargo');
+  fireEvent.click(screen.getByRole('button', { name: 'Proceed to Review & Payment' }));
+  await screen.findByRole('heading', { name: 'Order Review' });
+  fireEvent.click(screen.getByRole('checkbox'));
+}
+
 describe('Checkout courier quote loading', () => {
   const originalFetch = global.fetch;
+  const originalSnap = window.snap;
+  const originalRandomUUID = Object.getOwnPropertyDescriptor(crypto, 'randomUUID');
   beforeEach(() => {
     jest.clearAllMocks();
     localStorage.setItem('valam_token', 'checkout-test-token');
+    Object.defineProperty(crypto, 'randomUUID', { configurable: true, value: () => '00000000-0000-4000-8000-000000000001' });
+    mockSnapPay.mockImplementation((_token, callbacks) => callbacks.onClose());
+    window.snap = { pay: mockSnapPay } as any;
+    mockCart.fetchCart.mockResolvedValue(undefined);
+    mockCheckout.mockResolvedValue(response({ orderId: 'order-fixture', orderNumber: 'ORDER-FIXTURE', snapToken: 'unit-snap-token' }));
+    mockRetry.mockResolvedValue(response({ orderId: 'order-fixture', snapToken: 'unit-snap-token' }));
+    mockPaymentStatus.mockResolvedValue(response({ paymentStatus: 'pending' }));
     mockQuote.mockImplementation(async (body: any) => rates(body.destinationAreaId));
     global.fetch = jest.fn(async (url: any, options?: any) => {
       const path = String(url);
@@ -66,10 +90,18 @@ describe('Checkout courier quote loading', () => {
       if (path.includes('/districts/')) return response([{ id: 'district-a', name: 'District A' }, { id: 'district-b', name: 'District B' }]);
       if (path.includes('/areas/search')) return response([{ id: decodeURIComponent(path).includes('District B') ? 'area-b' : 'area-a', postal_code: 12345 }]);
       if (path.endsWith('/shipment/quote')) return mockQuote(JSON.parse(options.body));
+      if (path.endsWith('/orders/checkout')) return mockCheckout();
+      if (path.endsWith('/retry-payment')) return mockRetry();
+      if (path.includes('/payment/status/')) return mockPaymentStatus();
       throw Error(`Unexpected request: ${path}`);
     }) as any;
   });
-  afterEach(() => { global.fetch = originalFetch; localStorage.clear(); });
+  afterEach(() => {
+    global.fetch = originalFetch; localStorage.clear(); window.snap = originalSnap;
+    jest.useRealTimers();
+    if (originalRandomUUID) Object.defineProperty(crypto, 'randomUUID', originalRandomUUID);
+    else Reflect.deleteProperty(crypto, 'randomUUID');
+  });
 
   it('automatically requests and displays rates after district selection', async () => {
     render(<CheckoutPage />);
@@ -124,5 +156,57 @@ describe('Checkout courier quote loading', () => {
     await selectDestination();
     expect(await screen.findByText('Incomplete shipping quote response. Please try again.')).toBeInTheDocument();
     expect(screen.queryByText('No courier services for this route.')).not.toBeInTheDocument();
+  });
+
+  it('waits for backend confirmation even when Snap calls onSuccess', async () => {
+    mockSnapPay.mockImplementation((_token, callbacks) => callbacks.onSuccess({}));
+    render(<CheckoutPage />);
+    await reviewCheckout();
+    jest.useFakeTimers();
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Pay Now' })); });
+    expect(mockSnapPay).toHaveBeenCalled();
+    expect(screen.getByRole('heading', { name: 'Awaiting Payment' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Payment Successful!' })).not.toBeInTheDocument();
+    await act(async () => { jest.advanceTimersByTime(5000); });
+    expect(screen.getByRole('heading', { name: 'Awaiting Payment' })).toBeInTheDocument();
+    mockPaymentStatus.mockResolvedValue(response({ paymentStatus: 'paid' }));
+    await act(async () => { jest.advanceTimersByTime(5000); });
+    expect(screen.getByRole('heading', { name: 'Payment Successful!' })).toBeInTheDocument();
+  });
+
+  it('leaves retry usable and shows an error when Snap is unavailable', async () => {
+    render(<CheckoutPage />);
+    await reviewCheckout();
+    fireEvent.click(screen.getByRole('button', { name: 'Pay Now' }));
+    await screen.findByRole('heading', { name: 'Payment Incomplete' });
+    window.snap = undefined as any;
+    fireEvent.click(screen.getByRole('button', { name: 'Continue Payment' }));
+    expect(await screen.findByRole('heading', { name: 'Payment Failed' })).toBeInTheDocument();
+    expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({ description: expect.stringContaining('Snap could not be loaded') }));
+    expect(screen.getByRole('button', { name: 'Retry Payment' })).toBeEnabled();
+  });
+
+  it('shows a review state for a payment received after the reservation ended', async () => {
+    mockSnapPay.mockImplementation((_token, callbacks) => callbacks.onSuccess({}));
+    mockPaymentStatus.mockResolvedValue(response({ paymentStatus: 'paid', orderStatus: 'PAYMENT_REVIEW' }));
+    render(<CheckoutPage />);
+    await reviewCheckout();
+    jest.useFakeTimers();
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Pay Now' })); });
+    await act(async () => { jest.advanceTimersByTime(5000); });
+    expect(screen.getByRole('heading', { name: 'Payment Requires Review' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Payment Successful!' })).not.toBeInTheDocument();
+  });
+
+  it('preserves the backend configuration error when retrying payment', async () => {
+    render(<CheckoutPage />);
+    await reviewCheckout();
+    fireEvent.click(screen.getByRole('button', { name: 'Pay Now' }));
+    await screen.findByRole('heading', { name: 'Payment Incomplete' });
+    mockRetry.mockResolvedValue(response({ message: 'Sandbox Server Key required' }, false));
+    fireEvent.click(screen.getByRole('button', { name: 'Continue Payment' }));
+    await screen.findByRole('heading', { name: 'Payment Failed' });
+    expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({ description: 'Sandbox Server Key required' }));
+    expect(screen.getByRole('button', { name: 'Retry Payment' })).toBeEnabled();
   });
 });

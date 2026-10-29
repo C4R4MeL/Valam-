@@ -32,12 +32,13 @@ export class OrdersService {
    * Create order(s) + Midtrans Snap when buyer clicks Pay.
    * - Cart checkout: items from cart (multi-supplier → one order per supplier)
    * - Buy Now (direct): single product from body, cart not required
-   * - Stock is NOT decremented here — only after payment = paid
+   * - Stock is reserved atomically before gateway setup, then consumed when paid
    * - Cart is NOT cleared here — cleared after payment = paid
    * - Shipping: server re-quotes Biteship per supplier (never trusts client cost)
    */
   async checkout(userId: string, data: any) {
     if (typeof data.idempotency_key !== 'string' || !/^[a-zA-Z0-9_-]{8,100}$/.test(data.idempotency_key)) throw new BadRequestException('Idempotency key tidak valid');
+    this.paymentService.assertConfigured();
     const lineItems = await this.resolveCheckoutItems(userId, data);
 
     if (lineItems.length === 0) {
@@ -469,6 +470,7 @@ export class OrdersService {
     if (!order) throw new NotFoundException('Order not found');
     if (order.buyer_id !== userId) throw new ForbiddenException('Not your order');
     if (order.payment_status !== 'pending' || order.stock_state !== 'RESERVED' || !order.reservation_expires_at || order.reservation_expires_at <= new Date() || !order.payment) throw new BadRequestException('Pembayaran tidak dapat diulang; periksa status atau buat pesanan baru');
+    this.paymentService.assertConfigured();
     if (order.payment.snap_token) return { orderId: order.id, snapToken: order.payment.snap_token };
     if (!order.rfq_id || !order.shipment || order.shipment.status !== 'TERKONFIRMASI') throw new BadRequestException('Konfirmasikan tarif pengiriman server sebelum melanjutkan pembayaran RFQ');
     const amount = rupiah(order.total_amount + order.shipping_cost);

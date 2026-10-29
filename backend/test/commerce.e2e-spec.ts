@@ -32,6 +32,7 @@ describe('Commerce business regressions with PostgreSQL and simulated gateway tr
   const secret = 'SB-Mid-server-pertamuda-regression-only';
   const statuses = new Map<string, Record<string, unknown>>();
   const gateway = {
+    assertConfigured: jest.fn(),
     createTransaction: jest.fn(async () => ({
       token: 'simulated-snap-token',
       redirect_url: 'https://example.test/sandbox',
