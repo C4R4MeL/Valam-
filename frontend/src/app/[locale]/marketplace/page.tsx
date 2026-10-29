@@ -315,13 +315,18 @@ function MarketplaceContent({ isFilterOpen, setIsFilterOpen }: { isFilterOpen: b
   }
 
   if (activeTab === 'oil') {
-    // Filter by PA% range
-    activeProducts = activeProducts.filter(p => p.pa_percentage >= filters.paMin && p.pa_percentage <= filters.paMax)
+    // The default catalogue also includes batches awaiting reviewed PA results.
+    // A deliberately narrowed PA range requires an actual measurement.
+    const defaultPaRange = filters.paMin === 20 && filters.paMax === 40
+    activeProducts = activeProducts.filter(p => p.pa_percentage == null
+      ? defaultPaRange
+      : Number.isFinite(p.pa_percentage) && p.pa_percentage >= filters.paMin && p.pa_percentage <= filters.paMax)
 
     // Quality Tier Filter
     if (filters.qualityTier) {
       activeProducts = activeProducts.filter(p => {
         const pa = p.pa_percentage
+        if (pa == null || !Number.isFinite(pa)) return false
         if (filters.qualityTier === 'Premium') return pa >= 34
         if (filters.qualityTier === 'Export Grade') return pa >= 30 && pa < 34
         if (filters.qualityTier === 'Industrial') return pa >= 26 && pa < 30

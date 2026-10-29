@@ -72,3 +72,21 @@ tambahkan migrasi baru. File SQL dipertahankan LF agar checksum lintas OS sama.
 
 Startup tidak menjalankan migrasi atau seed otomatis. Untuk demo tetap gunakan
 `npm run demo:start` dengan schema pertamuda_test yang terpisah.
+
+## Tindak lanjut katalog buyer kosong
+
+Pemeriksaan read-only setelah integrasi menemukan 9 batch VERIFIED pada public
+dan 1 batch VERIFIED demonstrasi pada pertamuda_test. Output ProductsService
+memiliki PA null untuk semuanya karena belum ada hasil dari laporan yang lolos
+peninjauan dan diizinkan untuk publikasi. Ini berbeda dari nilai QC lama yang
+tersimpan; nilai lama tidak dipromosikan menjadi hasil terverifikasi.
+
+Filter frontend selalu menerapkan PA 20–40, sehingga null tersaring dan katalog
+menampilkan nol produk. Filter bawaan kini menyertakan batch tanpa hasil PA.
+Rentang PA yang dipersempit dan pilihan grade tetap memerlukan nilai PA nyata;
+null tidak diperlakukan sebagai nol atau grade Commercial. Reset filter
+mengembalikan batch yang menunggu hasil ditinjau. Status publikasi, harga,
+stok, dan aturan akses tetap mengikuti data/API. Tidak ada perubahan database
+atau persetujuan laporan otomatis. Tiga regresi halaman katalog dan typecheck
+frontend lulus. Build frontend juga lulus memakai direktori output baru melalui
+`VALAM_FRONTEND_DIST`, karena cache build lama terkena EINVAL/readlink OneDrive.
