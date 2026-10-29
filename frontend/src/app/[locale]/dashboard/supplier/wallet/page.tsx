@@ -2,7 +2,7 @@
 
 import { DashboardSkeleton } from '@/components/skeletons'
 
-import { useState, useEffect } from 'react'
+import {  useState, useEffect , useRef } from 'react'
 import { DashboardHeader } from '@/components/layout/DashboardHeader'
 import { Wallet, ArrowUpRight, ArrowDownRight, Building2, Calendar, AlertCircle, CreditCard, Plus, PhoneCall, Building } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -29,13 +29,13 @@ const contentMap = {
     history: "Riwayat Transaksi",
     empty: "Belum ada transaksi",
     withdrawTitle: "Tarik Dana",
-    withdrawDesc: "Dana akan ditransfer ke rekening bank Anda dalam 1-2 hari kerja.",
+    withdrawDesc: "Pengajuan dicatat sebagai PENDING pada ledger internal. Transfer bank belum terintegrasi; pengajuan bukan bukti dana telah dikirim.",
     amountLabel: "Jumlah Penarikan (Rp)",
     bankLabel: "Pilih / Input Informasi Rekening Bank",
     btnSubmit: "Ajukan Penarikan",
     stats: {
       earnings: "Total Pendapatan",
-      withdrawn: "Total Ditarik",
+      withdrawn: "Total Permintaan Penarikan",
       pending: "Menunggu Penarikan"
     },
     bankCard: {
@@ -46,7 +46,7 @@ const contentMap = {
     },
     supportCard: {
       title: "Bantuan Keuangan",
-      desc: "Punya kendala dengan pencairan dana? Tim finansial kami siap membantu Anda 24/7."
+      desc: "Penarikan memerlukan tindak lanjut operasional. Kontak bantuan keuangan belum dikonfigurasi."
     }
   },
   en: {
@@ -57,13 +57,13 @@ const contentMap = {
     history: "Transaction History",
     empty: "No transactions yet",
     withdrawTitle: "Withdraw Funds",
-    withdrawDesc: "Funds will be transferred to your bank account in 1-2 business days.",
+    withdrawDesc: "Requests are recorded as PENDING in the internal ledger. Bank transfers are not integrated; a request is not proof of disbursement.",
     amountLabel: "Withdrawal Amount (IDR)",
     bankLabel: "Select / Input Bank Account Details",
     btnSubmit: "Submit Withdrawal",
     stats: {
       earnings: "Total Earnings",
-      withdrawn: "Total Withdrawn",
+      withdrawn: "Requested Withdrawals",
       pending: "Pending Clearance"
     },
     bankCard: {
@@ -74,7 +74,7 @@ const contentMap = {
     },
     supportCard: {
       title: "Financial Support",
-      desc: "Having issues with your withdrawals? Our finance team is here to assist you 24/7."
+      desc: "Withdrawals require operational follow-up. Finance support contact is not configured."
     }
   }
 }
@@ -82,6 +82,7 @@ const contentMap = {
 export default function SupplierWalletPage() {
   const [wallet, setWallet] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const withdrawalKey = useRef('');
   const [withdrawAmount, setWithdrawAmount] = useState('')
   const [bankInfo, setBankInfo] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -118,29 +119,9 @@ export default function SupplierWalletPage() {
       } else {
         throw new Error('API unreachable')
       }
-    } catch (err) {
-      console.warn("Backend offline, loading mock wallet:", err)
-      const localWalletKey = 'valam_supplier_wallet_' + email
-      const stored = localStorage.getItem(localWalletKey)
-      if (stored) {
-        setWallet(JSON.parse(stored))
-      } else {
-        const initialWallet = {
-          balance: email === 'supplier1@gmail.com' || email === 'supplier@valam.id' ? 45000000 : 0,
-          transactions: email === 'supplier1@gmail.com' || email === 'supplier@valam.id' ? [
-            {
-              id: 'tx_1',
-              description: 'Penjualan Batch B-ACEH-901',
-              type: 'CREDIT',
-              amount: 45000000,
-              created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
-              status: 'COMPLETED'
-            }
-          ] : []
-        }
-        localStorage.setItem(localWalletKey, JSON.stringify(initialWallet))
-        setWallet(initialWallet)
-      }
+    } catch {
+      setWallet(null);
+      toast({ title: 'Saldo gagal dimuat', description: 'Saldo contoh atau cache lokal tidak ditampilkan.', variant: 'destructive' });
     } finally {
       setLoading(false)
     }
@@ -149,12 +130,15 @@ export default function SupplierWalletPage() {
   useEffect(() => {
     fetchWallet()
 
-    // Fetch bank info
-    const storedBank = localStorage.getItem('valam_bank_account_info_' + email)
-    if (storedBank) {
-      setLinkedBank(storedBank)
-      setBankInfo(storedBank)
-    }
+    const token = localStorage.getItem('valam_token');
+    const api = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api';
+    fetch(api + '/suppliers/me', { headers: { Authorization: 'Bearer ' + token } })
+      .then(response => response.ok ? response.json() : null)
+      .then(result => {
+        const profile = result?.data || result;
+        const bank = profile?.nomor_rekening ? [profile.nama_bank, profile.nomor_rekening, profile.nama_rekening].filter(Boolean).join(' - ') : '';
+        setLinkedBank(bank); setBankInfo(bank);
+      }).catch(() => { setLinkedBank(''); setBankInfo(''); });
   }, [email])
 
   const handleWithdraw = async (e: React.FormEvent) => {
@@ -172,74 +156,32 @@ export default function SupplierWalletPage() {
         return
       }
 
+      if (!withdrawalKey.current) withdrawalKey.current = crypto.randomUUID();
       const res = await fetch(`${API_URL}/wallet/withdraw`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ amount, bankDetails: bankInfo })
+        body: JSON.stringify({ amount, bankDetails: bankInfo, idempotency_key: withdrawalKey.current })
       })
 
       if (res.ok) {
         toast({ title: "Berhasil", description: "Permintaan penarikan dana berhasil diajukan" })
         setIsDialogOpen(false)
-        setWithdrawAmount('')
+        setWithdrawAmount(''); withdrawalKey.current = ''
         fetchWallet()
       } else {
         throw new Error('API failed')
       }
-    } catch (err) {
-      console.warn("Backend offline, updating local wallet info:", err)
-      const localWalletKey = 'valam_supplier_wallet_' + email
-
-      if (amount > wallet.balance) {
-        toast({ title: "Gagal", description: "Saldo tidak mencukupi", variant: "destructive" })
-        setIsSubmitting(false)
-        return
-      }
-
-      const updatedWallet = {
-        balance: wallet.balance - amount,
-        transactions: [
-          {
-            id: 'tx_w_' + Math.random().toString(36).substring(2, 9),
-            description: `Penarikan Dana ke ${bankInfo.split(' - ')[0] || 'Bank'}`,
-            type: 'DEBIT',
-            amount: amount,
-            created_at: new Date().toISOString(),
-            status: 'PENDING'
-          },
-          ...wallet.transactions
-        ]
-      }
-
-      localStorage.setItem(localWalletKey, JSON.stringify(updatedWallet))
-      setWallet(updatedWallet)
-
-      // Auto-save the bank account details
-      if (bankInfo !== linkedBank) {
-        localStorage.setItem('valam_bank_account_info_' + email, bankInfo)
-        setLinkedBank(bankInfo)
-      }
-
-      toast({ title: "Berhasil (Mock)", description: "Permintaan penarikan dana diajukan secara lokal." })
-      setIsDialogOpen(false)
-      setWithdrawAmount('')
+    } catch {
+      toast({ title: 'Penarikan gagal dikonfirmasi', description: 'Saldo lokal tidak diubah. Periksa status sebelum mengulang.', variant: 'destructive' });
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const handleLinkBank = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (bankInfo.trim()) {
-      localStorage.setItem('valam_bank_account_info_' + email, bankInfo)
-      setLinkedBank(bankInfo)
-      setIsBankDialogOpen(false)
-      toast({ title: "Berhasil", description: t.bankCard.linkedSuccess })
-    }
-  }
+  const handleLinkBank = (e: React.FormEvent) => { e.preventDefault(); router.push('/dashboard/supplier/settings'); }
 
   const formatRupiah = (num: number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num)
@@ -247,8 +189,8 @@ export default function SupplierWalletPage() {
 
   // Calculate stats
   const totalEarnings = wallet?.transactions
-    ?.filter((t: any) => t.type === 'CREDIT' && t.status === 'COMPLETED')
-    ?.reduce((sum: number, t: any) => sum + t.amount, 0) || 0
+    ?.filter((t: any) => t.type === 'CREDIT')
+    ?.reduce((sum: number, t: any) => sum + Number(t.amount), 0) || 0
 
   const totalWithdrawn = wallet?.transactions
     ?.filter((t: any) => t.type === 'DEBIT')
@@ -257,6 +199,7 @@ export default function SupplierWalletPage() {
   if (loading) {
     return <DashboardSkeleton />
   }
+  if (!wallet) return <main className="p-8"><p role="alert">Saldo gagal dimuat. Silakan muat ulang setelah koneksi API atau sesi login pulih.</p></main>;
 
   return (
     <div className="w-full flex flex-col min-h-[75vh] pb-16">
@@ -265,6 +208,7 @@ export default function SupplierWalletPage() {
         subtitle={t.subtitle}
       />
 
+      {wallet.frozen && <p role="alert" className="p-4 bg-amber-50 text-amber-900">Wallet memerlukan rekonsiliasi refund. Kewajiban refund: {Number(wallet.refund_due || 0)}. Penarikan dibatasi.</p>}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         {/* Top 3 Metric Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -360,7 +304,7 @@ export default function SupplierWalletPage() {
             </div>
             <div className="flex items-center text-xs text-zinc-500 pt-2 border-t border-zinc-100">
               <ArrowUpRight className="w-4 h-4 text-amber-500 mr-1" />
-              <span>Total Dana Ditransfer Ke Rekening</span>
+              <span>Pengajuan tercatat; bukan konfirmasi transfer bank</span>
             </div>
           </div>
 
@@ -374,7 +318,7 @@ export default function SupplierWalletPage() {
             <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-bold text-zinc-900">{t.history}</h3>
-                <span className="text-xs text-zinc-400 font-medium">Updated live</span>
+                <span className="text-xs text-zinc-400 font-medium">Data dari server</span>
               </div>
 
               {(!wallet?.transactions || wallet.transactions.length === 0) ? (
@@ -504,8 +448,8 @@ export default function SupplierWalletPage() {
               <p className="text-zinc-400 text-xs leading-relaxed mb-6">
                 {t.supportCard.desc}
               </p>
-              <Button variant="outline" className="w-full h-11 border-zinc-800 text-white hover:bg-zinc-850 rounded-xl text-xs font-semibold flex items-center justify-center gap-2">
-                <span>WhatsApp Finance Support</span>
+              <Button disabled variant="outline" className="w-full h-11 border-zinc-800 text-white hover:bg-zinc-850 rounded-xl text-xs font-semibold flex items-center justify-center gap-2">
+                <span>{locale === 'id' ? 'Kontak belum tersedia' : 'Contact unavailable'}</span>
               </Button>
             </div>
 

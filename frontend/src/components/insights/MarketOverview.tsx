@@ -22,19 +22,7 @@ interface PriceSnapshot {
   updatedAt: string | null;
 }
 
-const PLACEHOLDER: PriceSnapshot = {
-  price: {
-    id: 'placeholder',
-    grade: 'A',
-    price_per_kg: 450000,
-    currency: 'IDR',
-    updated_by: null,
-    updated_at: new Date().toISOString(),
-  },
-  weeklyChangePct: 2.4,
-  isPlaceholder: true,
-  updatedAt: new Date().toISOString(),
-};
+const PLACEHOLDER: PriceSnapshot = { price: null, weeklyChangePct: null, isPlaceholder: true, updatedAt: null };
 
 function formatChange(pct: number | null, isEn: boolean) {
   if (pct === null) return isEn ? '—' : '—';
@@ -189,7 +177,7 @@ export function MarketOverview({ locale, variant = 'section' }: MarketOverviewPr
             {data.isPlaceholder && (
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-semibold">
                 <Info className="w-3 h-3" />
-                {isEn ? 'Sample data' : 'Data contoh'}
+                {isEn ? 'Data unavailable' : 'Data belum tersedia'}
               </span>
             )}
           </div>
@@ -230,8 +218,8 @@ export function MarketOverview({ locale, variant = 'section' }: MarketOverviewPr
           {data.isPlaceholder && (
             <p className="text-xs text-zinc-500 leading-relaxed max-w-xl">
               {isEn
-                ? 'Live market prices are not connected yet. Figures shown are illustrative placeholders and will be replaced by API data.'
-                : 'Harga real-time belum terhubung. Angka di atas adalah placeholder ilustratif dan akan diganti data API.'}
+                ? 'Source price data is unavailable or could not be loaded.'
+                : 'Data harga sumber belum tersedia atau gagal dimuat.'}
             </p>
           )}
         </div>

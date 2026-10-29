@@ -3,16 +3,16 @@
 import { useState, useEffect, useTransition } from 'react';
 import { Link, usePathname, useRouter } from '@/i18n/routing';
 import { useLocale } from 'next-intl';
-import { 
-  Leaf, 
-  Phone, 
-  MapPin, 
-  Mail, 
-  Globe, 
-  ChevronDown, 
-  ChevronUp, 
-  CheckCircle2, 
-  AlertCircle, 
+import {
+  Leaf,
+  Phone,
+  MapPin,
+  Mail,
+  Globe,
+  ChevronDown,
+  ChevronUp,
+  CheckCircle2,
+  AlertCircle,
   ArrowRight,
   TrendingUp,
   Sparkles
@@ -34,13 +34,9 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
   const [isPending, startTransition] = useTransition();
 
   // Local state for dynamic database stats
-  const [prices, setPrices] = useState<any[]>(marketPrices || [
-    { grade: 'A', price_per_kg: 850000 },
-    { grade: 'B', price_per_kg: 780000 },
-    { grade: 'C', price_per_kg: 680000 }
-  ]);
-  const [activeKoperasiCount, setActiveKoperasiCount] = useState<number>(supplierCount || 5);
-  const [activeKabupatenCount, setActiveKabupatenCount] = useState<number>(kabupatenCount || 5);
+  const [prices, setPrices] = useState<any[]>(marketPrices || []);
+  const [activeKoperasiCount, setActiveKoperasiCount] = useState<number | null>(supplierCount ?? null);
+  const [activeKabupatenCount, setActiveKabupatenCount] = useState<number | null>(kabupatenCount ?? null);
 
   // Newsletter states
   const [email, setEmail] = useState('');
@@ -66,13 +62,13 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
     const fetchStats = async () => {
       try {
         const supabase = createClient();
-        
+
         // 1. Fetch market prices
         const { data: priceData, error: priceErr } = await supabase
           .from('insights_market_prices')
-          .select('grade, price_per_kg')
+          .select('id, grade, price_per_kg, currency, updated_at')
           .order('grade', { ascending: true });
-        
+
         if (priceData && priceData.length > 0 && !priceErr) {
           setPrices(mergeMarketPrices(priceData as any));
         }
@@ -83,8 +79,8 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
 
         if (stats && !statsErr) {
           const statsObj = stats as { active_koperasi_count: number; active_kabupaten_count: number };
-          setActiveKoperasiCount(statsObj.active_koperasi_count || supplierCount || 5);
-          setActiveKabupatenCount(statsObj.active_kabupaten_count || kabupatenCount || 5);
+          setActiveKoperasiCount(statsObj.active_koperasi_count ?? supplierCount ?? null);
+          setActiveKabupatenCount(statsObj.active_kabupaten_count ?? kabupatenCount ?? null);
         }
       } catch (err) {
         // graceful fallback to defaults
@@ -156,7 +152,7 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
   return (
     <footer className="w-full bg-[#06140D] text-zinc-300 border-t border-emerald-900/30 relative overflow-hidden select-none">
       {/* Visual background ambient gradient glow */}
-      <div 
+      <div
         className="absolute inset-0 pointer-events-none opacity-25"
         style={{
           background: 'radial-gradient(ellipse 70% 50% at 50% 0%, #104C2E 0%, transparent 70%)'
@@ -164,12 +160,12 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
       />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl relative z-10 pt-16 pb-10">
-        
+
         {/* ┌─────────────────────────────────────────────────────────────────────────────┐ */}
         {/* │                          MAIN FOOTER GRID                                   │ */}
         {/* └─────────────────────────────────────────────────────────────────────────────┘ */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 lg:gap-8 mb-12">
-          
+
           {/* Column 1 â€” Brand Identity (4 cols) */}
           <div className="lg:col-span-4 space-y-4">
             <Link className="flex items-center gap-2.5 group w-fit" href="/">
@@ -180,35 +176,35 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
                 Valam<span className="text-[#C8922A]">.</span>
               </span>
             </Link>
-            
+
             <p className="font-serif text-sm font-semibold text-emerald-200/90 leading-snug">
-              {isId 
-                ? 'Platform Perdagangan B2B Minyak Nilam Terpercaya & Terlacak' 
+              {isId
+                ? 'Platform Perdagangan B2B Minyak Nilam Terpercaya & Terlacak'
                 : 'Trusted & Traceable Patchouli Oil B2B Trading Platform'}
             </p>
 
             <p className="text-xs text-zinc-400 leading-relaxed font-normal max-w-sm">
-              {isId 
-                ? 'Infrastruktur digital minyak nilam Indonesia yang menghubungkan koperasi petani dengan industri global melalui verifikasi uji lab GC-MS, kepatuhan regulasi EUDR, dan sistem pembayaran escrow aman.' 
-                : 'Indonesia\'s patchouli oil digital trading infrastructure connecting local farmer cooperatives with global buyers through accredited GC-MS lab testing, EUDR compliance, and secure escrow.'}
+              {isId
+                ? 'Platform yang menghubungkan pemasok dan buyer minyak nilam. Status mutu, dokumen dan pembayaran mengikuti bukti serta integrasi yang tersedia.'
+                : 'Patchouli trading platform connecting suppliers and buyers. Quality, documents and payment status depend on available evidence and integrations.'}
             </p>
 
             {/* Coverage Badge */}
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-950/60 border border-emerald-800/40 text-xs text-emerald-300 backdrop-blur-sm shadow-xs">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
               <span className="font-medium text-[11px]">
-                {isId 
-                  ? `Sentra Koperasi Mitra: ${activeKabupatenCount} Kabupaten di Aceh`
-                  : `Partner Cooperatives across ${activeKabupatenCount} Aceh Regencies`}
+                {isId
+                  ? 'Informasi pemasok sesuai profil yang tersedia'
+                  : 'Supplier information follows available profiles'}
               </span>
             </div>
 
             {/* Social & Contact Icons */}
             <div className="flex items-center gap-2.5 pt-1">
-              <a 
-                href="https://linkedin.com/company/valam" 
-                target="_blank" 
-                rel="noopener noreferrer" 
+              <a
+                href="https://linkedin.com/company/valam"
+                target="_blank"
+                rel="noopener noreferrer"
                 aria-label="LinkedIn"
                 className="w-8 h-8 rounded-lg bg-zinc-900/80 border border-zinc-800 hover:border-emerald-500/50 hover:bg-emerald-950/40 hover:text-emerald-300 transition-all flex items-center justify-center text-zinc-400"
               >
@@ -216,10 +212,10 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
                   <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.779-1.75-1.75s.784-1.75 1.75-1.75 1.75.779 1.75 1.75-.784 1.75-1.75 1.75zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
                 </svg>
               </a>
-              <a 
-                href="https://instagram.com/valam.atsiri" 
-                target="_blank" 
-                rel="noopener noreferrer" 
+              <a
+                href="https://instagram.com/valam.atsiri"
+                target="_blank"
+                rel="noopener noreferrer"
                 aria-label="Instagram"
                 className="w-8 h-8 rounded-lg bg-zinc-900/80 border border-zinc-800 hover:border-emerald-500/50 hover:bg-emerald-950/40 hover:text-emerald-300 transition-all flex items-center justify-center text-zinc-400"
               >
@@ -229,17 +225,17 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
                   <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
                 </svg>
               </a>
-              <a 
-                href="https://wa.me/6281234567890" 
-                target="_blank" 
-                rel="noopener noreferrer" 
+              <a
+                aria-disabled={true} title="Kontak WhatsApp resmi belum dikonfigurasi"
+                target="_blank"
+                rel="noopener noreferrer"
                 aria-label="WhatsApp"
                 className="w-8 h-8 rounded-lg bg-zinc-900/80 border border-zinc-800 hover:border-emerald-500/50 hover:bg-emerald-950/40 hover:text-emerald-300 transition-all flex items-center justify-center text-zinc-400"
               >
                 <Phone className="w-3.5 h-3.5" />
               </a>
-              <a 
-                href="mailto:support@valam.id" 
+              <a
+                href="mailto:support@valam.id"
                 aria-label="Email"
                 className="w-8 h-8 rounded-lg bg-zinc-900/80 border border-zinc-800 hover:border-emerald-500/50 hover:bg-emerald-950/40 hover:text-emerald-300 transition-all flex items-center justify-center text-zinc-400"
               >
@@ -250,7 +246,7 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
 
           {/* Column 2 â€” Produk & Ekosistem (2 cols) */}
           <div className="lg:col-span-2 space-y-3">
-            <button 
+            <button
               onClick={() => toggleAccordion('produk')}
               className="w-full flex items-center justify-between lg:block text-left focus:outline-none cursor-pointer py-1"
             >
@@ -261,7 +257,7 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
                 {openAccordions.produk ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </span>
             </button>
-            
+
             <ul className={`space-y-2.5 transition-all duration-300 lg:block ${openAccordions.produk ? 'block' : 'hidden'}`}>
               <li>
                 <Link href="/marketplace" className="text-xs text-zinc-400 hover:text-white transition-colors flex items-center gap-1.5">
@@ -292,7 +288,7 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
                 </Link>
               </li>
               <li>
-                <Link href="/traceability/VAL-ACEH-001" className="text-xs text-zinc-400 hover:text-white transition-colors flex items-center gap-1.5">
+                <Link href="/marketplace" className="text-xs text-zinc-400 hover:text-white transition-colors flex items-center gap-1.5">
                   <span className="w-1 h-1 rounded-full bg-emerald-500/60" />
                   {isId ? 'Ketertelusuran Batch' : 'Batch Traceability'}
                 </Link>
@@ -302,7 +298,7 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
 
           {/* Column 3 â€” Layanan & Standar (2 cols) */}
           <div className="lg:col-span-2 space-y-3">
-            <button 
+            <button
               onClick={() => toggleAccordion('layanan')}
               className="w-full flex items-center justify-between lg:block text-left focus:outline-none cursor-pointer py-1"
             >
@@ -316,21 +312,21 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
 
             <ul className={`space-y-2.5 transition-all duration-300 lg:block ${openAccordions.layanan ? 'block' : 'hidden'}`}>
               <li>
-                <Link href="/insights" className="text-xs text-zinc-400 hover:text-white transition-colors flex items-center gap-1.5">
+                <Link href="/#testing-partners" className="text-xs text-zinc-400 hover:text-white transition-colors flex items-center gap-1.5">
                   <span className="w-1 h-1 rounded-full bg-emerald-500/60" />
-                  {isId ? 'Uji Lab GC-MS' : 'GC-MS Testing'}
+                  {isId ? 'Mitra Pengujian' : 'Testing Partners'}
                 </Link>
               </li>
               <li>
-                <Link href="/insights" className="text-xs text-zinc-400 hover:text-white transition-colors flex items-center gap-1.5">
+                <Link href="/marketplace" className="text-xs text-zinc-400 hover:text-white transition-colors flex items-center gap-1.5">
                   <span className="w-1 h-1 rounded-full bg-emerald-500/60" />
-                  {isId ? 'Digital CoA (Sertifikat)' : 'Digital CoA'}
+                  {isId ? 'Dokumen Hasil Uji' : 'Test Report Documents'}
                 </Link>
               </li>
               <li>
                 <Link href="/buyer/orders" className="text-xs text-zinc-400 hover:text-white transition-colors flex items-center gap-1.5">
                   <span className="w-1 h-1 rounded-full bg-emerald-500/60" />
-                  {isId ? 'Escrow Transaksi Aman' : 'Escrow Protection'}
+                  {isId ? 'Pembayaran melalui Gateway' : 'Gateway Payments'}
                 </Link>
               </li>
               <li>
@@ -344,7 +340,7 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
 
           {/* Column 4 â€” Kontak & Dukungan (2 cols) */}
           <div className="lg:col-span-2 space-y-3">
-            <button 
+            <button
               onClick={() => toggleAccordion('kontak')}
               className="w-full flex items-center justify-between lg:block text-left focus:outline-none cursor-pointer py-1"
             >
@@ -367,8 +363,8 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
               </li>
               <li className="flex items-center gap-2 text-xs text-zinc-400 hover:text-white transition-colors">
                 <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
-                <a href="https://wa.me/6281234567890" target="_blank" rel="noopener noreferrer">
-                  +62 812-3456-7890
+                <a aria-disabled="true" title="Kontak WhatsApp resmi belum tersedia" target="_blank" rel="noopener noreferrer">
+                  Kontak resmi belum tersedia
                 </a>
               </li>
               <li className="pt-1">
@@ -390,8 +386,8 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
               {isId ? 'Warta Pasar' : 'Market Digest'}
             </h4>
             <p className="text-xs text-zinc-400 leading-relaxed">
-              {isId 
-                ? 'Dapatkan pembaruan tren harga nilam dan riset pasar atsiri mingguan.' 
+              {isId
+                ? 'Dapatkan pembaruan tren harga nilam dan riset pasar atsiri mingguan.'
                 : 'Weekly patchouli price trends and market intelligence reports directly to your inbox.'}
             </p>
 
@@ -448,7 +444,7 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
             <div className="flex items-center gap-1.5">
               <TrendingUp className="w-4 h-4 text-emerald-400" />
               <span className="font-serif font-bold text-xs text-white uppercase tracking-wider">
-                {isId ? 'Live Pasar Nilam Hari Ini' : 'Live Patchouli Market Price'}
+                {isId ? 'Harga indikatif' : 'Indicative prices'}
               </span>
             </div>
           </div>
@@ -468,7 +464,7 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
           </div>
 
           <div className="text-[11px] text-zinc-400 hidden lg:block shrink-0">
-            {isId ? 'Data riil agregasi transaksi sentra Aceh' : 'Aggregated from Aceh distillation hubs'}
+            {isId ? 'Sumber harga dapat belum tersedia; bukan penawaran batch' : 'Source data may be unavailable; not batch offers'}
           </div>
         </div>
 

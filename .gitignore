@@ -15,6 +15,8 @@ build/
 .env.development.local
 .env.test.local
 .env.production.local
+.env.*.local
+.pertamuda-credentials.json
 
 # Debug logs
 npm-debug.log*
@@ -38,3 +40,13 @@ coverage/
 *.tsbuildinfo
 next-env.d.ts
 
+
+# Isolated Pertamuda frontend build output
+frontend/.next-pertamuda/
+frontend/.next-quality-ui/
+backend/.quality-preview.json
+backend/uploads/supplier-documents/quality-*/
+
+# Local verification output and private uploaded supplier documents
+/artifacts/
+/backend/uploads/supplier-documents/

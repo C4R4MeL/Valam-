@@ -91,7 +91,7 @@ async function main() {
       total_volume_kg: 500,
       available_volume_kg: 500,
       price_per_kg: 800000,
-      status: 'IN_LAB', // Waiting for QC
+      status: 'DRAFT', is_demo: true, price_type: 'DEMONSTRATION',
     },
   });
 
@@ -105,7 +105,7 @@ async function main() {
       total_volume_kg: 200,
       available_volume_kg: 200,
       price_per_kg: 750000,
-      status: 'VERIFIED',
+      status: 'VERIFIED', is_demo: true, price_type: 'DEMONSTRATION',
     },
   });
 
@@ -122,18 +122,11 @@ async function main() {
         specific_gravity: 0.965,
         refractive_index: 1.51,
         optical_rotation: -52,
-        overall_status: 'pass',
+        overall_status: 'UNEVALUATED',
       },
     });
 
-    await prisma.certificate.create({
-      data: {
-        product_id: batch2.id,
-        qc_result_id: qcResult.id,
-        certificate_number: 'COA-VAL-ACEH-002-123',
-        admin_name: 'Dr. Iskandar',
-      },
-    });
+    // Demonstration QC is not an official laboratory certificate.
 
     // 4. Create Trace Logs
     await prisma.traceLog.createMany({
@@ -152,9 +145,9 @@ async function main() {
         },
         {
           product_id: batch2.id,
-          event_type: 'LAB_VERIFIED',
-          location_name: 'Valam Central QC Hub',
-          description: 'Produk lulus uji lab',
+          event_type: 'DEMO_QC_RECORDED',
+          location_name: 'DEMONSTRASI — bukan laboratorium VALAM',
+          description: 'DATA DEMONSTRASI. Belum dievaluasi; tidak ada laporan laboratorium resmi.',
         },
       ],
     });

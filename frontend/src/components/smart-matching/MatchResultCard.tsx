@@ -1,24 +1,14 @@
 'use client';
 
+import type { MatchingResult } from '@/lib/matching-result';
+
 import { motion, useReducedMotion } from 'framer-motion';
 import { ShieldCheck, CheckCircle2, Clock } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { Button } from '@/components/ui/button';
 import { formatRupiah } from '@/lib/utils';
 
-interface Product {
-  id: string;
-  batch_code: string;
-  supplier_name: string;
-  supplier_id: string;
-  available_volume_kg: number;
-  pa_percentage: number;
-  moisture: number;
-  price_per_kg: number;
-  match_score: number;
-  origin_district?: string;
-  origin_village?: string;
-}
+type Product = MatchingResult;
 
 interface MatchResultCardProps {
   product: Product;
@@ -60,7 +50,7 @@ export function MatchResultCard({
   role,
 }: MatchResultCardProps) {
   const prefersReducedMotion = useReducedMotion();
-  const isBestRank = idx === 0;
+  const isBestRank = idx === 0 && product.is_eligible;
 
   return (
     <motion.div
@@ -74,7 +64,7 @@ export function MatchResultCard({
         }`}
       style={isBestRank ? { boxShadow: '0 0 20px rgba(242, 201, 76, 0.2)' } : undefined}
     >
-      
+
       {/* Rank Indicator Badge */}
       <div className={`absolute top-0 left-0 w-8 h-8 flex items-center justify-center font-bold tabular-nums rounded-br-xl shadow-sm text-xs border-r border-b border-zinc-150
         ${isBestRank ? 'bg-gradient-to-r from-gold-500 to-gold-400 text-forest-950' : 'bg-zinc-100 text-zinc-600'}
@@ -112,7 +102,7 @@ export function MatchResultCard({
       <div className={`flex-shrink-0 flex items-center justify-center w-20 h-20 rounded-full border shadow-inner
         ${isBestRank ? 'bg-gold-50/50 border-gold-200' : 'bg-forest-50/50 border-forest-100'}`}>
         <div className="text-center">
-          <span className={`block text-2xl font-bold tabular-nums tracking-tight leading-none ${isBestRank ? 'text-gold-700' : 'text-forest-700'}`}>{product.match_score}%</span>
+          <span className={`block text-2xl font-bold tabular-nums tracking-tight leading-none ${isBestRank ? 'text-gold-700' : 'text-forest-700'}`}>{product.match_score == null ? '—' : product.match_score}</span>
           <span className="block text-[9px] uppercase font-semibold text-warm-700 tracking-[0.08em] mt-0.5">{translations.matchScore}</span>
         </div>
       </div>
@@ -121,7 +111,7 @@ export function MatchResultCard({
       <div className="flex-1 text-center md:text-left w-full space-y-2">
         <h3 className="text-base md:text-lg font-semibold text-forest-950 tracking-tight leading-snug flex flex-wrap items-center justify-center md:justify-start gap-1.5">
           {product.supplier_name}
-          <ShieldCheck className="w-4 h-4 text-forest-500 shrink-0" />
+
           {product.origin_district && (
             <span className="inline-flex items-center gap-1 bg-terracotta-100 text-terracotta-700 text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full border border-terracotta-200/50 ml-1">
               <span className="w-1 h-1 rounded-full bg-terracotta-500 animate-pulse" />
@@ -129,7 +119,10 @@ export function MatchResultCard({
             </span>
           )}
         </h3>
-        
+
+        <p className="text-xs font-bold">{product.is_demo ? 'DEMONSTRASI — ' : ''}{product.is_eligible ? 'Memenuhi batas angka yang diminta' : 'Alternatif dengan syarat belum terpenuhi'}</p>
+        <ul className="text-xs text-amber-900">{product.unmet_requirements.map(reason => <li key={reason}>• {reason}</li>)}</ul>
+        <p className="text-xs text-zinc-500">{product.met_requirements.join('; ')}. {product.explanation}</p>
         {/* Specs detail row */}
         <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-4 gap-y-1.5 text-[12px] text-warm-700 font-normal leading-snug">
           <div className="flex items-center gap-1.5">
@@ -138,11 +131,11 @@ export function MatchResultCard({
           </div>
           <div className="flex items-center gap-1.5">
             <CheckCircle2 className="w-3.5 h-3.5 text-forest-500 shrink-0" />
-            {translations.pa}: <strong className="text-forest-950 font-semibold tabular-nums">{product.pa_percentage}%</strong>
+            {translations.pa}: <strong className="text-forest-950 font-semibold tabular-nums">{product.pa_percentage == null ? 'Belum tersedia' : product.pa_percentage + '%'}</strong>
           </div>
           <div className="flex items-center gap-1.5">
             <CheckCircle2 className="w-3.5 h-3.5 text-forest-500 shrink-0" />
-            {translations.moisture}: <strong className="text-forest-950 font-semibold tabular-nums">{product.moisture}%</strong>
+            {translations.moisture}: <strong className="text-forest-950 font-semibold tabular-nums">{product.moisture == null ? 'Belum tersedia' : product.moisture + '%'}</strong>
           </div>
         </div>
 
@@ -150,8 +143,8 @@ export function MatchResultCard({
         <div className="space-y-1 pt-1">
           <div className="w-full bg-zinc-100 rounded-full h-2 overflow-hidden border border-zinc-200/50">
             <motion.div
-              initial={prefersReducedMotion ? { width: `${product.match_score}%` } : { width: '0%' }}
-              animate={{ width: `${product.match_score}%` }}
+              initial={prefersReducedMotion ? { width: `${product.match_score ?? 0}%` } : { width: '0%' }}
+              animate={{ width: `${product.match_score ?? 0}%` }}
               transition={{ duration: 0.8, ease: 'easeOut', delay: idx * 0.15 }}
               className="h-full bg-gradient-to-r from-forest-500 to-forest-400 rounded-full"
             />
@@ -164,11 +157,11 @@ export function MatchResultCard({
         <div className="text-center md:text-right w-full">
           <p className="text-[10px] text-zinc-400 font-medium uppercase tracking-[0.08em] mb-0.5">{translations.priceLabel}</p>
           <p className={`text-lg font-bold tabular-nums tracking-tight leading-none ${isBestRank ? 'text-gold-700' : 'text-forest-700'}`}>
-            {formatRupiah(product.price_per_kg)}
+            {product.price_per_kg == null ? 'Belum tersedia' : formatRupiah(product.price_per_kg)}
             <span className="text-xs font-normal text-zinc-450 tracking-normal">/kg</span>
           </p>
         </div>
-        
+
         <div className="flex items-center gap-2 w-full">
           <Link href={`/katalog/${product.id}?from=matching&match_score=${product.match_score}`} className="flex-1">
             <Button variant="outline" className="w-full border-forest-200 text-forest-700 hover:bg-forest-50 hover:text-forest-800 h-9 text-xs font-semibold tracking-tight rounded-lg px-2 transition-all">
@@ -184,9 +177,9 @@ export function MatchResultCard({
               {translations.btnRfq}
             </button>
           ) : (
-            <Link 
-              href={`/buyer/rfq?supplier=${product.supplier_id}&supplier_name=${encodeURIComponent(product.supplier_name)}&volume=${criteria.volume_kg}&minPa=${criteria.min_pa}&budget=${criteria.max_budget}&moisture=${criteria.max_moisture}&from=public`} 
-              className="flex-1" 
+            <Link
+              href={`/buyer/rfq?batch_id=${product.id}&supplier=${product.supplier_id}&supplier_name=${encodeURIComponent(product.supplier_name)}&volume=${criteria.volume_kg}&minPa=${criteria.min_pa}&budget=${criteria.max_budget}&moisture=${criteria.max_moisture}&from=public`}
+              className="flex-1"
               onClick={onRfqClick}
             >
               <Button className="w-full bg-forest-700 hover:bg-forest-600 text-white font-semibold tracking-tight h-9 text-xs rounded-lg px-2 border border-forest-800/40 transition-colors">

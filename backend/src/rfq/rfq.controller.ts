@@ -1,5 +1,5 @@
 import { Controller, Post, Get, Put, Body, UseGuards, Param, Request } from '@nestjs/common';
-import { RfqService, SubmitRfqDto, RespondRfqDto } from './rfq.service';
+import { RfqService, SubmitRfqDto, RespondRfqDto, CloseRfqDto } from './rfq.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -39,7 +39,7 @@ export class RfqController {
 
   @Put(':id/close')
   @Roles('buyer')
-  async closeRfq(@Request() req: any, @Param('id') rfqId: string, @Body() body: { status: 'ACCEPTED' | 'REJECTED' }) {
+  async closeRfq(@Request() req: any, @Param('id') rfqId: string, @Body() body: CloseRfqDto) {
     const result = await this.rfqService.closeRfq(req.user.userId, rfqId, body.status);
     return { message: 'RFQ status updated successfully', data: result };
   }

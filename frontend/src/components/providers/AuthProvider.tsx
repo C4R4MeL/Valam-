@@ -1,6 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
+import { sessionExpiresAt } from '@/lib/session'
 
 // ─── Types ──────────────────────────────────────────────────────────
 interface AuthState {
@@ -41,6 +42,11 @@ export function useAuthContext(): AuthContextType {
 function readAuthFromStorage(): AuthState {
   if (typeof window === 'undefined') {
     return { token: null, role: null, email: null, country: null, name: null }
+  }
+  const expiry = sessionExpiresAt(localStorage.getItem(AUTH_KEYS.token));
+  if (!expiry || expiry <= Date.now()) {
+    for (const key of Object.values(AUTH_KEYS)) localStorage.removeItem(key);
+    return { token: null, role: null, email: null, country: null, name: null };
   }
   return {
     token: localStorage.getItem(AUTH_KEYS.token),
@@ -91,6 +97,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // ── logout: clear localStorage + update state ────────────────────
   const logout = useCallback(() => {
+    const token = localStorage.getItem(AUTH_KEYS.token);
+    if (token) {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api';
+      void fetch(`${apiUrl}/auth/logout`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
+        .then(response => { if (!response.ok && response.status !== 401) console.warn('Server logout was not confirmed.'); })
+        .catch(() => console.warn('Server logout was not confirmed; local session cleared.'));
+    }
     localStorage.removeItem(AUTH_KEYS.token)
     localStorage.removeItem(AUTH_KEYS.role)
     localStorage.removeItem(AUTH_KEYS.email)
@@ -99,6 +112,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     setAuth({ token: null, role: null, email: null, country: null, name: null })
   }, [])
+
+  useEffect(() => {
+    if (!auth.token) return;
+    const expiry = sessionExpiresAt(auth.token);
+    if (!expiry || expiry <= Date.now()) { logout(); return; }
+    const timer = window.setTimeout(logout, Math.min(expiry - Date.now(), 2_147_483_647));
+    return () => window.clearTimeout(timer);
+  }, [auth.token, logout]);
+
+  useEffect(() => {
+    if (!auth.token) return;
+    let cancelled = false;
+    const validate = async () => {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api';
+        const response = await fetch(`${apiUrl}/profiles/me`, { headers: { Authorization: `Bearer ${auth.token}` } });
+        if (!cancelled && response.status === 401) logout();
+      } catch { /* API failure is shown by the page; never create a fallback session. */ }
+    };
+    void validate();
+    window.addEventListener('focus', validate);
+    return () => { cancelled = true; window.removeEventListener('focus', validate); };
+  }, [auth.token, logout]);
 
   // ── Cross-tab sync via `storage` event ───────────────────────────
   // The `storage` event fires ONLY when another tab changes localStorage.

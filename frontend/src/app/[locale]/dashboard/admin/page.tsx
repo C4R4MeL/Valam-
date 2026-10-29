@@ -20,7 +20,7 @@ const contentMap = {
       labQueueTrend: "Prioritas tinggi",
       pendingValidation: "Menunggu Validasi",
       pendingValidationTrend: "Supplier baru",
-      verifiedBatches: "Batch Terverifikasi",
+      verifiedBatches: "Transaksi Hari Ini",
       verifiedBatchesTrend: "Bulan ini",
       revenue: "Estimasi Revenue",
       revenueTrend: "Berdasarkan transaksi",
@@ -29,7 +29,7 @@ const contentMap = {
     },
     qcQueue: {
       title: "Antrian Uji Lab",
-      desc: "Batch sampel fisik yang baru tiba di hub",
+      desc: "Batch menunggu pencatatan QC; penerimaan sampel perlu dikonfirmasi.",
       viewAll: "Lihat Semua",
       colId: "ID Batch / Asal",
       colStatus: "Status",
@@ -58,7 +58,7 @@ const contentMap = {
       labQueueTrend: "High priority",
       pendingValidation: "Pending Validation",
       pendingValidationTrend: "New suppliers",
-      verifiedBatches: "Verified Batches",
+      verifiedBatches: "Today's Transactions",
       verifiedBatchesTrend: "This month",
       revenue: "Estimated Revenue",
       revenueTrend: "Based on transactions",
@@ -99,7 +99,7 @@ export default function AdminDashboardPage() {
     revenue: number,
     gmv?: number,
     platformFee?: number,
-    qcRevenue?: number
+    qcRevenue?: number | null
   } | null>(null)
   const [qcQueue, setQcQueue] = useState<any[]>([])
   const [pendingSuppliersList, setPendingSuppliersList] = useState<any[]>([])
@@ -111,13 +111,13 @@ export default function AdminDashboardPage() {
     const headers = token ? { 'Authorization': `Bearer ${token}` } : undefined
     
     // Fetch KPI
-    fetch(`${API_URL}/admin/dashboard`)
+    fetch(`${API_URL}/admin/dashboard`, { headers })
       .then(res => res.json())
       .then(data => setDashboardData(data))
       .catch(err => console.error("Error fetching dashboard data:", err))
       
     // Fetch Queue Preview
-    fetch(`${API_URL}/admin/qc/queue`)
+    fetch(`${API_URL}/admin/qc/queue`, { headers })
       .then(res => res.json())
       .then(data => setQcQueue(data.slice(0, 4)))
       .catch(err => console.error("Error fetching QC queue:", err))
@@ -174,7 +174,7 @@ export default function AdminDashboardPage() {
         <div className="bg-gradient-to-br from-emerald-950 to-zinc-900 rounded-3xl p-6 text-white shadow-xl border border-emerald-900/50">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div>
-              <p className="text-emerald-400 text-xs font-bold uppercase tracking-wider mb-1">Total Pendapatan Bersih Platform</p>
+              <p className="text-emerald-400 text-xs font-bold uppercase tracking-wider mb-1">Model Estimasi Pendapatan Platform</p>
               <h2 className="text-3xl font-serif font-bold text-white">{formatRupiah(revenue)}</h2>
               <p className="text-zinc-400 text-[11px] mt-1.5">
                 Estimasi pendapatan langsung dari komisi komersial dan biaya administrasi pengujian lab QC.
@@ -193,7 +193,7 @@ export default function AdminDashboardPage() {
               </div>
               <div>
                 <p className="text-amber-400 text-[10px] uppercase font-bold tracking-wider">QC Certification Fee</p>
-                <p className="text-base font-bold text-amber-300 mt-1">{formatRupiah(dashboardData?.qcRevenue || 0)}</p>
+                <p className="text-base font-bold text-amber-300 mt-1">{dashboardData?.qcRevenue == null ? (locale === 'id' ? 'Belum tersedia' : 'Unavailable') : formatRupiah(dashboardData.qcRevenue)}</p>
                 <p className="text-[10px] text-zinc-400 mt-0.5">Rp 250k Per Batch Sertifikasi</p>
               </div>
             </div>

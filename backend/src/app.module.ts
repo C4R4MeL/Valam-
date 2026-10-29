@@ -21,6 +21,8 @@ import { ChatModule } from './chat/chat.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { SupplierModule } from './supplier/supplier.module';
 import { CircularProductsModule } from './circular-products/circular-products.module';
+import { CommerceModule } from './commerce/commerce.module';
+import { QualityModule } from './quality/quality.module';
 
 @Module({
   imports: [
@@ -29,6 +31,8 @@ import { CircularProductsModule } from './circular-products/circular-products.mo
       limit: 60,
     }]),
     PrismaModule, 
+    QualityModule,
+    CommerceModule,
     AuthModule, 
     UsersModule, 
     ProfilesModule, 

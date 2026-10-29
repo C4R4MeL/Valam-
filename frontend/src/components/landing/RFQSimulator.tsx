@@ -25,7 +25,7 @@ export function RFQSimulator() {
       ? "Platform kami menyediakan dashboard bagi pembeli dan penjual untuk memantau status pesanan (RFQ), negosiasi, dan verifikasi sertifikat CoA secara waktu nyata."
       : "Our platform provides a dashboard for buyers and suppliers to monitor order status (RFQ), negotiation, and CoA verification in real-time.",
     docs: [
-      isId ? "Certificate of Analysis (Lab Terakreditasi)" : "Certificate of Analysis (Accredited Lab)",
+      isId ? "Laporan hasil uji (jika tersedia)" : "Test report (if available)",
       isId ? "GPS Terroir Leaf Signature" : "GPS Terroir Leaf Signature",
       isId ? "Escrow Smart Contract Bill" : "Escrow Smart Contract Bill",
     ],

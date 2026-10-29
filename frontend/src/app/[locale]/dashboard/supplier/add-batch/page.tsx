@@ -47,9 +47,9 @@ const contentMap = {
       date: "Tanggal Suling",
       vol: "Volume",
       price: "Harga per Kg",
-      info: "Setelah di-submit, batch ini akan masuk ke antrian Laboratorium. Anda",
-      infoStrong: " wajib mengirimkan sampel 50ml ",
-      infoEnd: "ke hub Valam untuk pengujian GC-MS sebelum produk aktif di etalase."
+      info: "Pendaftaran batch terpisah dari pengajuan pengujian. ",
+      infoStrong: "Pilih mitra pada menu Pengujian & Hasil. ",
+      infoEnd: "Instruksi dan kebutuhan sampel menunggu konfirmasi admin."
     },
     actions: {
       prev: "Kembali",
@@ -90,9 +90,9 @@ const contentMap = {
       date: "Distillation Date",
       vol: "Volume",
       price: "Price per Kg",
-      info: "After submission, this batch will enter the Laboratory queue. You",
-      infoStrong: " must send a 50ml sample ",
-      infoEnd: "to the Valam hub for GC-MS testing before the product becomes active on the storefront."
+      info: "Batch registration is separate from testing requests. ",
+      infoStrong: "Choose a partner under Testing & Results. ",
+      infoEnd: "Instructions and sample requirements await admin confirmation."
     },
     actions: {
       prev: "Back",
@@ -270,6 +270,7 @@ export default function AddBatchPage() {
         body: JSON.stringify({
           origin_district: formData.origin_district,
           origin_village: formData.origin_village,
+          production_date: formData.production_date,
           total_volume_kg: parseFloat(formData.volume) || 0,
           images: imageString ? [imageString] : undefined,
         }),
@@ -287,8 +288,8 @@ export default function AddBatchPage() {
       toast({
         title: locale === 'id' ? 'Batch Berhasil Didaftarkan' : 'Batch Registered Successfully',
         description: locale === 'id' 
-          ? 'Batch baru berhasil didaftarkan. Harap ikuti instruksi pengiriman sampel.' 
-          : 'New batch successfully registered. Please follow the sample shipment instructions.',
+          ? 'Batch terdaftar. Pilih mitra dan ajukan pengujian melalui menu Pengujian & Hasil.'
+          : 'Batch registered. Choose a partner and request testing under Testing & Results.',
       })
     } catch (err: any) {
       console.error('Failed to submit batch:', err)
@@ -733,8 +734,8 @@ export default function AddBatchPage() {
               <div className="flex gap-3">
                 <div className="w-6 h-6 rounded-full bg-emerald-50 text-emerald-800 font-bold flex items-center justify-center text-xs shrink-0 mt-0.5">1</div>
                 <div>
-                  <p className="font-semibold text-zinc-900">Siapkan 50ml Sampel</p>
-                  <p className="text-zinc-500 text-xs mt-0.5">Masukkan minyak nilam hasil sulingan Anda ke dalam botol kaca gelap (vial amber) berkapasitas 50ml agar terlindung dari cahaya.</p>
+                  <p className="font-semibold text-zinc-900">Konfirmasi Kebutuhan Sampel</p>
+                  <p className="text-zinc-500 text-xs mt-0.5">Kebutuhan sampel dan kemasan menunggu instruksi mitra yang dikonfirmasi admin.</p>
                 </div>
               </div>
 
@@ -749,13 +750,10 @@ export default function AddBatchPage() {
               <div className="flex gap-3">
                 <div className="w-6 h-6 rounded-full bg-emerald-50 text-emerald-800 font-bold flex items-center justify-center text-xs shrink-0 mt-0.5">3</div>
                 <div>
-                  <p className="font-semibold text-zinc-900">Kirim Fisik ke Hub Atsiri ARC USK</p>
-                  <p className="text-zinc-500 text-xs mt-0.5">Kirimkan botol sampel tersebut ke alamat berikut:</p>
+                  <p className="font-semibold text-zinc-900">{locale === 'id' ? 'Konfirmasi tujuan pengiriman' : 'Confirm shipment destination'}</p>
+                  <p className="text-zinc-500 text-xs mt-0.5">{locale === 'id' ? 'Alamat pengiriman menunggu konfirmasi admin.' : 'Shipment address awaits admin confirmation.'}</p>
                   <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-3 mt-1.5 text-xs text-emerald-950 font-serif leading-relaxed">
-                    <strong>Pusat Lab QC Atsiri ARC USK</strong><br />
-                    Gedung Atsiri Research Center (ARC) Lantai 1,<br />
-                    Universitas Syiah Kuala, Kopelma Darussalam,<br />
-                    Kec. Syiah Kuala, Kota Banda Aceh, Aceh 23111
+                    <Link href="/dashboard/supplier/testing" className="underline">{locale === 'id' ? 'Buka Pengujian & Hasil untuk instruksi yang dikonfigurasi mitra' : 'Open Testing & Results for configured partner instructions'}</Link>
                   </div>
                 </div>
               </div>
@@ -763,7 +761,7 @@ export default function AddBatchPage() {
               <div className="flex gap-3">
                 <div className="w-6 h-6 rounded-full bg-emerald-50 text-emerald-800 font-bold flex items-center justify-center text-xs shrink-0 mt-0.5">4</div>
                 <div>
-                  <p className="font-semibold text-zinc-900">Pantau Hasil Uji GC-MS</p>
+                  <p className="font-semibold text-zinc-900">Pantau Laporan Pengujian</p>
                   <p className="text-zinc-500 text-xs mt-0.5">Setelah sampel diterima oleh tim Lab, status pengujian dapat Anda pantau langsung melalui Dashboard Supplier.</p>
                 </div>
               </div>

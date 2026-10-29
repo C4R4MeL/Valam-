@@ -14,35 +14,7 @@ export function FAQSection() {
   const locale = useLocale();
   const isId = locale === 'id';
 
-  const faqs: FAQItem[] = isId 
-    ? [
-        {
-          q: "Apa itu Smart Matching MCDM Valam?",
-          a: "Smart Matching MCDM adalah fitur cerdas yang menyaring dan merangking kualitas minyak nilam (seperti kadar Patchouli Alcohol %, kadar air, ketersediaan volume, dan kecocokan harga) menggunakan algoritma Multi-Criteria Decision Making (MCDM) untuk mempertemukan pembeli global dengan kelompok tani/koperasi terbaik secara objektif dan instan."
-        },
-        {
-          q: "Bagaimana keaslian sertifikat analisis (CoA) dijamin?",
-          a: "Setiap batch minyak nilam yang terdaftar di Valam wajib melewati pengujian laboratorium terakreditasi atsiri (GC-MS). Hasil uji laboratorium diunggah langsung dengan jaminan tanda tangan digital terenkripsi, koordinat pemetaan GPS asal terroir daun nilam, dan kode lacak batch yang transparan."
-        },
-        {
-          q: "Bagaimana sistem rekening bersama (Escrow) Valam bekerja?",
-          a: "Valam menyediakan sistem pembayaran aman (escrow) di mana dana transaksi buyer akan ditampung sementara di rekening penampung resmi. Dana ini hanya akan dicairkan ke rekening koperasi supplier setelah komoditas minyak nilam tiba di lokasi bongkar muat dan lulus verifikasi uji fisik ulang kadar PA% oleh tim Quality Control independen kami."
-        }
-      ]
-    : [
-        {
-          q: "What is Valam's MCDM Smart Matching?",
-          a: "MCDM Smart Matching is an intelligent feature that filters and ranks patchouli oil quality criteria (such as Patchouli Alcohol %, moisture level, batch volume, and price alignment) using Multi-Criteria Decision Making (MCDM) mathematical models to objectively connect global fragrance buyers with the most ideal cooperatives instantly."
-        },
-        {
-          q: "How is the authenticity of the Certificate of Analysis (CoA) guaranteed?",
-          a: "Every batch of patchouli oil registered on Valam must undergo gas chromatography-mass spectrometry (GC-MS) testing in an accredited essential oil laboratory. The analysis results are directly uploaded onto the platform with secure digital signatures, GPS tracking of the terroir farm origin, and a fully transparent traceability code."
-        },
-        {
-          q: "How does Valam's secure Escrow payment system work?",
-          a: "Valam provides an escrow system where the buyer's funds are held securely in a neutral account. Funds are released to the supplier's bank account only after the patchouli cargo arrives at the designated warehouse and successfully passes physically independent QC testing for PA% levels."
-        }
-      ];
+  const faqs: FAQItem[] = isId ? [{"q":"Bagaimana matching menentukan hasil?","a":"MCDM memakai jarak Euclidean berbobot ke titik ideal. Kecocokan penuh dipisahkan dari alternatif berdasarkan PA, air, harga, volume dan MOQ. Skor relatif bukan jaminan mutu."},{"q":"Bagaimana membaca hasil uji batch?","a":"Periksa nama laboratorium, nomor laporan, tanggal uji dan dokumen sumber jika tersedia. Akreditasi dan kelulusan tidak diasumsikan. Tanpa aturan evaluasi yang terdokumentasi, mutu batch belum dievaluasi."},{"q":"Bagaimana pembayaran dan saldo pemasok dicatat?","a":"Pembayaran harus dikonfirmasi gateway. Pengiriman dan penerimaan buyer terpisah; unggah bukti pengiriman tidak mencairkan dana. Saldo adalah ledger internal, permintaan penarikan bukan transfer bank. Refund baru selesai setelah konfirmasi gateway. Tidak ada janji escrow pihak ketiga."}] : [{"q":"How are matching results ranked?","a":"MCDM uses weighted Euclidean distance to an ideal point. Full matches and alternatives are separated by PA, moisture, price, volume and MOQ. Relative scores do not guarantee quality."},{"q":"How should I read batch test records?","a":"Check the laboratory, report number, test date and source document when available. Accreditation and approval are not assumed. Quality remains unevaluated without documented rules."},{"q":"How are payments and supplier balances recorded?","a":"Payment must be confirmed by the gateway. Shipping and buyer receipt are separate; shipping evidence does not release funds. The wallet is an internal ledger, and a withdrawal request is not a bank transfer. Refund completion requires gateway confirmation. Third-party escrow is not promised."}];
 
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 

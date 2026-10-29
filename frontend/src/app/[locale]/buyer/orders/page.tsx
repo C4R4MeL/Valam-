@@ -1,5 +1,7 @@
 'use client'
 
+import { CoAViewer } from '@/components/qc/CoAViewer';
+
 import { useState, useEffect } from 'react'
 import { Package, Clock, Truck, CheckCircle2, XCircle, AlertCircle, Search, Calendar, Globe, FileText, Download, ShieldCheck, Camera, Eye, MapPin, CreditCard, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -26,6 +28,7 @@ const contentMap = {
       PACKED: "Dikemas",
       SHIPPED: "Dalam Pengiriman",
       COMPLETED: "Selesai",
+      EXPIRED: "Kedaluwarsa", REFUND_REQUESTED: "Refund diajukan", REFUNDED: "Refund dikonfirmasi gateway", REFUND_REVIEW: "Refund perlu rekonsiliasi", PAYMENT_REVIEW: "Pembayaran perlu pemeriksaan",
       CANCELLED: "Dibatalkan"
     },
     total: "Total:",
@@ -47,6 +50,7 @@ const contentMap = {
       PACKED: "Packed",
       SHIPPED: "Shipped",
       COMPLETED: "Completed",
+      EXPIRED: "Expired", REFUND_REQUESTED: "Refund requested", REFUNDED: "Gateway-confirmed refund", REFUND_REVIEW: "Refund needs reconciliation", PAYMENT_REVIEW: "Payment needs review",
       CANCELLED: "Cancelled"
     },
     total: "Total:",
@@ -62,7 +66,7 @@ export default function BuyerOrdersPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null)
-  
+
   const [shippingOrder, setShippingOrder] = useState<any | null>(null)
   const [payingOrder, setPayingOrder] = useState<any | null>(null)
   const [shippingAddress, setShippingAddress] = useState('')
@@ -70,7 +74,6 @@ export default function BuyerOrdersPage() {
   const [paymentType, setPaymentType] = useState('ESCROW')
   const [savingShipping, setSavingShipping] = useState(false)
   const [paying, setPaying] = useState(false)
-  const [activePaymentInstruction, setActivePaymentInstruction] = useState<any | null>(null)
 
   // Shipment Module States
   const [shipmentType, setShipmentType] = useState<'DOMESTIK' | 'EKSPOR'>('DOMESTIK')
@@ -82,7 +85,7 @@ export default function BuyerOrdersPage() {
   const [forwarderName, setForwarderName] = useState('')
   const [estimatedFreight, setEstimatedFreight] = useState('')
   const [exportNotes, setExportNotes] = useState('')
-  
+
   const [mapSearch, setMapSearch] = useState('')
   const [showMapModal, setShowMapModal] = useState(false)
 
@@ -193,13 +196,13 @@ export default function BuyerOrdersPage() {
   const handlePaySubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!payingOrder) return
-    
+
     if (paymentType === 'ESCROW') {
       setPaying(true)
       try {
         const token = localStorage.getItem('valam_token')
         const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api'
-        
+
         const res = await fetch(`${API_URL}/orders/${payingOrder.id}/retry-payment`, {
           method: 'PUT',
           headers: {
@@ -208,9 +211,9 @@ export default function BuyerOrdersPage() {
         })
         const data = await res.json()
         const snapToken = data.snapToken || data.snap_token;
-        
+
         if (!res.ok || !snapToken) throw new Error(data.message || 'Gagal memuat pembayaran Midtrans')
-        
+
         const snap = (window as any).snap;
         if (snap) {
           snap.pay(snapToken, {
@@ -242,58 +245,13 @@ export default function BuyerOrdersPage() {
         setPaying(false)
       }
     } else {
-      setActivePaymentInstruction({
-        orderId: payingOrder.id,
-        totalAmount: payingOrder.total_amount + (payingOrder.shipping_cost || 0),
-        paymentMethod: paymentType,
-      })
-      setPayingOrder(null)
-    }
-  }
-
-  const handleConfirmFinalPayment = async (orderId: string, method: string) => {
-    if (paying) return
-    setPaying(true)
-
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api'
-    try {
-      const token = localStorage.getItem('valam_token')
-      const res = await fetch(`${API_URL}/orders/${orderId}/pay`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          payment_method: method
-        })
-      })
-
-      if (res.ok) {
-        toast({
-          title: "Pembayaran Sukses Terverifikasi",
-          description: "Sistem telah memverifikasi transfer dana Anda. Pesanan Anda kini diproses pemasok."
-        })
-        setActivePaymentInstruction(null)
-        // Refresh page
-        window.location.reload()
-      } else {
-        throw new Error('Gagal memproses pembayaran')
-      }
-    } catch (err: any) {
-      toast({
-        title: "Gagal",
-        description: err.message || "Terjadi kesalahan saat memproses pembayaran.",
-        variant: "destructive"
-      })
-    } finally {
-      setPaying(false)
+      toast({ title: 'Metode belum tersedia', description: 'Pembayaran hanya melalui gateway yang terkonfirmasi.', variant: 'destructive' });
     }
   }
 
   const handleDownloadDoc = async (orderId: string, orderNumber: string, docKey: string, docName: string) => {
     if (docKey !== 'invoice' && docKey !== 'packing_list' && docKey !== 'invoice_local' && docKey !== 'surat_jalan') {
-      toast({ title: "Mengunduh " + docName, description: `${docName} berhasil diunduh.` })
+      toast({ title: "Dokumen belum tersedia", description: "Sumber dokumen belum tersedia untuk diunduh.", variant: "destructive" })
       return;
     }
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api';
@@ -327,7 +285,7 @@ export default function BuyerOrdersPage() {
         const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api';
         const token = localStorage.getItem('valam_token');
         try {
-          const res = await fetch(`${API_URL}/products/${productId}/coa`, {
+          const res = await fetch(`${API_URL}/products/${productId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           if (res.ok) {
@@ -336,29 +294,11 @@ export default function BuyerOrdersPage() {
             return;
           }
         } catch (err) {
-          console.warn("Backend COA fetch failed, using fallback mock COA:", err);
+          console.warn("Batch test record fetch failed:", err);
         }
       }
-      
-      // Fallback/mock COA if backend request fails or product is local
-      setPreviewDoc({ 
-        key: docKey, 
-        name: docName, 
-        order: selectedOrder, 
-        coaData: {
-          certificate_number: `COA-${selectedOrder.order_number || '1782970'}-QC`,
-          issued_at: new Date().toISOString(),
-          admin_name: "Ahmad Dahlan, M.Si (QC Lead)",
-          qc_result: {
-            pa_percentage: 32.4,
-            moisture: 3.1,
-            specific_gravity: 0.958,
-            refractive_index: 1.507,
-            optical_rotation: -42.5,
-            overall_status: "PASS"
-          }
-        } 
-      });
+
+      toast({ title: 'Document source unavailable', description: 'Tidak ada hasil, laporan atau sertifikat contoh yang ditampilkan.', variant: 'destructive' });
     } else {
       setPreviewDoc({ key: docKey, name: docName, order: selectedOrder });
     }
@@ -366,86 +306,31 @@ export default function BuyerOrdersPage() {
 
   const handleConfirmDelivery = async (orderId: string) => {
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api'
-      const token = localStorage.getItem('valam_token')
-      const email = localStorage.getItem('valam_email') || 'buyer@valam.id'
-
-      if (token) {
-        try {
-          await fetch(`${API_URL}/orders/${orderId}/complete`, {
-            method: 'PUT',
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          })
-        } catch (e) {
-          console.warn('Backend complete request failed, updating locally:', e)
-        }
-      }
-
-      setOrders(prev => prev.map(o => (o.id === orderId || o.order_number === orderId) ? { ...o, status: 'COMPLETED' } : o))
-      const localOrdersRaw = localStorage.getItem('valam_buyer_orders_' + email)
-      if (localOrdersRaw) {
-        const parsed = JSON.parse(localOrdersRaw)
-        const updated = parsed.map((o: any) => (o.id === orderId || o.order_number === orderId) ? { ...o, status: 'COMPLETED' } : o)
-        localStorage.setItem('valam_buyer_orders_' + email, JSON.stringify(updated))
-      }
-
-      toast({
-        title: locale === 'id' ? "Pesanan Selesai!" : "Order Completed!",
-        description: locale === 'id' ? "Terima kasih telah mengonfirmasi penerimaan barang. Transaksi Anda telah selesai." : "Thank you for confirming delivery. Your transaction is now complete."
-      })
-    } catch (err: any) {
-      toast({
-        title: "Gagal",
-        description: err.message || "Gagal mengonfirmasi penerimaan pesanan.",
-        variant: "destructive"
-      })
-    }
+      const api = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api';
+      const response = await fetch(api + '/orders/' + orderId + '/complete', { method: 'PUT', headers: { Authorization: 'Bearer ' + localStorage.getItem('valam_token') } });
+      if (!response.ok) throw new Error('Penerimaan tidak dapat dikonfirmasi');
+      const updated = await response.json();
+      setOrders(prev => prev.map(order => order.id === orderId ? { ...order, ...updated } : order));
+      toast({ title: 'Penerimaan tercatat', description: 'Pesanan diselesaikan sesuai status server.' });
+    } catch { toast({ title: 'Konfirmasi gagal', description: 'Periksa status pembayaran dan pengiriman.', variant: 'destructive' }); }
   }
 
   useEffect(() => {
     const fetchOrders = async () => {
-      const email = localStorage.getItem('valam_email') || 'buyer@valam.id'
-      const localOrdersRaw = localStorage.getItem('valam_buyer_orders_' + email)
-      const localOrders = localOrdersRaw ? JSON.parse(localOrdersRaw) : []
-
       try {
-        const token = localStorage.getItem('valam_token')
-        if (!token) {
-          if (localOrders.length > 0) {
-            setOrders(localOrders)
-          } else {
-            router.push('/login')
-          }
-          setLoading(false)
-          return
-        }
-
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api'}/orders/buyer`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
-        
-        if (res.ok) {
-          const data = await res.json()
-          // Overwrite local storage with the authoritative backend data to prevent orphaned/deleted orders from persisting
-          localStorage.setItem('valam_buyer_orders_' + email, JSON.stringify(data))
-          setOrders(data)
-        } else {
-          setOrders(localOrders)
-        }
-      } catch (err) {
-        console.warn("Backend unavailable, setting local orders fallback:", err)
-        setOrders(localOrders)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchOrders()
-  }, [router])
+        const token = localStorage.getItem('valam_token');
+        if (!token) { router.push('/login'); return; }
+        const api = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api';
+        const response = await fetch(api + '/orders/buyer', { headers: { Authorization: 'Bearer ' + token } });
+        if (!response.ok) throw new Error('Order API unavailable');
+        setOrders(await response.json());
+      } catch {
+        setOrders([]);
+        toast({ title: 'Pesanan gagal dimuat', description: 'Periksa koneksi atau sesi login.', variant: 'destructive' });
+      } finally { setLoading(false); }
+    };
+    void fetchOrders();
+  }, [router]);
 
   const formatRupiah = (num: number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num)
@@ -487,7 +372,7 @@ export default function BuyerOrdersPage() {
       COMPLETED: "bg-emerald-100 text-emerald-800 border-emerald-200",
       CANCELLED: "bg-red-100 text-red-800 border-red-200"
     }
-    
+
     return (
       <span className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 ${statusClasses[status] || "bg-zinc-100 text-zinc-800 border-zinc-200"}`}>
         {getStatusIcon(status)}
@@ -496,7 +381,7 @@ export default function BuyerOrdersPage() {
     )
   }
 
-  const filteredOrders = orders.filter(o => 
+  const filteredOrders = orders.filter(o =>
     (o.id && o.id.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (o.order_number && o.order_number.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (o.supplier?.profile?.company_name && o.supplier.profile.company_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -519,8 +404,8 @@ export default function BuyerOrdersPage() {
       <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
         <div className="relative mb-6 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 w-5 h-5" />
-          <Input 
-            placeholder={t.search} 
+          <Input
+            placeholder={t.search}
             className="pl-10 h-12 rounded-xl bg-zinc-50 border-zinc-200 focus:bg-white transition-colors"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -581,7 +466,7 @@ export default function BuyerOrdersPage() {
                       // Find PA and moisture parameters if available
                       const paParam = item.product?.parameters?.find((p: any) => p.parameter_name === 'Patchouli Alcohol' || p.parameter_name === 'PA');
                       const moistureParam = item.product?.parameters?.find((p: any) => p.parameter_name === 'Moisture' || p.parameter_name === 'Kadar Air');
-                      
+
                       const paValue = paParam ? `${paParam.value}%` : '32.5%';
                       const moistureValue = moistureParam ? `${moistureParam.value}%` : '1.2%';
 
@@ -596,7 +481,7 @@ export default function BuyerOrdersPage() {
                               <p className="text-xs text-zinc-500 mt-1">
                                 {item.quantity_kg} kg x {formatRupiah(item.price_per_kg)}
                               </p>
-                              
+
                               {/* Product Specifications / Quality Indicators */}
                               <div className="flex flex-wrap gap-2 mt-2.5">
                                 <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-blue-50/80 text-blue-700 px-2.5 py-0.5 rounded-full border border-blue-100">
@@ -648,8 +533,8 @@ export default function BuyerOrdersPage() {
                     <div className="flex gap-3">
                       {isAwaitingPayment(order) && (
                         <div className="flex gap-2">
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             className="border-emerald-600 text-emerald-700 hover:bg-emerald-50 font-bold"
                             onClick={() => {
                               setShippingOrder(order)
@@ -659,7 +544,7 @@ export default function BuyerOrdersPage() {
                           >
                             Atur Pengiriman
                           </Button>
-                          <Button 
+                          <Button
                             className="bg-gold-500 hover:bg-gold-600 text-emerald-950 font-bold"
                             disabled={!order.shipping_address?.address}
                             onClick={() => {
@@ -671,7 +556,7 @@ export default function BuyerOrdersPage() {
                         </div>
                       )}
                       {order.status === 'SHIPPED' && (
-                        <Button 
+                        <Button
                           className="bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs shadow-xs"
                           onClick={() => handleConfirmDelivery(order.id)}
                         >
@@ -680,8 +565,8 @@ export default function BuyerOrdersPage() {
                         </Button>
                       )}
                       {(order.status === 'SHIPPED' || order.status === 'COMPLETED') && (
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 font-bold"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -738,7 +623,7 @@ export default function BuyerOrdersPage() {
                     </h4>
                     <div className="flex items-center justify-between relative mt-2">
                       <div className="absolute left-[10%] right-[10%] top-3.5 h-0.5 bg-zinc-200 -z-10" />
-                      
+
                       {[
                         { statusKey: 'UNPAID', labelId: 'Belum Bayar', labelEn: 'Unpaid' },
                         { statusKey: 'PENDING', labelId: 'Diproses Pemasok', labelEn: 'Processing' },
@@ -753,10 +638,10 @@ export default function BuyerOrdersPage() {
 
                         return (
                           <div key={step.statusKey} className="flex flex-col items-center relative z-10 w-1/5">
-                            <div 
+                            <div
                               className={`w-7 h-7 rounded-full flex items-center justify-center border-2 transition-all duration-300 font-bold text-xs ${
-                                isCompleted 
-                                  ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm' 
+                                isCompleted
+                                  ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm'
                                   : isActive
                                     ? 'bg-emerald-950 border-emerald-950 text-white animate-pulse shadow-md scale-110'
                                     : 'bg-white border-zinc-300 text-zinc-400'
@@ -764,12 +649,12 @@ export default function BuyerOrdersPage() {
                             >
                               {isCompleted ? '✓' : idx + 1}
                             </div>
-                            <span 
+                            <span
                               className={`text-[9px] font-bold mt-2 text-center leading-tight whitespace-nowrap hidden sm:block ${
-                                isActive 
-                                  ? 'text-emerald-950 font-black scale-105' 
-                                  : isCompleted 
-                                    ? 'text-emerald-800' 
+                                isActive
+                                  ? 'text-emerald-950 font-black scale-105'
+                                  : isCompleted
+                                    ? 'text-emerald-800'
                                     : 'text-zinc-400'
                               }`}
                             >
@@ -860,9 +745,9 @@ export default function BuyerOrdersPage() {
                         {locale === 'id' ? 'Foto Bukti Pengemasan Kargo' : 'Cargo Packing Photo Proof'}
                       </h4>
                       <div className="relative rounded-lg overflow-hidden border border-emerald-100 aspect-[4/3] max-w-sm mx-auto bg-zinc-50 shadow-sm">
-                        <img 
-                          src={packedLog.description} 
-                          alt="Bukti pengemasan drum" 
+                        <img
+                          src={packedLog.description}
+                          alt="Bukti pengemasan drum"
                           className="w-full h-full object-cover cursor-zoom-in"
                           onClick={() => {
                             const w = window.open();
@@ -874,8 +759,8 @@ export default function BuyerOrdersPage() {
                         />
                       </div>
                       <p className="text-[11px] text-zinc-600 font-bold text-center italic">
-                        {locale === 'id' 
-                          ? 'Foto drum kargo minyak nilam terverifikasi saat dikemas di gudang koperasi.' 
+                        {locale === 'id'
+                          ? 'Foto drum kargo minyak nilam terverifikasi saat dikemas di gudang koperasi.'
                           : 'Verified photo of patchouli oil cargo drum during packaging at cooperative warehouse.'}
                       </p>
                     </div>
@@ -894,9 +779,9 @@ export default function BuyerOrdersPage() {
                         {locale === 'id' ? 'Foto Bukti Penjemputan Kargo' : 'Cargo Pickup Photo Proof'}
                       </h4>
                       <div className="relative rounded-lg overflow-hidden border border-emerald-100 aspect-[4/3] max-w-sm mx-auto bg-zinc-50 shadow-sm">
-                        <img 
-                          src={shippedLog.description} 
-                          alt="Bukti penjemputan kargo" 
+                        <img
+                          src={shippedLog.description}
+                          alt="Bukti penjemputan kargo"
                           className="w-full h-full object-cover cursor-zoom-in"
                           onClick={() => {
                             const w = window.open();
@@ -908,8 +793,8 @@ export default function BuyerOrdersPage() {
                         />
                       </div>
                       <p className="text-[11px] text-zinc-650 font-bold text-center italic leading-relaxed">
-                        {locale === 'id' 
-                          ? 'Foto bukti drum kargo minyak nilam saat diserahkan ke kurir kargo/forwarder.' 
+                        {locale === 'id'
+                          ? 'Foto bukti drum kargo minyak nilam saat diserahkan ke kurir kargo/forwarder.'
                           : 'Verified photo proof of patchouli oil cargo drum handed over to logistics carrier.'}
                       </p>
                     </div>
@@ -926,7 +811,7 @@ export default function BuyerOrdersPage() {
                           <ShieldCheck className="w-4 h-4 text-emerald-600" />
                           Letter of Credit (L/C) Status Tracker
                         </h4>
-                        
+
                         <div className="grid grid-cols-5 gap-2 relative">
                           {[
                             { key: 'LC_DRAFT', label: '1. Draft Application' },
@@ -955,10 +840,10 @@ export default function BuyerOrdersPage() {
                             <span className="text-xs text-zinc-500">
                               {locale === 'id' ? 'Ajukan draf L/C ke Bank pembuka Anda.' : 'Submit L/C draft to your issuing bank.'}
                             </span>
-                            <Button 
+                            <Button
                               onClick={() => toast({ title: "Unduh Draf L/C", description: "Format draf L/C untuk Bank berhasil diunduh." })}
-                              size="sm" 
-                              variant="outline" 
+                              size="sm"
+                              variant="outline"
                               className="text-xs gap-1 border-emerald-600 text-emerald-700 hover:bg-emerald-50"
                             >
                               <Download className="w-3.5 h-3.5" />
@@ -1016,18 +901,18 @@ export default function BuyerOrdersPage() {
                               <span className="font-medium text-zinc-900">{doc.name}</span>
                               {isUploaded ? (
                                 <div className="flex items-center gap-2">
-                                  <Button 
-                                    size="sm" 
-                                    variant="ghost" 
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
                                     onClick={() => handlePreviewDoc(selectedOrder.id, doc.key, doc.name)}
                                     className="h-8 text-emerald-800 font-bold hover:bg-emerald-50 gap-1 text-[11px]"
                                   >
                                     <Eye className="w-3.5 h-3.5" />
                                     {locale === 'id' ? 'Lihat Preview' : 'View Preview'}
                                   </Button>
-                                  <Button 
-                                    size="sm" 
-                                    variant="ghost" 
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
                                     onClick={() => handleDownloadDoc(selectedOrder.id, selectedOrder.order_number, doc.key, doc.name)}
                                     className="h-8 text-emerald-700 font-bold hover:bg-emerald-50 gap-1 text-[11px]"
                                   >
@@ -1085,18 +970,18 @@ export default function BuyerOrdersPage() {
                               <span className="font-medium text-zinc-900">{doc.name}</span>
                               {isAvailable ? (
                                 <div className="flex items-center gap-2">
-                                  <Button 
-                                    size="sm" 
-                                    variant="ghost" 
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
                                     onClick={() => handlePreviewDoc(selectedOrder.id, doc.key, doc.name)}
                                     className="h-8 text-emerald-800 font-bold hover:bg-emerald-50 gap-1 text-[11px]"
                                   >
                                     <Eye className="w-3.5 h-3.5" />
                                     {locale === 'id' ? 'Lihat Preview' : 'View Preview'}
                                   </Button>
-                                  <Button 
-                                    size="sm" 
-                                    variant="ghost" 
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
                                     onClick={() => handleDownloadDoc(selectedOrder.id, selectedOrder.order_number, doc.key, doc.name)}
                                     className="h-8 text-emerald-700 font-bold hover:bg-emerald-50 gap-1 text-[11px]"
                                   >
@@ -1137,7 +1022,7 @@ export default function BuyerOrdersPage() {
           {previewDoc && (() => {
             const order = previewDoc.order;
             const docKey = previewDoc.key;
-            
+
             if (docKey === 'invoice_local' || docKey === 'invoice') {
               const subtotal = order.total_amount || 0;
               const shippingCost = order.shipping_cost || 0;
@@ -1153,7 +1038,7 @@ export default function BuyerOrdersPage() {
                     </div>
                     <div className="text-right">
                       <span className="bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                        {locale === 'id' ? 'LUNAS (ESCROW)' : 'PAID (ESCROW)'}
+                        {locale === 'id' ? 'LUNAS (GATEWAY)' : 'PAID (GATEWAY)'}
                       </span>
                     </div>
                   </div>
@@ -1232,7 +1117,7 @@ export default function BuyerOrdersPage() {
 
             if (docKey === 'surat_jalan') {
               const drumCount = order.shipment?.drum_count || Math.ceil((order.items?.[0]?.quantity_kg || 100) / 180);
-              
+
               return (
                 <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-sm space-y-6 font-sans text-xs text-zinc-800">
                   {/* DO Header */}
@@ -1303,158 +1188,20 @@ export default function BuyerOrdersPage() {
               );
             }
 
-            if (docKey === 'coa') {
-              const coa = previewDoc.coaData;
-              const qc = coa?.qc_result;
-              const batchCode = order.items?.[0]?.product?.batch_code || '-';
-
-              return (
-                <div className="bg-white border-2 border-emerald-800 rounded-xl p-6 shadow-sm space-y-6 font-sans text-xs text-zinc-800 relative overflow-hidden">
-                  {/* Decorative Border Line */}
-                  <div className="absolute top-0 left-0 right-0 h-1.5 bg-emerald-800" />
-
-                  {/* COA Header */}
-                  <div className="flex justify-between items-start border-b border-zinc-200 pb-4">
-                    <div>
-                      <h2 className="text-base font-bold text-emerald-800 font-serif tracking-wide">KOPERASI PRODUSEN NILAM ACEH</h2>
-                      <p className="text-[9px] text-zinc-500 uppercase tracking-widest font-semibold font-sans">Central QC & GC-MS Testing Laboratory</p>
-                      <p className="text-[9px] text-zinc-400 mt-1">Banda Aceh, Indonesia | support@valam.id</p>
-                    </div>
-                    <div className="text-right">
-                      <span className="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                        {qc?.overall_status === 'PASS' || qc?.overall_status === 'pass' ? 'LULUS QC (PASS)' : 'DRAFT'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <h3 className="text-center text-sm font-bold text-zinc-900 tracking-wide underline uppercase">
-                    CERTIFICATE OF ANALYSIS (CoA)
-                  </h3>
-
-                  {/* Metadata Table */}
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-[11px] bg-zinc-50 p-3 rounded-lg border border-zinc-150">
-                    <div>
-                      <span className="text-zinc-450 font-normal">{locale === 'id' ? 'No. Sertifikat:' : 'Certificate No:'}</span>
-                      <p className="font-mono font-bold text-zinc-950">{coa?.certificate_number}</p>
-                    </div>
-                    <div>
-                      <span className="text-zinc-450 font-normal">{locale === 'id' ? 'Kode Batch Produk:' : 'Product Batch Code:'}</span>
-                      <p className="font-mono font-bold text-zinc-950">{batchCode}</p>
-                    </div>
-                    <div>
-                      <span className="text-zinc-450 font-normal">{locale === 'id' ? 'Tanggal Pengujian:' : 'Test Date:'}</span>
-                      <p className="font-bold text-zinc-950">{coa?.issued_at ? new Date(coa.issued_at).toLocaleDateString('id-ID') : '-'}</p>
-                    </div>
-                    <div>
-                      <span className="text-zinc-450 font-normal">{locale === 'id' ? 'Analis Lab / Penandatangan:' : 'Lead Analyst:'}</span>
-                      <p className="font-bold text-zinc-950">{coa?.admin_name}</p>
-                    </div>
-                  </div>
-
-                  {/* QC Parameter Results Table */}
-                  <div className="border border-zinc-200 rounded-xl overflow-x-auto">
-                    <table className="w-full min-w-[480px] text-left border-collapse text-[11px]">
-                      <thead>
-                        <tr className="bg-zinc-50 border-b border-zinc-200 text-zinc-650 text-[10px] font-bold uppercase tracking-wider">
-                          <th className="py-2.5 px-4">{locale === 'id' ? 'Parameter Pengujian' : 'Test Parameter'}</th>
-                          <th className="py-2.5 px-4 text-center">{locale === 'id' ? 'Standar SNI' : 'SNI Standard'}</th>
-                          <th className="py-2.5 px-4 text-right">{locale === 'id' ? 'Hasil Analisis' : 'Analysis Result'}</th>
-                          <th className="py-2.5 px-4 text-center">{locale === 'id' ? 'Status' : 'Status'}</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-zinc-100 font-medium text-zinc-900">
-                        {/* 1. Patchouli Alcohol */}
-                        <tr>
-                          <td className="py-3 px-4">
-                            <p className="font-bold text-zinc-950">Patchouli Alcohol (PA)</p>
-                            <p className="text-[9px] text-zinc-400">Kandungan senyawa aktif utama</p>
-                          </td>
-                          <td className="py-3 px-4 text-center">Min. 30.0%</td>
-                          <td className="py-3 px-4 text-right font-bold text-emerald-800">{qc?.pa_percentage?.toFixed(1) || '32.4'}%</td>
-                          <td className="py-3 px-4 text-center">
-                            <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-[9px] font-bold">LULUS</span>
-                          </td>
-                        </tr>
-                        {/* 2. Kadar Air */}
-                        <tr>
-                          <td className="py-3 px-4">
-                            <p className="font-bold text-zinc-950">Kadar Air (Moisture Content)</p>
-                            <p className="text-[9px] text-zinc-400">Persentase kelembaban kargo</p>
-                          </td>
-                          <td className="py-3 px-4 text-center">Max. 5.0%</td>
-                          <td className="py-3 px-4 text-right font-bold text-emerald-800">{qc?.moisture?.toFixed(1) || '3.1'}%</td>
-                          <td className="py-3 px-4 text-center">
-                            <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-[9px] font-bold">LULUS</span>
-                          </td>
-                        </tr>
-                        {/* 3. Bobot Jenis */}
-                        <tr>
-                          <td className="py-3 px-4">
-                            <p className="font-bold text-zinc-950">Bobot Jenis (Specific Gravity)</p>
-                            <p className="text-[9px] text-zinc-400">Densitas pada suhu 20°C</p>
-                          </td>
-                          <td className="py-3 px-4 text-center">0.950 - 0.975</td>
-                          <td className="py-3 px-4 text-right font-bold">{qc?.specific_gravity?.toFixed(3) || '0.958'}</td>
-                          <td className="py-3 px-4 text-center">
-                            <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-[9px] font-bold">LULUS</span>
-                          </td>
-                        </tr>
-                        {/* 4. Indeks Bias */}
-                        <tr>
-                          <td className="py-3 px-4">
-                            <p className="font-bold text-zinc-950">Indeks Bias (Refractive Index)</p>
-                            <p className="text-[9px] text-zinc-400">Pembiasan cahaya pada suhu 20°C</p>
-                          </td>
-                          <td className="py-3 px-4 text-center">1.500 - 1.515</td>
-                          <td className="py-3 px-4 text-right font-bold">{qc?.refractive_index?.toFixed(3) || '1.507'}</td>
-                          <td className="py-3 px-4 text-center">
-                            <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-[9px] font-bold">LULUS</span>
-                          </td>
-                        </tr>
-                        {/* 5. Putaran Optik */}
-                        <tr>
-                          <td className="py-3 px-4">
-                            <p className="font-bold text-zinc-950">Putaran Optik (Optical Rotation)</p>
-                            <p className="text-[9px] text-zinc-400">Polarisasi cahaya</p>
-                          </td>
-                          <td className="py-3 px-4 text-center">-40° s/d -50°</td>
-                          <td className="py-3 px-4 text-right font-bold">{qc?.optical_rotation?.toFixed(1) || '-42.5'}°</td>
-                          <td className="py-3 px-4 text-center">
-                            <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-[9px] font-bold">LULUS</span>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Lab Sign-off & Verification */}
-                  <div className="flex justify-between items-end border-t border-zinc-100 pt-6">
-                    <div className="text-[10px] text-zinc-450 space-y-1">
-                      <p>• {locale === 'id' ? 'Metode Analisis: SNI 06-2385-2006' : 'Analysis Method: SNI 06-2385-2006'}</p>
-                      <p>• {locale === 'id' ? 'Sertifikasi Terenkripsi Rantai Pasok' : 'Encrypted Supply Chain Certification'}</p>
-                    </div>
-                    <div className="text-center text-[10px] font-semibold text-zinc-700 w-44">
-                      <p className="text-[9px] text-zinc-400 mb-10">{locale === 'id' ? 'Disetujui Secara Digital oleh' : 'Digitally Approved by'}</p>
-                      <p className="font-bold text-emerald-950 underline">{coa?.admin_name}</p>
-                      <p className="text-[9px] text-zinc-400 font-normal">QC Laboratory Lead</p>
-                    </div>
-                  </div>
-                </div>
-              );
-            }
+            if (docKey === 'coa') return <CoAViewer batch={previewDoc.coaData || {}} />;
 
             // Fallback for custom uploaded documents preview page
             return (
               <div className="bg-white border border-zinc-200 rounded-xl p-8 shadow-sm text-center space-y-4">
                 <div className="text-4xl">📄</div>
                 <div className="inline-block bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
-                  {locale === 'id' ? 'Terverifikasi Sistem' : 'System Verified'}
+                  {locale === 'id' ? 'Sumber belum tersedia' : 'Source unavailable'}
                 </div>
                 <h4 className="font-bold text-zinc-900 text-sm">{previewDoc.name}</h4>
                 <p className="text-zinc-500 text-xs leading-relaxed max-w-sm mx-auto">
-                  {locale === 'id' 
-                    ? 'Arsip dokumen digital terverifikasi dalam rantai pasok minyak nilam berkelanjutan. Dokumen ini sah dan disimpan secara terenkripsi dalam sistem B2B Valam.' 
-                    : 'Verified digital document archive in the sustainable patchouli oil supply chain. This document is valid and stored securely encrypted in the Valam B2B system.'}
+                  {locale === 'id'
+                    ? 'Dokumen sumber belum tersedia. Keaslian, validitas dan enkripsi dokumen tidak diklaim tanpa bukti.'
+                    : 'Source document unavailable. Authenticity, validity and encryption have not been established.'}
                 </p>
               </div>
             );
@@ -1477,61 +1224,18 @@ export default function BuyerOrdersPage() {
           {(() => {
             const order = orders.find(o => o.id === trackingOrderId);
             if (!order) return null;
-            
-            const courier = order.shipment?.courier_name || 'Biteship Cargo (Truk)';
+
+            const courier = order.shipment?.courier_name || (locale === 'id' ? 'Belum tersedia' : 'Unavailable');
             const trackingNum = order.shipment?.tracking_number || 'BELUM TERSEDIA';
             const status = order.status;
 
-            // Generate clean mock checkpoints based on status
-            const checkpoints = [];
-            
-            if (status === 'SHIPPED' || status === 'COMPLETED') {
-              checkpoints.push({
-                time: new Date(order.created_at).toLocaleDateString('id-ID') + ' 09:00',
-                title: locale === 'id' ? 'Pesanan Diproses Pemasok' : 'Order Processed by Supplier',
-                desc: locale === 'id' ? 'Pemasok mulai menyiapkan dan mengemas drum kargo nilam.' : 'Supplier started preparing and packing patchouli cargo drums.'
-              });
-              checkpoints.push({
-                time: new Date(order.created_at).toLocaleDateString('id-ID') + ' 15:30',
-                title: locale === 'id' ? 'Kargo Selesai Dikemas' : 'Cargo Packing Completed',
-                desc: locale === 'id' ? 'Drum kargo disegel, ditimbang berat netto, dan diberi label kode QR.' : 'Cargo drums sealed, net weight verified, and QR code labeled.'
-              });
-              checkpoints.push({
-                time: new Date(order.created_at).toLocaleDateString('id-ID') + ' 18:00',
-                title: locale === 'id' ? 'Penjemputan oleh Kurir Kargo' : 'Picked up by Cargo Courier',
-                desc: locale === 'id' ? `Kurir ekspedisi (${courier}) telah menjemput muatan kargo di gudang pemasok.` : `Expedition carrier (${courier}) picked up cargo at supplier's warehouse.`
-              });
-              
-              if (status === 'SHIPPED') {
-                checkpoints.push({
-                  time: new Date().toLocaleDateString('id-ID') + ' 10:15',
-                  title: locale === 'id' ? 'Dalam Perjalanan (In Transit)' : 'In Transit',
-                  desc: locale === 'id' ? 'Armada kargo sedang menyeberang/menuju ke lokasi gudang konsolidasi terdekat.' : 'Cargo fleet is in transit to the nearest consolidation warehouse.'
-                });
-              }
-              
-              if (status === 'COMPLETED') {
-                checkpoints.push({
-                  time: new Date().toLocaleDateString('id-ID') + ' 10:15',
-                  title: locale === 'id' ? 'Kargo Tiba di Transit Hub' : 'Arrived at Transit Hub',
-                  desc: locale === 'id' ? 'Kargo nilam sedang dibongkar untuk proses pengecekan silang dokumen jalan.' : 'Patchouli cargo unloading for check-in verification.'
-                });
-                checkpoints.push({
-                  time: new Date().toLocaleDateString('id-ID') + ' 14:00',
-                  title: locale === 'id' ? 'Kargo Berhasil Diterima' : 'Cargo Successfully Delivered',
-                  desc: locale === 'id' ? 'Muatan drum aluminum minyak nilam telah diterima dengan aman di gudang pembeli.' : 'Patchouli oil aluminum drums successfully received at buyer warehouse.'
-                });
-              }
-            } else {
-              checkpoints.push({
-                time: new Date(order.created_at).toLocaleDateString('id-ID') + ' 09:00',
-                title: locale === 'id' ? 'Menunggu Konfirmasi Pemasok' : 'Awaiting Supplier Processing',
-                desc: locale === 'id' ? 'Pesanan terverifikasi lunas escrow. Pemasok sedang bersiap melakukan pengemasan kargo.' : 'Order paid in escrow. Supplier preparing to pack cargo.'
-              });
-            }
-
-            // Reverse checkpoints to show latest on top
-            const sortedCheckpoints = [...checkpoints].reverse();
+            const sortedCheckpoints = [...(order.shipment?.tracking_logs || [])]
+              .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+              .map((log: any) => ({
+                time: log.created_at ? new Date(log.created_at).toLocaleString(locale === 'id' ? 'id-ID' : 'en-US') : '—',
+                title: log.status,
+                desc: log.description?.startsWith('data:image') ? (locale === 'id' ? 'Bukti diunggah pemasok; bukan konfirmasi penerimaan buyer.' : 'Supplier evidence uploaded; not buyer receipt confirmation.') : log.description,
+              }));
 
             return (
               <div className="space-y-6 pt-3 text-zinc-800">
@@ -1549,6 +1253,7 @@ export default function BuyerOrdersPage() {
 
                 {/* Vertical Timeline */}
                 <div className="relative border-l-2 border-zinc-150 ml-3.5 space-y-6">
+                  {sortedCheckpoints.length === 0 && <p className="pl-4 text-xs text-zinc-500">{locale === 'id' ? 'Belum ada catatan pelacakan dari server.' : 'No server tracking records yet.'}</p>}
                   {sortedCheckpoints.map((cp, idx) => {
                     const isLatest = idx === 0;
                     return (
@@ -1559,7 +1264,7 @@ export default function BuyerOrdersPage() {
                         }`}>
                           {isLatest && <div className="w-1.5 h-1.5 bg-emerald-600 rounded-full" />}
                         </div>
-                        
+
                         {/* Checkpoint Detail */}
                         <div className="text-xs">
                           <span className="text-zinc-400 text-[10px] font-mono">{cp.time}</span>
@@ -1671,8 +1376,8 @@ export default function BuyerOrdersPage() {
                                 key={rate.rateId}
                                 onClick={() => setSelectedRateId(rate.rateId)}
                                 className={`p-3 rounded-xl border-2 cursor-pointer transition-all ${
-                                  isSelected 
-                                    ? 'border-emerald-700 bg-emerald-50/50' 
+                                  isSelected
+                                    ? 'border-emerald-700 bg-emerald-50/50'
                                     : 'border-zinc-200 hover:border-zinc-350 bg-white'
                                 }`}
                               >
@@ -1694,8 +1399,8 @@ export default function BuyerOrdersPage() {
                         </div>
                       ) : (
                         <div className="p-4 text-center bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-[11px]">
-                          {locale === 'id' 
-                            ? 'Masukkan alamat pengiriman di atas untuk memuat pilihan kurir kargo Biteship.' 
+                          {locale === 'id'
+                            ? 'Masukkan alamat pengiriman di atas untuk memuat pilihan kurir kargo Biteship.'
                             : 'Enter shipping address above to load Biteship cargo courier rates.'}
                         </div>
                       )}
@@ -1790,7 +1495,7 @@ export default function BuyerOrdersPage() {
       <Dialog open={!!payingOrder} onOpenChange={(open) => !open && setPayingOrder(null)}>
         <DialogContent className="max-w-md bg-white/95 backdrop-blur-xl rounded-3xl p-0 shadow-2xl border border-white overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-[#1B5E3A] via-emerald-400 to-[#1B5E3A]"></div>
-          
+
           <div className="p-7">
             <DialogHeader className="mb-5">
               <DialogTitle className="text-2xl font-black font-serif bg-gradient-to-r from-zinc-900 to-zinc-600 bg-clip-text text-transparent">
@@ -1806,7 +1511,7 @@ export default function BuyerOrdersPage() {
                 {/* Ringkasan Biaya */}
                 <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 p-5 rounded-2xl border border-emerald-100/80 space-y-3 relative overflow-hidden shadow-inner">
                   <div className="absolute -right-10 -top-10 w-32 h-32 bg-emerald-200/40 rounded-full blur-2xl"></div>
-                  
+
                   <div className="flex justify-between items-center text-xs relative z-10">
                     <span className="text-emerald-900/70 font-bold">{locale === 'id' ? 'Subtotal Produk' : 'Product Subtotal'}</span>
                     <span className="font-black text-emerald-950">{formatRupiah(payingOrder.total_amount)}</span>
@@ -1815,7 +1520,7 @@ export default function BuyerOrdersPage() {
                     <span className="text-emerald-900/70 font-bold">{locale === 'id' ? 'Ongkos Kirim' : 'Shipping Cost'}</span>
                     <span className="font-black text-emerald-950">{formatRupiah(payingOrder.shipping_cost || 0)}</span>
                   </div>
-                  
+
                   {payingOrder.shipment && (
                     <div className="pl-3 py-2 border-l-2 border-emerald-300 space-y-1.5 text-[10px] text-emerald-800/80 font-medium relative z-10">
                       {payingOrder.shipment.shipment_type === 'DOMESTIK' ? (
@@ -1878,7 +1583,7 @@ export default function BuyerOrdersPage() {
                     className="flex h-12 w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-4 py-2 text-sm font-bold text-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-emerald-500 transition-all shadow-sm hover:border-emerald-200 cursor-pointer appearance-none"
                     style={{ backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1em' }}
                   >
-                    <option value="ESCROW">{locale === 'id' ? 'Rekening Bersama Valam (Escrow Safepay)' : 'Valam Joint Account (Escrow Safepay)'}</option>
+                    <option value="ESCROW">{locale === 'id' ? 'Gateway Midtrans' : 'Midtrans Gateway'}</option>
                     <option value="bank_transfer">{locale === 'id' ? 'Transfer Bank Manual Direct TT' : 'Manual Bank Transfer Direct TT'}</option>
                   </select>
                 </div>
@@ -2007,122 +1712,7 @@ export default function BuyerOrdersPage() {
       </Dialog>
 
       {/* DIALOG 3: INSTRUKSI PEMBAYARAN & SIMULASI SUKSES */}
-      <Dialog open={!!activePaymentInstruction} onOpenChange={(open) => !open && setActivePaymentInstruction(null)}>
-        <DialogContent className="max-w-md bg-white rounded-2xl p-6 shadow-2xl border border-zinc-150">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold font-serif text-zinc-900 flex items-center gap-1.5">
-              💳 {locale === 'id' ? 'Instruksi Pembayaran B2B' : 'B2B Payment Billing Details'}
-            </DialogTitle>
-            <DialogDescription className="text-zinc-500 text-xs">
-              {locale === 'id' 
-                ? 'Selesaikan transfer dana Anda untuk mengaktifkan pesanan.' 
-                : 'Follow the instructions below to complete your corporate bank transfer.'}
-            </DialogDescription>
-          </DialogHeader>
 
-          {activePaymentInstruction && (
-            <div className="space-y-4 pt-3 text-xs font-semibold text-zinc-700">
-              {/* Payment Summary */}
-              <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-4 space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-zinc-400 font-normal">{locale === 'id' ? 'Metode Pembayaran' : 'Method'}</span>
-                  <span className="text-zinc-950 font-bold">
-                    {activePaymentInstruction.paymentMethod === 'ESCROW' 
-                      ? (locale === 'id' ? 'Rekening Bersama Valam' : 'Valam Escrow') 
-                      : (locale === 'id' ? 'Transfer Bank Langsung' : 'Direct Bank Wire')}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-zinc-400 font-normal">{locale === 'id' ? 'Total yang Harus Ditransfer' : 'Total Amount'}</span>
-                  <span className="text-sm font-bold text-emerald-700 font-mono">
-                    {formatRupiah(activePaymentInstruction.totalAmount)}
-                  </span>
-                </div>
-              </div>
-
-              {/* Account details */}
-              <div className="border border-zinc-200 rounded-xl p-4 bg-white space-y-3">
-                {activePaymentInstruction.paymentMethod === 'ESCROW' ? (
-                  <>
-                    <p className="text-zinc-500 font-bold uppercase tracking-wider text-[10px]">
-                      {locale === 'id' ? 'Kirim ke Rekening Bersama Valam:' : 'Send to Valam Escrow Account:'}
-                    </p>
-                    <div className="space-y-2 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-zinc-400 font-normal">{locale === 'id' ? 'Nama Bank' : 'Bank Name'}</span>
-                        <span className="text-zinc-950 font-bold">Bank Mandiri Escrow</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-zinc-400 font-normal">{locale === 'id' ? 'Nomor Virtual Account' : 'Virtual Account Number'}</span>
-                        <span className="text-zinc-950 font-bold font-mono">89201-901283-912</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-zinc-400 font-normal">{locale === 'id' ? 'Atas Nama' : 'Account Name'}</span>
-                        <span className="text-zinc-950 font-bold">PT Valam Agritech Indonesia</span>
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-zinc-500 font-bold uppercase tracking-wider text-[10px]">
-                      {locale === 'id' ? 'Transfer Langsung ke Pemasok:' : 'Wire directly to Supplier Bank Account:'}
-                    </p>
-                    <div className="space-y-2 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-zinc-400 font-normal">{locale === 'id' ? 'Nama Bank' : 'Bank Name'}</span>
-                        <span className="text-zinc-950 font-bold">Bank Negara Indonesia (BNI)</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-zinc-400 font-normal">{locale === 'id' ? 'Nomor Rekening Pemasok' : 'Supplier Account Number'}</span>
-                        <span className="text-zinc-950 font-bold font-mono">0912-832-123</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-zinc-400 font-normal">{locale === 'id' ? 'Nama Pemegang Rekening' : 'Account Holder'}</span>
-                        <span className="text-zinc-950 font-bold font-mono">PT Global Utama Corp</span>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Virtual payment simulation warning/helper */}
-              <div className="bg-amber-50 border border-amber-200 text-amber-800 p-3.5 rounded-xl flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <div className="text-[11px] leading-relaxed">
-                  <p className="font-bold mb-0.5">{locale === 'id' ? 'Simulasi Sandbox Payment' : 'Sandbox Payment Simulation'}</p>
-                  <p className="text-zinc-650 font-normal">
-                    {locale === 'id' 
-                      ? 'Ini adalah demo transaksi B2B. Klik tombol di bawah untuk menyimulasikan transfer dana sukses dari bank Anda.' 
-                      : 'This is a demo checkout mode. Click the button below to simulate a successful bank wire transfer verification.'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Action buttons */}
-              <div className="flex gap-3 pt-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => setActivePaymentInstruction(null)}
-                  className="w-1/3 text-xs font-semibold"
-                >
-                  {locale === 'id' ? 'Tutup' : 'Close'}
-                </Button>
-                <Button
-                  type="button"
-                  disabled={paying}
-                  onClick={() => handleConfirmFinalPayment(activePaymentInstruction.orderId, activePaymentInstruction.paymentMethod)}
-                  className="w-2/3 bg-emerald-900 hover:bg-emerald-950 text-white font-bold text-xs"
-                >
-                  {paying 
-                    ? (locale === 'id' ? 'Memproses...' : 'Confirming...') 
-                    : (locale === 'id' ? 'Simulasikan Bayar Sukses' : 'Simulate Success')}
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

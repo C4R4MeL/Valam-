@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { Link } from '@/i18n/routing'
 import { formatRupiah } from '@/lib/mock-data'
 import { Search, Filter, Download, Pencil, Trash2, X, FlaskConical, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -30,7 +31,7 @@ const contentMap = {
       colVol: "Volume (Kg)",
       colPrice: "Harga/Kg",
       colAction: "Aksi",
-      statusVerified: "Terverifikasi",
+      statusVerified: "Ditawarkan (mutu belum dievaluasi)",
       statusInLab: "Diuji Lab",
       statusDraft: "Draft",
       statusAwaitingPrice: "Menunggu Harga",
@@ -62,7 +63,7 @@ const contentMap = {
       colVol: "Volume (Kg)",
       colPrice: "Price/Kg",
       colAction: "Action",
-      statusVerified: "Verified",
+      statusVerified: "Published (quality unevaluated)",
       statusInLab: "In Lab",
       statusDraft: "Draft",
       statusAwaitingPrice: "Awaiting Price",
@@ -87,6 +88,7 @@ export default function InventoryPage() {
   
   const [batches, setBatches] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   
   // Edit Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
@@ -114,25 +116,11 @@ export default function InventoryPage() {
 
   const fetchBatches = async () => {
     setLoading(true)
+    setLoadError('')
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api'
     try {
-      // 1. Get profile to retrieve user_id
-      const profileRes = await fetch(`${apiUrl}/suppliers/me`, {
-        headers: getAuthHeaders(),
-      })
-      if (!profileRes.ok) {
-        throw new Error('Gagal memuat profil supplier.')
-      }
-      const profileResult = await profileRes.json()
-      const userId = profileResult.data?.user_id
-      
-      if (!userId) {
-        setBatches([])
-        return
-      }
-
-      // 2. Get batches for this supplier
-      const productsRes = await fetch(`${apiUrl}/products?supplier_id=${userId}`, {
+      // Ownership and role are enforced by the backend token on /products/mine.
+      const productsRes = await fetch(`${apiUrl}/products/mine`, {
         headers: getAuthHeaders(),
         cache: 'no-store'
       })
@@ -142,6 +130,7 @@ export default function InventoryPage() {
       const productsResult = await productsRes.json()
       setBatches(productsResult.data || [])
     } catch (err: any) {
+      setLoadError(err.message || 'Daftar batch gagal dimuat')
       toast({
         title: "Koneksi Gagal",
         description: err.message,
@@ -258,7 +247,7 @@ export default function InventoryPage() {
     const headers = ["ID Batch", "Tanggal Dibuat", "Status", "Volume (Kg)", "Harga/Kg (Rp)"]
     const rows = batches.map(b => [
       b.batch_code,
-      new Date(b.created_at || Date.now()).toLocaleDateString('id-ID'),
+      b.created_at ? new Date(b.created_at).toLocaleDateString('id-ID') : '—',
       b.status,
       b.available_volume_kg,
       b.price_per_kg
@@ -332,6 +321,7 @@ export default function InventoryPage() {
         </div>
       </div>
 
+      {loadError && <p role="alert" className="mb-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-900">{loadError}</p>}
       {/* Data Table */}
       <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
@@ -360,7 +350,7 @@ export default function InventoryPage() {
                     <div className="text-xs text-zinc-400 mt-0.5">{product.origin_district}</div>
                   </td>
                   <td className="py-4 px-6 text-sm text-zinc-600">
-                    25 Juni 2026
+                    {product.created_at ? new Date(product.created_at).toLocaleDateString(locale === 'id' ? 'id-ID' : 'en-US') : '—'}
                   </td>
                   <td className="py-4 px-6">
                     <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${
@@ -387,7 +377,7 @@ export default function InventoryPage() {
                             setShowCoAModal(true)
                           }}
                           className="text-zinc-400 hover:text-emerald-700 p-2 rounded-lg hover:bg-emerald-50 transition-colors"
-                          title={locale === 'id' ? 'Lihat CoA' : 'View CoA'}
+                          title={locale === 'id' ? 'Catatan QC lama' : 'Legacy QC records'}
                         >
                           <FileText className="w-4 h-4 text-emerald-600 animate-pulse" />
                         </button>
@@ -554,8 +544,8 @@ export default function InventoryPage() {
               <div className="flex gap-3">
                 <div className="w-6 h-6 rounded-full bg-emerald-50 text-emerald-800 font-bold flex items-center justify-center text-xs shrink-0 mt-0.5">1</div>
                 <div>
-                  <p className="font-semibold text-zinc-900">Siapkan 50ml Sampel</p>
-                  <p className="text-zinc-500 text-xs mt-0.5">Masukkan minyak nilam hasil sulingan Anda ke dalam botol kaca gelap (vial amber) berkapasitas 50ml agar terlindung dari cahaya.</p>
+                  <p className="font-semibold text-zinc-900">Konfirmasi Kebutuhan Sampel</p>
+                  <p className="text-zinc-500 text-xs mt-0.5">Kebutuhan sampel dan kemasan menunggu instruksi mitra yang dikonfirmasi admin.</p>
                 </div>
               </div>
 
@@ -570,13 +560,10 @@ export default function InventoryPage() {
               <div className="flex gap-3">
                 <div className="w-6 h-6 rounded-full bg-emerald-50 text-emerald-800 font-bold flex items-center justify-center text-xs shrink-0 mt-0.5">3</div>
                 <div>
-                  <p className="font-semibold text-zinc-900">Kirim Fisik ke Hub Atsiri ARC USK</p>
-                  <p className="text-zinc-500 text-xs mt-0.5">Kirimkan botol sampel tersebut ke alamat berikut:</p>
+                  <p className="font-semibold text-zinc-900">{locale === 'id' ? 'Konfirmasi tujuan pengiriman' : 'Confirm shipment destination'}</p>
+                  <p className="text-zinc-500 text-xs mt-0.5">{locale === 'id' ? 'Alamat pengiriman menunggu konfirmasi admin.' : 'Shipment address awaits admin confirmation.'}</p>
                   <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-3 mt-1.5 text-xs text-emerald-950 font-serif leading-relaxed">
-                    <strong>Pusat Lab QC Atsiri ARC USK</strong><br />
-                    Gedung Atsiri Research Center (ARC) Lantai 1,<br />
-                    Universitas Syiah Kuala, Kopelma Darussalam,<br />
-                    Kec. Syiah Kuala, Kota Banda Aceh, Aceh 23111
+                    <Link href="/dashboard/supplier/testing" className="underline">{locale === 'id' ? 'Buka Pengujian & Hasil untuk instruksi yang dikonfigurasi mitra' : 'Open Testing & Results for configured partner instructions'}</Link>
                   </div>
                 </div>
               </div>
@@ -584,7 +571,7 @@ export default function InventoryPage() {
               <div className="flex gap-3">
                 <div className="w-6 h-6 rounded-full bg-emerald-50 text-emerald-800 font-bold flex items-center justify-center text-xs shrink-0 mt-0.5">4</div>
                 <div>
-                  <p className="font-semibold text-zinc-900">Pantau Hasil Uji GC-MS</p>
+                  <p className="font-semibold text-zinc-900">Pantau Laporan Pengujian</p>
                   <p className="text-zinc-500 text-xs mt-0.5">Setelah sampel diterima oleh tim Lab, status pengujian dapat Anda pantau langsung melalui Dashboard Supplier.</p>
                 </div>
               </div>
@@ -612,7 +599,7 @@ export default function InventoryPage() {
             {/* Modal Header */}
             <div className="flex justify-between items-start">
               <div>
-                <h3 className="text-xl font-bold font-serif text-emerald-950">Certificate of Analysis (CoA)</h3>
+                <h3 className="text-xl font-bold font-serif text-emerald-950">{locale === 'id' ? 'Catatan QC lama (perlu ditinjau)' : 'Legacy QC records (require review)'}</h3>
                 <p className="text-xs text-zinc-500 mt-1">Nomor batch: <strong className="font-mono text-emerald-800">{selectedProductForCoA.batch_code}</strong></p>
               </div>
               <button 

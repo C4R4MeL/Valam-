@@ -74,7 +74,7 @@ export class SupplierAdminController {
   }
 
   @Patch(':id/verify')
-  @ApiOperation({ summary: 'Finalize supplier verification (all docs must be approved)' })
+  @ApiOperation({ summary: 'Finalize supplier profile using subtype-specific approved document requirements' })
   async finalizeVerification(@Param('id') id: string, @Request() req: any) {
     return this.supplierService.finalizeVerification(id, req.user.userId);
   }

@@ -1,0 +1,74 @@
+# Integrasi main dan Supabase — 29 Oktober 2026
+
+Seluruh perubahan aplikasi yang sebelumnya berada di working tree branch
+`codex/quality-partnership-workflow` digabungkan: kesiapan demo, autentikasi sesi,
+integritas transaksi/RFQ, verifikasi pemasok, mitra dan laporan pengujian,
+perbaikan sidebar admin, serta navbar pemasok dengan satu label statis.
+Branch lokal DetailProduct dan pertamuda-readiness menunjuk commit dasar yang
+sama. Dokumen PRD/design/development pada origin/staging sama dengan main;
+riwayat staging yang terpisah ikut digabungkan dengan mempertahankan .gitignore
+terbaru. File .env, akun demo lokal, unggahan privat, dan output pengujian tidak
+disertakan dalam commit.
+
+## Database operasional
+
+Target yang diperiksa adalah schema `public` pada Supabase yang terkonfigurasi
+di backend. Seluruh rantai delapan migrasi diuji di schema sementara baru dan
+dibandingkan dengan schema Prisma yang dibuat terpisah. Pemeriksaan meliputi
+nama/tipe/nullability/default kolom, index, primary/foreign key, enum, dan RLS
+yang diwajibkan. Tabel Insights, auth, storage, dan objek Supabase lain yang
+tidak dikelola aplikasi tidak dihapus atau dimigrasi.
+
+Baseline 20260917 mendokumentasikan struktur aplikasi lama; migrasi penyesuaian
+20261029 melengkapi perbedaan DDL manual yang tidak tercakup migrasi fitur.
+Timestamp Circular Products tetap TIMESTAMPTZ(6), UUID tetap dapat dihasilkan
+database, dan penghapusan produk yang direferensikan order tetap RESTRICT.
+Kolom profil khusus koperasi menjadi nullable untuk mendukung petani/penyuling.
+Tabel sesi dan data mutu privat dilindungi RLS tanpa akses langsung browser.
+
+Migrasi pada public dijalankan dalam satu transaksi. Sebelum/sesudahnya, jumlah
+baris dan sidik semua nilai kolom lama pada **24 tabel aplikasi identik**.
+Tidak ada reset, seed akun demo, penghapusan ledger, rekayasa laporan mutu,
+atau perubahan nilai data bisnis lama. Mitra awal ARC USK dibuat oleh migrasi
+mutu dengan penerimaan pengajuan masih ditutup sampai layanan dikonfigurasi.
+
+Hasil akhir: **nol selisih struktur yang diwajibkan**, delapan migrasi tercatat
+dan checksum diverifikasi. Schema guard startup serta query Prisma untuk
+produk, order, Circular Products, mitra, dan laporan berhasil secara read-only.
+Bukti lokal: `artifacts/main-supabase-apply.log` dan
+`artifacts/main-supabase-initial-release.json` (tidak dipush).
+
+## Validasi aplikasi
+
+- Backend: 41 tes pada 21 suite, serta build Nest lulus setelah generate ulang
+  Prisma Client.
+- Frontend: 43 tes pada 15 suite, serta build Next.js lulus.
+- Pengaman lingkungan/migrasi demo: 12 tes lulus.
+- Alur mutu: 14 tes integrasi PostgreSQL dan HTTP guards lulus pada schema
+  sementara yang dibersihkan sesudah pengujian.
+- Build frontend masih melewati lint sesuai konfigurasi proyek. Kelulusan
+  build tidak dianggap sebagai bukti lint bersih. Gateway pembayaran,
+  pengiriman eksternal, dan disbursement nyata tidak dijalankan pada rilis ini.
+
+## Pemeliharaan berikutnya
+
+Dari direktori backend:
+
+```sh
+npm ci
+npm run db:audit
+npm run db:release
+npm run build
+```
+
+`db:audit` tidak mengubah public; ia membuat dan membersihkan schema sementara
+untuk memverifikasi rantai migrasi dan membandingkan metadata. `db:release`
+hanya boleh dijalankan dengan DIRECT_URL/DATABASE_URL yang secara eksplisit
+menargetkan public. Perintah menolak checksum berbeda atau migrasi gagal,
+menerapkan SQL yang ditinjau dalam transaksi, membandingkan sidik data lama,
+lalu mencatat migrasi Prisma. Pada database yang sudah sesuai, migrasi lama
+tidak dijalankan ulang. Jangan mengubah berkas migrasi yang sudah tercatat;
+tambahkan migrasi baru. File SQL dipertahankan LF agar checksum lintas OS sama.
+
+Startup tidak menjalankan migrasi atau seed otomatis. Untuk demo tetap gunakan
+`npm run demo:start` dengan schema pertamuda_test yang terpisah.

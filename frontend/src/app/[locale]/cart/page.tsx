@@ -410,7 +410,7 @@ export default function CartPage() {
                     <p className="leading-relaxed">
                       {activeTab === 'circular'
                         ? (isId ? 'Pembayaran langsung diteruskan ke rekening resmi Mitra Pengolah terkait.' : 'Payments are directly processed to the corresponding partner.')
-                        : (isId ? 'Dana pembayaran ditahan aman di Escrow VALAM hingga barang terkonfirmasi diterima.' : 'Payments are held securely in VALAM Escrow until batch arrival is confirmed.')}
+                        : (isId ? 'Pembayaran melalui gateway; saldo internal dicatat setelah penerimaan buyer. Belum tersedia jaminan escrow pihak ketiga.' : 'Payments use a gateway; internal supplier credit follows buyer receipt. Third-party escrow is not available.')}
                     </p>
                   </div>
                 </div>

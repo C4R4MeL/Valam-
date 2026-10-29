@@ -15,8 +15,12 @@ interface ProductCardProps {
     supplier_name: string
     status: string
     origin_district: string
-    pa_percentage: number
-    moisture: number
+    pa_percentage: number | null
+    moisture: number | null
+    match_score?: number | null
+    lab_verified?: boolean
+    is_demo?: boolean
+    price_type?: string
     available_volume_kg: number
     price_per_kg: number
     images: string[]
@@ -103,7 +107,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const { isAuthenticated } = useAuthContext()
   const locale = useLocale()
   const isId = locale === 'id'
-  const isVerified = isGcmsVerified(product.status)
+  const isVerified = isGcmsVerified(product)
   const [isExpanded, setIsExpanded] = useState(false)
   const [imgSrc, setImgSrc] = useState(() => getProductImage(product))
   const detailHref = `/katalog/${product.id}`
@@ -116,32 +120,14 @@ export function ProductCard({ product }: ProductCardProps) {
   // Using original batch code from database as per user's preference
 
   // Determine if product is a featured choice
-  const isFeatured = product.is_featured || product.pa_percentage >= 34
+  const isFeatured = product.is_featured
 
-  // Deterministic Mock Match Percentage (78-98%) based on ID
-  const matchPercentage = useMemo(() => {
-    let hash = 0;
-    const str = product.id;
-    for (let i = 0; i < str.length; i++) {
-      hash = str.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return 78 + (Math.abs(hash) % 21);
-  }, [product.id]);
+  const matchPercentage = product.match_score ?? null;
 
-  // Mock Iron (ppm) based on ID
-  const mockIron = useMemo(() => {
-    let hash = 0;
-    const str = product.batch_code;
-    for (let i = 0; i < str.length; i++) {
-      hash = str.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return product.pa_percentage >= 30 ? (Math.abs(hash) % 3) + 1 : (Math.abs(hash) % 8) + 3;
-  }, [product.batch_code, product.pa_percentage]);
-
-  const tier = getPatchouliTier(product.pa_percentage);
+  const tier = getPatchouliTier(product.pa_percentage ?? 0);
   const tierInfo = {
-    label: tier,
-    colorClass: getTierColorClass(tier) + ' shadow-sm'
+    label: isId ? 'Belum dievaluasi' : 'Not evaluated',
+    colorClass: 'bg-zinc-100 text-zinc-700 border-zinc-200 shadow-sm'
   };
 
   const formatDate = (dateString?: string) => {
@@ -166,7 +152,7 @@ export function ProductCard({ product }: ProductCardProps) {
           ) : (
             <div className="flex flex-col gap-1 items-start">
               <div className={`px-2.5 py-1 rounded-md text-[9px] font-bold uppercase tracking-wider shadow-sm ${tierInfo.colorClass}`}>
-                {tierInfo.label}
+                {product.is_demo ? 'DEMONSTRASI' : product.pa_percentage == null ? 'Belum diuji' : tierInfo.label}
               </div>
               
               {/* Featured Choice Badge with Mobile timestamp */}
@@ -187,13 +173,13 @@ export function ProductCard({ product }: ProductCardProps) {
           {isVerified && (
             <div className="flex items-center gap-1 bg-[#1B5E3A]/90 backdrop-blur text-white px-2 py-0.5 rounded-md text-[9px] font-bold tracking-wider uppercase shadow-sm">
               <CheckCircle2 className="w-3 h-3 text-valam-gold-400" />
-              {isId ? "Terverifikasi GC-MS" : "GC-MS Verified"}
+              {isId ? "Laporan uji diperiksa" : "Test report reviewed"}
             </div>
           )}
         </div>
         
         {/* Match% Badge (Right Side) - Displays if came from matching */}
-        {!product.is_circular && (
+        {!product.is_circular && matchPercentage != null && (
           <div className="absolute top-3 right-3 z-10">
             <div className="flex flex-col items-center justify-center bg-white/95 backdrop-blur rounded-lg p-1.5 shadow-md border border-zinc-100">
               <span className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest leading-none mb-0.5">Match</span>
@@ -240,7 +226,7 @@ export function ProductCard({ product }: ProductCardProps) {
             <div className="absolute top-0 right-3 bg-[#1B5E3A] text-white px-2 pt-2.5 pb-2 rounded-b-lg shadow-md flex flex-col items-center z-10 border border-t-0 border-white/20">
               <span className="text-[10px] uppercase font-bold tracking-widest text-valam-gold-300 opacity-90 mb-0.5">PA</span>
               <span className="font-serif font-bold text-sm leading-none flex items-baseline">
-                {product.pa_percentage}
+                {product.pa_percentage ?? '—'}
                 <span className="text-[10px] ml-0.5">%</span>
               </span>
             </div>
@@ -287,7 +273,7 @@ export function ProductCard({ product }: ProductCardProps) {
                 <div className="relative h-2 w-full bg-zinc-100 rounded-full overflow-hidden">
                   <div 
                     className="absolute top-0 left-0 h-full rounded-full bg-gradient-to-r from-red-500 via-valam-gold-400 to-[#1B5E3A]"
-                    style={{ width: `${Math.min(Math.max((product.pa_percentage / 35) * 100, 0), 100)}%` }}
+                    style={{ width: `${Math.min(Math.max(((product.pa_percentage ?? 0) / 35) * 100, 0), 100)}%` }}
                   />
                 </div>
               </div>
@@ -313,9 +299,7 @@ export function ProductCard({ product }: ProductCardProps) {
                     <div>
                       <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">Eco Score</p>
                       <div className="flex">
-                        {[...Array(5)].map((_, i) => (
-                          <Star key={i} className={`w-3 h-3 ${i < (product.sustainability_score || 5) ? 'text-valam-gold-400 fill-valam-gold-400' : 'text-zinc-200'}`} />
-                        ))}
+                        <span className="text-xs text-zinc-500">{locale === 'id' ? 'Belum dinilai' : 'Not evaluated'}</span>
                       </div>
                     </div>
                   </div>
@@ -344,7 +328,7 @@ export function ProductCard({ product }: ProductCardProps) {
             <div className="flex items-end justify-between mb-3">
               <div>
                 <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-0.5">
-                  {product.is_circular ? `${isId ? "Harga" : "Price"} / ${product.unit || 'Unit'}` : `${isId ? "Harga / Kg" : "Price / Kg"}`}
+                  {product.is_demo ? 'Harga demonstrasi / Kg' : product.is_circular ? `${isId ? "Harga" : "Price"} / ${product.unit || 'Unit'}` : `${isId ? "Harga penawaran / Kg" : "Offer / Kg"}`}
                 </p>
                 <div className="flex items-baseline gap-1">
                   <span className="text-lg font-black text-[#1B5E3A] leading-none">

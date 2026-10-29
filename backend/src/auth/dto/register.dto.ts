@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength, IsOptional, IsNotEmpty } from 'class-validator';
+import { IsEmail, IsString, MinLength, IsOptional, IsNotEmpty, IsIn } from 'class-validator';
 
 export class RegisterDto {
   @IsEmail({}, { message: 'Format email tidak valid' })
@@ -12,6 +12,7 @@ export class RegisterDto {
 
   @IsString()
   @IsNotEmpty({ message: 'Peran tidak boleh kosong' })
+  @IsIn(['buyer', 'supplier'])
   roleName: string;
 
   @IsString()

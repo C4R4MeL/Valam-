@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcryptjs';
@@ -16,15 +16,13 @@ export class AuthService {
     // Seed standard roles if not exist
     const roles = ['admin', 'supplier', 'buyer'];
     for (const roleName of roles) {
-      const existing = await this.prisma.role.findUnique({ where: { name: roleName } });
-      if (!existing) {
-        await this.prisma.role.create({ data: { name: roleName } });
-      }
+      await this.prisma.role.upsert({ where: { name: roleName }, update: {}, create: { name: roleName } });
     }
   }
 
   async register(registerDto: RegisterDto) {
     const { email, password, roleName, companyName, phone, address, fullName, country } = registerDto;
+    if (!['buyer', 'supplier'].includes(roleName)) throw new ForbiddenException('Public registration role is not allowed');
 
     const existingUser = await this.prisma.user.findUnique({ where: { email } });
     if (existingUser) {
@@ -66,7 +64,7 @@ export class AuthService {
       include: { role: true, profile: true },
     });
 
-    if (!user) {
+    if (!user || !['active', 'pending'].includes(user.status)) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -75,12 +73,20 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const payload = { email: user.email, sub: user.id, role: user.role.name };
+    const session = await this.prisma.authSession.create({ data: {
+      user_id: user.id, expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    } });
+    const payload = { email: user.email, sub: user.id, role: user.role.name, jti: session.id };
     return {
       access_token: this.jwtService.sign(payload),
       role: user.role.name,
       country: user.profile?.country || 'ID',
       name: user.profile?.company_name || user.profile?.contact_person || user.email.split('@')[0],
     };
+  }
+
+  async logout(userId: string, sessionId: string) {
+    await this.prisma.authSession.updateMany({ where: { id: sessionId, user_id: userId, revoked_at: null }, data: { revoked_at: new Date() } });
+    return { message: 'Logout successful' };
   }
 }

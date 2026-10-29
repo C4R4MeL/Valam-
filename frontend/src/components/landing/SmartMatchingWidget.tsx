@@ -68,7 +68,7 @@ export function SmartMatchingWidget() {
           <div className="lg:col-span-6 space-y-4 sm:space-y-6">
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/20 text-emerald-400 text-xs font-semibold uppercase tracking-wider">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-              <span>⚡ {isId ? 'AI-POWERED MATCHING' : 'AI-POWERED MATCHING'}</span>
+              <span>⚡ {isId ? 'MCDM MATCHING' : 'MCDM MATCHING'}</span>
             </div>
 
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold font-serif leading-tight">
@@ -77,16 +77,16 @@ export function SmartMatchingWidget() {
 
             <p className="text-zinc-300 leading-relaxed max-w-lg font-light text-sm md:text-base">
               {isId
-                ? 'Gunakan widget interaktif ini untuk memicu algoritma Smart Matching MCDM Valam. Sistem kami mencocokkan target volume dan budget Anda dengan CoA digital supplier real-time.'
-                : 'Use this interactive widget to trigger Valam’s MCDM Smart Matching. We match your volume and budget requirements against real-time supplier digital CoA.'}
+                ? 'Gunakan widget interaktif ini untuk memicu algoritma Smart Matching MCDM Valam. Hasil memenuhi batas angka dipisahkan dari alternatif. Pemeringkatan memakai jarak Euclidean berbobot pada data tercatat, bukan validasi laboratorium.'
+                : 'Use this interactive widget to trigger Valam’s MCDM Smart Matching. Eligible numeric matches are separated from alternatives and ranked by weighted Euclidean distance on recorded data, not laboratory validation.'}
             </p>
 
             <div className="flex items-center gap-2 text-zinc-400 text-xs font-medium">
               <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
               <span>
                 {isId
-                  ? 'Berdasarkan 154 supplier berlisensi distilasi modern.'
-                  : 'Based on 154 licensed modern distillation suppliers.'}
+                  ? 'Menggunakan batch yang dipublikasikan pemasok; kelengkapan data dapat berbeda.'
+                  : 'Uses published supplier batches; data completeness may vary.'}
               </span>
             </div>
           </div>
@@ -191,8 +191,8 @@ export function SmartMatchingWidget() {
 
                   <p className="text-[10px] text-center text-zinc-400 mt-3 font-medium">
                     {isId
-                      ? '"Mencocokkan spesifikasi Anda dengan database CoA digital terverifikasi"'
-                      : '"Matches your target specs against our database of verified digital CoAs"'}
+                      ? '"Membandingkan kebutuhan dengan data batch tercatat; bukan evaluasi laboratorium"'
+                      : '"Compares requirements with recorded batch data; not laboratory evaluation"'}
                   </p>
                 </div>
 

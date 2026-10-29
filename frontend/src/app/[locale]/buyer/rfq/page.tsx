@@ -38,7 +38,7 @@ import {
   Send,
   ListOrdered
 } from 'lucide-react'
-import { mockProducts, formatRupiah } from '@/lib/mock-data'
+import { formatRupiah } from '@/lib/mock-data'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { getSupplierDisplayName } from '@/lib/utils'
@@ -55,22 +55,7 @@ const COUNTRIES = [
   { code: 'GB', name: 'United Kingdom (Inggris)' },
 ]
 
-const MOCK_ADMIN_LOGS: Record<string, Array<{ sender: string; time: string; message: string }>> = {
-  PENDING: [
-    { sender: 'Admin VALAM', time: '10 menit yang lalu', message: 'RFQ diterima oleh sistem. Kami sedang meninjau dokumen pabean ekspor yang Anda ajukan.' }
-  ],
-  NEGOTIATING: [
-    { sender: 'Admin VALAM', time: '2 jam yang lalu', message: 'Dokumen ekspor awal disetujui. Kami telah mengirimkan spesifikasi ini ke Koperasi Serba Usaha Gayo Atsiri.' },
-    { sender: 'Sistem VALAM', time: '1 jam yang lalu', message: 'Pemasok merespons penawaran. Menunggu verifikasi sisa stok batch.' }
-  ],
-  DOCS_VERIFIED: [
-    { sender: 'Admin VALAM', time: '1 hari yang lalu', message: 'Hasil analisis GC-MS dan sertifikat asal (CoA & CoO) telah diverifikasi oleh surveyor pihak ketiga.' },
-    { sender: 'Admin VALAM', time: '12 jam yang lalu', message: 'Dokumen ekspor disetujui secara resmi. Silakan lanjut ke langkah konfirmasi kontrak.' }
-  ],
-  COMPLETED: [
-    { sender: 'Admin VALAM', time: '2 hari yang lalu', message: 'Transaksi selesai. Seluruh dokumen logistik ekspor telah diserahkan.' }
-  ]
-}
+const MOCK_ADMIN_LOGS: Record<string, Array<{ sender: string; time: string; message: string }>> = { PENDING: [] };
 
 function BuyerRfqContent() {
   const router = useRouter()
@@ -81,7 +66,13 @@ function BuyerRfqContent() {
 
   // ─── QUERY PARAMS ───────────────────────────────────────────────────
   const batchIdParam = searchParams.get('batch_id') || searchParams.get('product_id') || searchParams.get('product')
-  const supplierIdParam = searchParams.get('supplier')
+  const supplierIdParam = searchParams.get('supplier');
+  const [chosenSupplier, setChosenSupplier] = useState(supplierIdParam || '');
+  const [suppliers, setSuppliers] = useState<any[]>([]);
+  useEffect(() => {
+    const api = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api';
+    fetch(api + '/suppliers?limit=50').then(response => response.ok ? response.json() : []).then(setSuppliers).catch(() => setSuppliers([]));
+  }, []);
   const supplierNameParam = searchParams.get('supplier_name')
   const volumeParam = searchParams.get('volume') || searchParams.get('qty')
   const minPaParam = searchParams.get('minPa')
@@ -131,7 +122,7 @@ function BuyerRfqContent() {
   const [submittedRfq, setSubmittedRfq] = useState<{ rfq_number: string; created_at: string } | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const isCoaGcmsDisabled = referencedBatch && (referencedBatch.status === 'VERIFIED' || referencedBatch.status === 'APPROVED')
+  const isCoaGcmsDisabled = referencedBatch?.lab_verified === true
 
   const [formData, setFormData] = useState({
     nama_perusahaan: '',
@@ -150,21 +141,12 @@ function BuyerRfqContent() {
   // Pre-fill fields from query params
   useEffect(() => {
     if (batchIdParam) {
-      const b = mockProducts.find(p => p.id === batchIdParam)
-      if (b) {
-        setReferencedBatch(b)
-        const isVerified = b.status === 'VERIFIED' || b.status === 'APPROVED'
-        setFormData(prev => ({
-          ...prev,
-          pa_minimum: b.pa_percentage || 30,
-          moisture_maksimum: b.moisture || 3,
-          budget_max: b.price_per_kg || 850000,
-          catatan_khusus: isId 
-            ? `Diajukan berdasarkan referensi Batch ${b.batch_code} dari ${b.supplier_name}.` 
-            : `Submitted based on reference Batch ${b.batch_code} from ${b.supplier_name}.`,
-          dokumen_diminta: isVerified ? ['CoA GC-MS'] : []
-        }))
-      }
+      const api = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api';
+      fetch(api + '/products/' + encodeURIComponent(batchIdParam)).then(response => response.ok ? response.json() : null).then(batch => {
+        if (!batch) return;
+        setReferencedBatch(batch); setChosenSupplier(batch.supplier_id);
+        setFormData(prev => ({ ...prev, budget_max: batch.price_per_kg, catatan_khusus: 'Referensi batch ' + batch.batch_code + '; batch final harus dipilih eksplisit oleh pemasok.' }));
+      }).catch(() => setReferencedBatch(null));
     }
     if (supplierNameParam) {
       setFormData(prev => ({
@@ -269,21 +251,11 @@ function BuyerRfqContent() {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api'
     try {
       const token = localStorage.getItem('valam_token')
-      const payload = {
-        nama_perusahaan: formData.nama_perusahaan,
-        negara_asal_buyer: formData.negara_asal_buyer,
-        pa_minimum: Number(formData.pa_minimum),
-        moisture_maksimum: Number(formData.moisture_maksimum),
-        volume_kg: Number(formData.volume_kg),
-        budget_min: Number(formData.budget_min),
-        budget_max: Number(formData.budget_max),
-        budget_currency: formData.budget_currency,
-        timeline_pengiriman: formData.timeline_pengiriman,
-        catatan_khusus: formData.catatan_khusus,
-        dokumen_diminta: formData.dokumen_diminta,
-        referenced_batch_id: referencedBatch ? referencedBatch.id : null,
-        target_supplier_id: supplierIdParam || null
-      }
+      if (!chosenSupplier) throw new Error('Pilih pemasok yang sebenarnya sebelum mengirim RFQ');
+      if (formData.budget_currency !== 'IDR') throw new Error('RFQ saat ini hanya menggunakan IDR');
+      const payload = { supplier_id: chosenSupplier, volume_kg: Number(formData.volume_kg),
+        budget_per_kg: Number(formData.budget_max), min_pa_percentage: Number(formData.pa_minimum),
+        max_moisture: Number(formData.moisture_maksimum), notes: formData.catatan_khusus || undefined };
 
       const res = await fetch(`${API_URL}/rfq`, {
         method: 'POST',
@@ -301,8 +273,8 @@ function BuyerRfqContent() {
 
       const resData = await res.json()
       setSubmittedRfq({
-        rfq_number: resData.data?.rfq_number || `RFQ-${Date.now().toString().slice(-6)}`,
-        created_at: new Date().toISOString()
+        rfq_number: resData.data.rfq_number,
+        created_at: resData.data.created_at
       })
 
       toast({
@@ -368,67 +340,19 @@ function BuyerRfqContent() {
     }
   }
 
-  const handleAcceptResponse = async (rfq: any) => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api'
+  const closeResponse = async (id: string, status: 'ACCEPTED' | 'REJECTED') => {
     try {
-      const token = localStorage.getItem('valam_token')
-      await fetch(`${API_URL}/rfq/${rfq.id}/close`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ status: 'ACCEPTED' })
-      })
-
-      toast({
-        title: isId ? "Penawaran Diterima!" : "Offer Accepted!",
-        description: isId ? "Menghubungkan ke kontak resmi koperasi..." : "Connecting to official cooperative contact..."
-      })
-
-      let phone = rfq.supplier?.profile?.phone || rfq.supplier?.supplier_profile?.whatsapp || '6281234567890'
-      phone = phone.replace(/[^0-9]/g, '')
-      if (phone.startsWith('0')) {
-        phone = '62' + phone.substring(1)
-      }
-
-      const volume = rfq.response?.proposed_volume_kg || rfq.data?.volume_kg || rfq.volume_kg || '100'
-      const price = rfq.response?.proposed_price_per_kg || rfq.data?.budget_max || rfq.budget_per_kg || '850000'
-      const message = `Halo ${rfq.supplier ? getSupplierDisplayName(rfq.supplier) : 'Pemasok'}, saya ingin menindaklanjuti RFQ ${rfq.rfq_number} yang telah disepakati di Valam untuk volume ${volume} Kg dengan harga ${formatRupiah(Number(price))}/Kg. Silakan kirimkan instruksi pengiriman dan pembayaran.`
-      const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
-      
-      setTimeout(() => {
-        window.open(url, '_blank')
-        fetchRfqs()
-      }, 800)
-    } catch (err) {
-      console.error("Failed to close RFQ as accepted:", err)
-    }
-  }
-
-  const handleRejectResponse = async (rfqId: string) => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api'
-    try {
-      const token = localStorage.getItem('valam_token')
-      await fetch(`${API_URL}/rfq/${rfqId}/close`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ status: 'REJECTED' })
-      })
-
-      toast({
-        title: isId ? "Negosiasi Dihentikan" : "Negotiation Ended",
-        description: isId ? "Anda telah menolak penawaran dari pemasok ini." : "You have rejected the offer from this supplier.",
-        variant: "destructive"
-      })
-      fetchRfqs()
-    } catch (err) {
-      console.error("Failed to close RFQ as rejected:", err)
-    }
-  }
+      const api = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api';
+      const response = await fetch(api + '/rfq/' + id + '/close', { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + localStorage.getItem('valam_token') }, body: JSON.stringify({ status }) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || 'Penawaran tidak dapat diproses');
+      setSelectedRfq(null); await fetchRfqs();
+      if (status === 'ACCEPTED') router.push('/' + locale + '/buyer/orders');
+      else toast({ title: 'Penawaran ditolak' });
+    } catch (error) { toast({ title: 'RFQ gagal diproses', description: error instanceof Error ? error.message : 'Periksa koneksi API', variant: 'destructive' }); }
+  };
+  const handleAcceptResponse = (rfq: any) => closeResponse(rfq.id, 'ACCEPTED');
+  const handleRejectResponse = (id: string) => closeResponse(id, 'REJECTED');
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
@@ -484,6 +408,10 @@ function BuyerRfqContent() {
       {/* ════════════════════════════════════════════════════════════════ */}
       {activeTab === 'create' && (
         <div className="space-y-6">
+          <label className="block text-sm font-bold">Pemasok tujuan<select className="block w-full p-3 border rounded-lg" value={chosenSupplier} onChange={e => setChosenSupplier(e.target.value)}>
+            <option value="">Pilih pemasok</option>{chosenSupplier && !suppliers.some(supplier => supplier.user_id === chosenSupplier) && <option value={chosenSupplier}>{supplierNameParam || 'Pemasok sesuai batch yang dipilih'}</option>}
+            {suppliers.map(supplier => <option key={supplier.user_id} value={supplier.user_id}>{supplier.nama_koperasi || supplier.nama_pic}</option>)}
+          </select></label>
           {submittedRfq ? (
             /* SUCCESS SUBMISSION CARD */
             <div className="max-w-xl mx-auto bg-white rounded-3xl border border-emerald-200 p-8 shadow-sm text-center space-y-6 animate-scale-in">
@@ -893,7 +821,7 @@ function BuyerRfqContent() {
             <div className="grid md:grid-cols-2 gap-5">
               {rfqs.map(rfq => {
                 const rfqData = rfq.data || rfq
-                const companyName = rfqData.nama_perusahaan || rfqData.company_name || 'Pemasok / Supplier'
+                const companyName = rfq.supplier ? getSupplierDisplayName(rfq.supplier) : 'Pemasok belum tersedia'
                 const volume = rfqData.volume_kg || rfq.volume_kg || 100
                 const paPercent = rfqData.pa_minimum || rfq.min_pa_percentage || 30
                 const destination = rfqData.negara_asal_buyer || rfq.destination || '-'
@@ -999,15 +927,16 @@ function BuyerRfqContent() {
                 </div>
               </div>
 
+              <div className="p-3 border rounded-lg text-sm">Batch: {selectedRfq.response?.product?.batch_code || 'Belum ditawarkan'}<br />Harga: {selectedRfq.response?.proposed_price_per_kg ?? 'Belum tersedia'} IDR/kg — volume: {selectedRfq.response?.proposed_volume_kg ?? 'Belum tersedia'} kg<br />Berlaku sampai: {selectedRfq.response?.expires_at ? new Date(selectedRfq.response.expires_at).toLocaleString('id-ID') : 'Belum tersedia'}<br />{selectedRfq.order && <Link href="/buyer/orders" className="underline">Lanjutkan pesanan {selectedRfq.order.order_number}</Link>}</div>
               {/* Action buttons based on status */}
-              {(selectedRfq.status === 'COUNTER_OFFER' || selectedRfq.status === 'DOCS_VERIFIED') && (
+              {(selectedRfq.status === 'COUNTER_OFFER' || selectedRfq.status === 'OFFERED') && (
                 <div className="flex gap-2.5 pt-2">
                   <Button
                     onClick={() => handleAcceptResponse(selectedRfq)}
                     className="flex-1 bg-emerald-800 hover:bg-emerald-900 text-white font-bold h-10 rounded-xl text-xs flex items-center justify-center gap-2"
                   >
                     <Check className="w-4 h-4" />
-                    <span>{isId ? 'Terima & Lanjut ke WhatsApp' : 'Accept & Proceed via WhatsApp'}</span>
+                    <span>{isId ? 'Terima & Buat Pesanan' : 'Accept & Create Order'}</span>
                   </Button>
                   <Button
                     variant="outline"

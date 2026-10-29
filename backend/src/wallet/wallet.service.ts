@@ -1,53 +1,37 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CommerceService, rupiah } from '../commerce/commerce.service';
 
 @Injectable()
 export class WalletService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly commerce: CommerceService) {}
 
-  async getWallet(supplierId: string) {
-    let wallet = await this.prisma.wallet.findUnique({
-      where: { user_id: supplierId },
-      include: {
-        transactions: {
-          orderBy: { created_at: 'desc' }
-        }
-      }
-    });
-
-    if (!wallet) {
-      wallet = await this.prisma.wallet.create({
-        data: { user_id: supplierId, balance: 0 },
-        include: { transactions: true }
-      });
-    }
-
-    return wallet;
+  getWallet(supplierId: string) {
+    return this.prisma.wallet.upsert({ where: { user_id: supplierId }, update: {},
+      create: { user_id: supplierId }, include: { transactions: { orderBy: { created_at: 'desc' } } } });
   }
 
-  async requestWithdrawal(supplierId: string, amount: number, bankDetails: string) {
-    const wallet = await this.getWallet(supplierId);
-
-    if (Number(wallet.balance) < amount) {
-      throw new BadRequestException('Insufficient balance');
-    }
-
-    // Deduct balance
-    await this.prisma.wallet.update({
-      where: { id: wallet.id },
-      data: { balance: { decrement: amount } }
-    });
-
-    // Create pending transaction
-    const transaction = await this.prisma.walletTransaction.create({
-      data: {
-        wallet_id: wallet.id,
-        type: 'DEBIT',
-        amount: amount,
-        description: `Penarikan Dana ke ${bankDetails}`
+  async requestWithdrawal(supplierId: string, value: number, bankDetails: string, requestKey: string) {
+    const amount = rupiah(value);
+    if (amount !== value || typeof requestKey !== 'string' || !/^[a-zA-Z0-9_-]{8,100}$/.test(requestKey)) throw new BadRequestException('Nominal atau idempotency key tidak valid');
+    return this.prisma.$transaction(async tx => {
+      await this.commerce.lock(tx, 'wallet:' + supplierId);
+      const key = supplierId + ':' + requestKey;
+      const existing = await tx.withdrawal.findUnique({ where: { request_key: key } });
+      if (existing) {
+        if (Number(existing.amount) !== amount) throw new ConflictException('Permintaan berbeda memakai idempotency key yang sama');
+        return existing;
       }
-    });
-
-    return transaction;
+      const supplier = await tx.supplierProfile.findUnique({ where: { user_id: supplierId } });
+      if (!supplier?.nomor_rekening || !supplier.nama_bank || !supplier.nama_rekening) throw new BadRequestException('Rekening pemasok belum lengkap');
+      const wallet = await tx.wallet.upsert({ where: { user_id: supplierId }, update: {}, create: { user_id: supplierId } });
+      if (wallet.frozen || Number(wallet.refund_due) > 0) throw new BadRequestException('Wallet memerlukan rekonsiliasi refund sebelum penarikan');
+      if (Number(wallet.balance) < amount) throw new BadRequestException('Saldo tidak cukup');
+      const withdrawal = await tx.withdrawal.create({ data: { wallet_id: wallet.id, amount, request_key: key,
+        bank_name: supplier.nama_bank, account_number: supplier.nomor_rekening, account_holder_name: supplier.nama_rekening, status: 'PENDING' } });
+      await tx.wallet.update({ where: { id: wallet.id }, data: { balance: { decrement: amount } } });
+      await tx.walletTransaction.create({ data: { wallet_id: wallet.id, type: 'DEBIT', amount, description: 'Permintaan penarikan ' + withdrawal.id + ' menunggu pemrosesan; belum transfer bank' } });
+      return withdrawal;
+    }, { timeout: 30000, maxWait: 10000 });
   }
 }

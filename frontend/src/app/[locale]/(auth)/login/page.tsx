@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { Link } from '@/i18n/routing'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
@@ -18,9 +17,9 @@ const contentMap = {
     hero: {
       badge: "B2B Premium Network",
       title1: "Portal menuju ",
-      titleStrong: "kualitas nilam",
-      title2: " terverifikasi.",
-      desc: "Masuk untuk memantau inventori, mengelola RFQ, dan melacak status verifikasi laboratorium secara real-time."
+      titleStrong: "perdagangan nilam",
+      title2: " berbasis informasi.",
+      desc: "Masuk untuk memantau inventori, mengelola RFQ, dan membaca catatan hasil uji yang tersedia."
     },
     form: {
       welcome: "Selamat Datang",
@@ -44,10 +43,10 @@ const contentMap = {
   en: {
     hero: {
       badge: "B2B Premium Network",
-      title1: "Portal to verified ",
-      titleStrong: "patchouli quality",
+      title1: "Your portal to ",
+      titleStrong: "patchouli trade",
       title2: ".",
-      desc: "Log in to monitor inventory, manage RFQs, and track lab verification status in real-time."
+      desc: "Log in to monitor inventory, manage RFQs, and read available test records."
     },
     form: {
       welcome: "Welcome Back",
@@ -75,7 +74,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
   const { toast } = useToast()
 
   const { login: authLogin } = useAuthContext()
@@ -125,52 +123,11 @@ export default function LoginPage() {
         window.location.href = `/${locale}/dashboard/supplier`;
       }
     } catch (error: any) {
-      if (error?.isApiError) {
-        toast({
-          title: "Login Gagal",
-          description: error.message,
-          variant: "destructive"
-        });
-        setLoading(false);
-        return;
-      }
-
-      console.warn("Backend login failed, using mock auth:", error);
-      
-      // MOCK LOGIN FALLBACK (Offline mode)
-      let role = 'buyer';
-      if (email.toLowerCase().includes('supplier') || password === 'supplier') role = 'supplier';
-      if (email.toLowerCase().includes('admin') || password === 'admin') role = 'admin';
-      
-      let country = 'ID';
-      const mockSavedCountry = localStorage.getItem('valam_registered_country_' + email);
-      if (mockSavedCountry) {
-        country = mockSavedCountry;
-      } else if (email.includes('global') || email.includes('inter') || (email.includes('.com') && !email.includes('.id') && !email.includes('supplier'))) {
-        country = 'US'; // default mock international country
-      }
-      
-      authLogin({
-        token: 'mock_token_123',
-        role: role,
-        email: email,
-        country: country,
-        name: email.split('@')[0],
-      });
-
       toast({
-        title: t.toast.mock,
-        description: `${t.toast.mockDesc} ${role.toUpperCase()}`,
-        variant: "default"
+        title: "Login Gagal",
+        description: error?.isApiError ? error.message : (locale === 'id' ? 'Layanan login tidak dapat dihubungi. Silakan coba lagi.' : 'Login service unavailable. Please try again.'),
+        variant: "destructive"
       });
-      
-      if (role === 'admin') {
-        window.location.href = `/${locale}/dashboard/admin`;
-      } else if (role === 'buyer') {
-        window.location.href = `/${locale}/marketplace`;
-      } else {
-        window.location.href = `/${locale}/dashboard/supplier`;
-      }
     } finally {
       setLoading(false);
     }

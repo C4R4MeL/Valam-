@@ -27,8 +27,8 @@ export const getTierColorClass = (tier: "Premium" | "Standard" | "Basic") => {
   return 'bg-[#FAF6F0] text-[#6B4423] border-[#F0E5D8]';
 };
 
-export const isGcmsVerified = (status: string): boolean => {
-  return status === "VERIFIED" || status === "APPROVED";
+export const isGcmsVerified = (product: { lab_verified?: boolean } | string): boolean => {
+  return typeof product === 'object' && product.lab_verified === true;
 };
 
 export const validateOrderQuantity = (qty: number, moq: number, available: number, unit: string = 'kg') => {

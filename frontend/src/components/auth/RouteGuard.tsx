@@ -27,8 +27,8 @@ export function RouteGuard({ requiredRole, children }: RouteGuardProps) {
       return
     }
 
-    if (role && role !== requiredRole) {
-      window.location.href = `/${locale}/dashboard/${role}`
+    if (role !== requiredRole) {
+      window.location.href = role && ['admin', 'buyer', 'supplier'].includes(role) ? `/${locale}/dashboard/${role}` : `/${locale}/login`
       return
     }
   }, [isAuthenticated, isLoading, role, requiredRole, locale])
@@ -37,7 +37,7 @@ export function RouteGuard({ requiredRole, children }: RouteGuardProps) {
     return <SessionSkeleton />
   }
 
-  if (!isAuthenticated || (role && role !== requiredRole)) {
+  if (!isAuthenticated || role !== requiredRole) {
     return <SessionSkeleton />
   }
 

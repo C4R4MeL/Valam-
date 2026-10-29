@@ -1,5 +1,5 @@
 import { Controller, Post, Body, UseGuards } from '@nestjs/common';
-import { MatchingService, type MatchingCriteriaDto } from './matching.service';
+import { MatchingService, MatchingCriteriaDto, MATCHING_ALGORITHM } from './matching.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -15,7 +15,10 @@ export class MatchingController {
     const matches = await this.matchingService.findMatches(criteria);
     return {
       message: 'Matches retrieved successfully',
-      data: matches
+      data: matches,
+      matches: matches.filter(product => product.is_eligible),
+      alternatives: matches.filter(product => !product.is_eligible),
+      algorithm: MATCHING_ALGORITHM,
     };
   }
 }

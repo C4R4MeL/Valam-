@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { DashboardHeader } from '@/components/layout/DashboardHeader'
 
 export default function SupplierRfqListPage() {
+  const [batches, setBatches] = useState<any[]>([]);
   const [rfqs, setRfqs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -21,6 +22,7 @@ export default function SupplierRfqListPage() {
 
   const [respondingTo, setRespondingTo] = useState<string | null>(null)
   const [responseForm, setResponseForm] = useState({
+    product_id: '', expires_at: '',
     proposed_price_per_kg: 0,
     proposed_volume_kg: 0,
     message: '',
@@ -36,7 +38,10 @@ export default function SupplierRfqListPage() {
       })
       if (!res.ok) throw new Error('Gagal memuat RFQ masuk')
       const json = await res.json()
-      setRfqs(json.data || [])
+      setRfqs(json.data || []);
+      const products = await fetch(API_URL + '/products/mine', { headers: { Authorization: 'Bearer ' + token } });
+      if (!products.ok) throw new Error('Batch pemasok gagal dimuat');
+      setBatches((await products.json()).data.filter((batch: any) => batch.status === 'VERIFIED'));
     } catch (err: any) {
       console.warn("Backend offline or error fetching RFQs:", err)
       setRfqs([])
@@ -63,7 +68,7 @@ export default function SupplierRfqListPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(responseForm)
+        body: JSON.stringify({ ...responseForm, expires_at: responseForm.action === 'REJECT' ? undefined : new Date(responseForm.expires_at).toISOString() })
       })
 
       if (!res.ok) throw new Error('Gagal merespons RFQ')
@@ -88,6 +93,7 @@ export default function SupplierRfqListPage() {
       case 'SENT': return <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100"><Clock className="w-3 h-3 mr-1"/> Baru</Badge>
       case 'ACCEPTED': return <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100"><CheckCircle2 className="w-3 h-3 mr-1"/> Disetujui</Badge>
       case 'REJECTED': return <Badge className="bg-red-100 text-red-800 hover:bg-red-100"><XCircle className="w-3 h-3 mr-1"/> Ditolak</Badge>
+      case 'OFFERED': return <Badge className="bg-blue-100 text-blue-800">Menunggu persetujuan buyer</Badge>
       case 'COUNTER_OFFER': return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100"><FileText className="w-3 h-3 mr-1"/> Counter Offer</Badge>
       default: return <Badge variant="outline">{status}</Badge>
     }
@@ -158,6 +164,7 @@ export default function SupplierRfqListPage() {
                       onClick={() => {
                         setRespondingTo(rfq.id)
                         setResponseForm({
+                          product_id: '', expires_at: '',
                           proposed_price_per_kg: rfq.budget_per_kg,
                           proposed_volume_kg: rfq.volume_kg,
                           message: '',
@@ -173,7 +180,7 @@ export default function SupplierRfqListPage() {
                 
                 {rfq.response && rfq.status !== 'SENT' && (
                   <div className="mt-4 bg-blue-50 border border-blue-100 p-4 rounded-xl">
-                    <h4 className="font-semibold text-blue-900 mb-2">Respons Anda ({rfq.status}):</h4>
+                    <h4 className="font-semibold text-blue-900 mb-2">Respons Anda ({rfq.status}):</h4><p>Batch: {rfq.response.product?.batch_code || "Belum dipilih"} — berlaku sampai {rfq.response.expires_at ? new Date(rfq.response.expires_at).toLocaleString("id-ID") : "Belum tersedia"}</p>
                     <div className="flex flex-col md:flex-row gap-4 mb-4">
                       <div>
                         <p className="text-xs text-blue-700">Volume Disetujui</p>
@@ -195,6 +202,13 @@ export default function SupplierRfqListPage() {
                 <div className="bg-zinc-50 p-6 border-t border-zinc-200">
                   <h4 className="font-bold text-zinc-900 mb-4">Form Respons RFQ</h4>
                   <form onSubmit={(e) => handleRespond(e, rfq.id)} className="space-y-4">
+                    {responseForm.action !== 'REJECT' && <div className="grid gap-3">
+                      <label>Batch yang ditawarkan<select required className="border rounded-lg p-2 w-full" value={responseForm.product_id} onChange={e => setResponseForm({ ...responseForm, product_id: e.target.value })}>
+                        <option value="">Pilih batch sebenarnya</option>{batches.map(batch => <option key={batch.id} value={batch.id} disabled={batch.available_volume_kg <= 0}>{batch.batch_code} — {batch.available_volume_kg} kg, MOQ {batch.moq_kg} kg</option>)}
+                      </select></label>
+                      <label>Berlaku sampai (waktu lokal)<Input type="datetime-local" required value={responseForm.expires_at} onChange={e => setResponseForm({ ...responseForm, expires_at: e.target.value })} /></label>
+                    </div>}
+
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Keputusan</Label>

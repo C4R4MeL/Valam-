@@ -4,6 +4,10 @@ const withNextIntl = createNextIntlPlugin();
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Keep development and demo builds away from an existing or damaged .next cache.
+  distDir: process.env.VALAM_FRONTEND_DIST || (process.env.NODE_ENV === 'development'
+    ? '.next-dev'
+    : process.env.PERTAMUDA_FRONTEND_BUILD === 'true' ? '.next-pertamuda' : '.next'),
   images: {
     remotePatterns: [
       {
@@ -20,7 +24,7 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   async headers() {
     return [

@@ -162,6 +162,7 @@ export default function SmartMatchingPage() {
   const presets = PRESETS[locale] || PRESETS.id
   
   const [loading, setLoading] = useState(false)
+  const [matchingError, setMatchingError] = useState('');
   const [results, setResults] = useState<any[]>([])
   const [hasSearched, setHasSearched] = useState(false)
   const [activePresetId, setActivePresetId] = useState<string>('export_std')
@@ -191,18 +192,7 @@ export default function SmartMatchingPage() {
         return;
       }
 
-      const savedResults = sessionStorage.getItem('pub_matching_results')
-      if (savedResults && savedResults !== '[]') {
-        try {
-          const parsed = JSON.parse(savedResults)
-          setResults(parsed)
-          setHasSearched(true)
-          return
-        } catch (e) {
-          // ignore error
-        }
-      }
-
+      sessionStorage.removeItem('pub_matching_results_v2');
       // If no search was run yet, immediately run matching with standard preset so user sees instant results
       handleSearch(defaultCriteria)
     }
@@ -211,7 +201,7 @@ export default function SmartMatchingPage() {
   // Persist results state
   useEffect(() => {
     if (typeof window !== 'undefined' && results.length > 0) {
-      sessionStorage.setItem('pub_matching_results', JSON.stringify(results))
+      sessionStorage.setItem('pub_matching_results_v2', JSON.stringify(results))
     }
   }, [results])
 
@@ -246,7 +236,7 @@ export default function SmartMatchingPage() {
     const activeCriteria = (overrideCriteria && typeof overrideCriteria === 'object' && 'volume_kg' in overrideCriteria) 
       ? overrideCriteria 
       : criteria;
-    setLoading(true)
+    setLoading(true); setMatchingError('');
     try {
       const token = localStorage.getItem('valam_token')
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api'}/matching`, {
@@ -268,59 +258,8 @@ export default function SmartMatchingPage() {
       const json = await res.json()
       setResults(json.data || [])
       setHasSearched(true)
-    } catch (err: any) {
-      console.warn("Matching endpoint failed, calculating from verified database products:", err)
-      try {
-        const pRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api'}/products?status=VERIFIED`)
-        if (pRes.ok) {
-          const pData = await pRes.json()
-          const dbProducts = pData.data || []
-          const calculated = dbProducts
-            .filter((p: any) => p.status === 'VERIFIED' && p.available_volume_kg > 0)
-            .map((item: any) => {
-              const pa = item.pa_percentage || 0
-              const moisture = item.moisture || 0
-              const price = item.price_per_kg || 0
-              const vol = item.available_volume_kg || 0
-
-              const volDiffRatio = Math.abs(vol - activeCriteria.volume_kg) / Math.max(activeCriteria.volume_kg, 1)
-              const volScore = Math.max(0, 100 - volDiffRatio * 50)
-
-              let budgetScore = 100
-              if (price > activeCriteria.max_budget) {
-                const budgetOverRatio = (price - activeCriteria.max_budget) / Math.max(activeCriteria.max_budget, 1)
-                budgetScore = Math.max(0, 100 - budgetOverRatio * 150)
-              }
-
-              let paScore = 100
-              if (pa < activeCriteria.min_pa) {
-                const paUnderRatio = (activeCriteria.min_pa - pa) / Math.max(activeCriteria.min_pa, 1)
-                paScore = Math.max(0, 100 - paUnderRatio * 200)
-              }
-
-              let moistureScore = 100
-              if (moisture > activeCriteria.max_moisture) {
-                const moistureOverRatio = (moisture - activeCriteria.max_moisture) / Math.max(activeCriteria.max_moisture, 1)
-                moistureScore = Math.max(0, 100 - moistureOverRatio * 100)
-              }
-
-              const score = (volScore * 0.25) + (budgetScore * 0.25) + (paScore * 0.35) + (moistureScore * 0.15)
-              return {
-                ...item,
-                match_score: Math.round(score)
-              }
-            })
-
-          calculated.sort((a: any, b: any) => b.match_score - a.match_score)
-          setResults(calculated)
-          setHasSearched(true)
-          return
-        }
-      } catch (e) {
-        console.error("Failed to query verified products for matching:", e)
-      }
-      setResults([])
-      setHasSearched(true)
+    } catch {
+      setResults([]); setHasSearched(true); setMatchingError('Matching gagal dimuat. Masuk sebagai buyer dan periksa koneksi API; tidak ada hasil cadangan.');
     } finally {
       setLoading(false)
     }
@@ -329,6 +268,7 @@ export default function SmartMatchingPage() {
   return (
     <div className="min-h-screen valam-grid-bg flex flex-col selection:bg-[#1B5E3A]/10 selection:text-[#1B5E3A] font-sans">
       <Navbar />
+      {matchingError && <p role="alert" className="mt-24 p-4 text-amber-900 bg-amber-50">{matchingError}</p>}
 
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16 space-y-6">
         

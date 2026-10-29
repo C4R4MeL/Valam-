@@ -1,3 +1,6 @@
+import { CommerceService, rupiah } from '../commerce/commerce.service';
+import { randomUUID } from 'node:crypto';
+import { PUBLIC_USER_SELECT } from '../users/public-user.select';
 import { Injectable, Logger, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaymentService } from '../payment/payment.service';
@@ -22,6 +25,7 @@ export class OrdersService {
     private prisma: PrismaService,
     private paymentService: PaymentService,
     private shipmentService: ShipmentService,
+    private readonly commerce: CommerceService,
   ) {}
 
   /**
@@ -33,16 +37,14 @@ export class OrdersService {
    * - Shipping: server re-quotes Biteship per supplier (never trusts client cost)
    */
   async checkout(userId: string, data: any) {
+    if (typeof data.idempotency_key !== 'string' || !/^[a-zA-Z0-9_-]{8,100}$/.test(data.idempotency_key)) throw new BadRequestException('Idempotency key tidak valid');
     const lineItems = await this.resolveCheckoutItems(userId, data);
 
     if (lineItems.length === 0) {
       throw new BadRequestException('Tidak ada produk untuk di-checkout');
     }
 
-    // Validate stock & MOQ without reserving
-    for (const item of lineItems) {
-      await this.assertStockAvailable(item);
-    }
+    // Stock and MOQ are checked atomically by createReservedOrder, after replay lookup.
 
     const destination = data.destinationAddress || (
       data.shipping_address
@@ -113,7 +115,7 @@ export class OrdersService {
     let supplierIndex = 0;
 
     for (const [supplierId, items] of bySupplier) {
-      const subtotal = items.reduce((s, i) => s + i.subtotal, 0);
+      const subtotal = rupiah(items.reduce((s, i) => s + Math.round(i.subtotal), 0));
 
       // SERVER-SIDE RE-QUOTE — never trust client shipping_cost
       const quote = await this.shipmentService.quoteRatesForItems({
@@ -138,11 +140,10 @@ export class OrdersService {
       }
 
       const orderShipping = rate.totalOngkir;
-      const orderNumber = `ORD-${Date.now()}-${supplierIndex + 1}`;
+      const orderNumber = `ORD-${Date.now()}-${randomUUID().slice(0, 8)}`;
       supplierIndex += 1;
 
-      const order = await this.prisma.order.create({
-        data: {
+      const reservation = await this.commerce.createReservedOrder({
           order_number: orderNumber,
           buyer_id: userId,
           supplier_id: supplierId,
@@ -173,11 +174,16 @@ export class OrdersService {
               circular_product_id: item.circular_product_id,
               quantity_kg: item.quantity_kg,
               price_per_kg: item.price_per_kg,
-              subtotal: item.subtotal,
+              subtotal: Math.round(item.subtotal),
             })),
           },
-        },
-      });
+        }, items, userId + ':' + data.idempotency_key + ':' + supplierId);
+      const order = reservation.order;
+      if (!reservation.created) {
+        if (order.payment_status !== 'pending' || !order.payment?.snap_token) throw new BadRequestException('Pesanan sedang disiapkan atau telah berakhir; periksa daftar pesanan');
+        createdOrders.push({ orderId: order.id, orderNumber: order.order_number, snapToken: order.payment.snap_token, redirectUrl: '', supplierId, amount: order.total_amount + order.shipping_cost, shippingCost: order.shipping_cost });
+        continue;
+      }
 
       await this.shipmentService.createShipmentForCheckout({
         orderId: order.id,
@@ -196,7 +202,8 @@ export class OrdersService {
       const payment = await this.prisma.payment.create({
         data: {
           order_id: order.id,
-          amount: subtotal + orderShipping,
+          amount: rupiah(subtotal + orderShipping),
+          gateway_order_id: order.id,
           status: 'pending',
           payment_method: data.payment_method || 'ESCROW',
         },
@@ -378,6 +385,7 @@ export class OrdersService {
   }
 
   private async assertStockAvailable(item: CheckoutLineItem) {
+    if (!Number.isFinite(item.quantity_kg) || item.quantity_kg <= 0) throw new BadRequestException('Jumlah pesanan harus positif');
     if (item.product_id) {
       const product = await this.prisma.product.findUnique({
         where: { id: item.product_id },
@@ -419,7 +427,7 @@ export class OrdersService {
             },
           },
         },
-        supplier: { include: { profile: true } },
+        supplier: { select: PUBLIC_USER_SELECT },
       },
       orderBy: { created_at: 'desc' },
     });
@@ -440,318 +448,48 @@ export class OrdersService {
             },
           },
         },
-        buyer: { include: { profile: true } },
+        buyer: { select: PUBLIC_USER_SELECT },
       },
       orderBy: { created_at: 'desc' },
     });
   }
 
-  async updateOrderStatus(
-    supplierId: string,
-    orderId: string,
-    status: string,
-    note?: string,
-    delivery_proof_url?: string,
-  ) {
-    const order = await this.prisma.order.findUnique({
-      where: { id: orderId },
-    });
-
-    if (!order) {
-      throw new NotFoundException('Order not found');
-    }
-
-    if (order.supplier_id !== supplierId) {
-      throw new BadRequestException('Unauthorized to update this order');
-    }
-
-    if (order.payment_status !== 'paid' && status !== 'CANCELLED') {
-      throw new BadRequestException(
-        'Pesanan belum dibayar — tidak dapat diproses fulfillment',
-      );
-    }
-
-    const validStatuses = ['PENDING', 'PACKED', 'SHIPPED', 'COMPLETED', 'CANCELLED'];
-    if (!validStatuses.includes(status)) {
-      throw new BadRequestException('Invalid status');
-    }
-
-    if (status === 'COMPLETED' && !delivery_proof_url) {
-      throw new BadRequestException(
-        'Bukti foto barang sampai wajib diunggah sebelum menandai pesanan selesai.',
-      );
-    }
-
-    const updateData: any = { status };
-    if (status === 'COMPLETED' && delivery_proof_url) {
-      updateData.delivery_proof_url = delivery_proof_url;
-    }
-    if (status === 'CANCELLED') {
-      updateData.payment_status = 'cancelled';
-    }
-
-    const updatedOrder = await this.prisma.order.update({
-      where: { id: orderId },
-      data: updateData,
-    });
-
-    // Restore stock only if it was already decremented (paid then cancelled)
-    if (status === 'CANCELLED' && order.payment_status === 'paid') {
-      const orderWithItems = await this.prisma.order.findUnique({
-        where: { id: orderId },
-        include: { items: true },
-      });
-      if (orderWithItems?.items) {
-        for (const item of orderWithItems.items) {
-          if (item.product_id) {
-            await this.prisma.product.update({
-              where: { id: item.product_id },
-              data: { available_volume_kg: { increment: item.quantity_kg } },
-            });
-          } else if (item.circular_product_id) {
-            await this.prisma.circularProduct.update({
-              where: { id: item.circular_product_id },
-              data: { stock: { increment: item.quantity_kg } },
-            });
-          }
-        }
-      }
-    }
-
-    const shipment = await this.prisma.shipment.findUnique({
-      where: { order_id: orderId },
-    });
-    if (shipment) {
-      await this.prisma.shipmentTrackingLog.create({
-        data: {
-          shipment_id: shipment.id,
-          status: status,
-          description: note || `Pesanan diubah statusnya menjadi ${status}`,
-        },
-      });
-    }
-
-    if (status === 'COMPLETED') {
-      await this.addFundsToWallet(supplierId, order.total_amount, order.id);
-    }
-
-    return updatedOrder;
+  async updateOrderStatus(supplierId: string, orderId: string, status: string, note?: string, delivery_proof_url?: string) {
+    return this.commerce.supplierTransition(supplierId, orderId, status, delivery_proof_url);
   }
 
-  private async addFundsToWallet(
-    supplierId: string,
-    amount: number,
-    orderId: string,
-  ) {
-    let wallet = await this.prisma.wallet.findUnique({
-      where: { user_id: supplierId },
-    });
-
-    if (!wallet) {
-      wallet = await this.prisma.wallet.create({
-        data: { user_id: supplierId, balance: 0 },
-      });
-    }
-
-    await this.prisma.walletTransaction.create({
-      data: {
-        wallet_id: wallet.id,
-        type: 'CREDIT',
-        amount: amount,
-        description: `Pembayaran Pesanan #${orderId.substring(0, 8)}`,
-      },
-    });
-
-    await this.prisma.wallet.update({
-      where: { id: wallet.id },
-      data: { balance: { increment: amount } },
-    });
+  async updateOrderShipping(userId: string, orderId: string, data: unknown) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order || order.buyer_id !== userId) throw new ForbiddenException('Not your order');
+    throw new BadRequestException('Alamat dan biaya pesanan harus disepakati melalui tarif pengiriman server sebelum pembayaran');
   }
 
-  async updateOrderShipping(
-    userId: string,
-    orderId: string,
-    data: { shipping_address: string; shipping_cost: number },
-  ) {
-    const order = await this.prisma.order.findUnique({
-      where: { id: orderId },
-    });
-
-    if (!order) throw new NotFoundException('Order not found');
-    if (order.buyer_id !== userId) throw new ForbiddenException('Not your order');
-
-    return this.prisma.order.update({
-      where: { id: orderId },
-      data: {
-        shipping_cost: data.shipping_cost,
-        shipping_address: { address: data.shipping_address },
-      },
-    });
-  }
-
-  /**
-   * Retry payment for an existing pending/failed order.
-   */
   async retryPayment(userId: string, orderId: string) {
-    const order = await this.prisma.order.findUnique({
-      where: { id: orderId },
-      include: {
-        items: { include: { product: true, circular_product: true } },
-        payment: true,
-      },
-    });
-
+    const order = await this.prisma.order.findUnique({ where: { id: orderId }, include: { payment: true, shipment: true, items: { include: { product: true, circular_product: true } }, buyer: { include: { profile: true } } } });
     if (!order) throw new NotFoundException('Order not found');
     if (order.buyer_id !== userId) throw new ForbiddenException('Not your order');
-
-    const paidStatuses = ['paid', 'COMPLETED', 'PAID'];
-    if (
-      paidStatuses.includes(order.payment_status) ||
-      paidStatuses.includes(order.payment?.status || '')
-    ) {
-      throw new BadRequestException('Order is already paid');
-    }
-
-    if (
-      order.payment?.snap_token &&
-      ['pending', 'PENDING'].includes(order.payment.status) &&
-      !order.payment.snap_token.startsWith('mock-')
-    ) {
-      return {
-        orderId: order.id,
-        snapToken: order.payment.snap_token,
-      };
-    }
-
-    const buyer = await this.prisma.user.findUnique({
-      where: { id: userId },
-      include: { profile: true },
+    if (order.payment_status !== 'pending' || order.stock_state !== 'RESERVED' || !order.reservation_expires_at || order.reservation_expires_at <= new Date() || !order.payment) throw new BadRequestException('Pembayaran tidak dapat diulang; periksa status atau buat pesanan baru');
+    if (order.payment.snap_token) return { orderId: order.id, snapToken: order.payment.snap_token };
+    if (!order.rfq_id || !order.shipment || order.shipment.status !== 'TERKONFIRMASI') throw new BadRequestException('Konfirmasikan tarif pengiriman server sebelum melanjutkan pembayaran RFQ');
+    const amount = rupiah(order.total_amount + order.shipping_cost);
+    await this.commerce.withOrder(orderId, async (tx, current) => {
+      if (current.payment_status !== 'pending' || current.stock_state !== 'RESERVED' || !current.payment || current.payment.gateway_order_id) throw new BadRequestException('Pembayaran sedang disiapkan atau telah berakhir');
+      const shipping = await tx.shipment.findUnique({ where: { order_id: orderId } });
+      if (!shipping || Number(shipping.total_shipping_cost) !== current.shipping_cost || current.shipping_cost !== order.shipping_cost) throw new BadRequestException('Tarif pengiriman berubah; muat ulang pesanan');
+      await tx.payment.update({ where: { id: current.payment.id }, data: { amount, gateway_order_id: order.id } });
     });
-    const customerDetails = {
-      firstName: buyer?.profile?.contact_person || 'Buyer',
-      lastName: '',
-      email: buyer?.email,
-      phone: buyer?.profile?.phone || '08123456789',
-    };
-
-    const paymentItems = order.items.map((item) => ({
-      id: item.product_id || item.circular_product_id!,
-      price: item.price_per_kg,
-      quantity: item.quantity_kg,
-      name: item.product_id
-        ? `Minyak Nilam Batch ${item.product?.batch_code || 'N/A'}`
-        : `${item.circular_product?.name || 'Product'}`,
-    }));
-
-    const grossAmount = order.total_amount + order.shipping_cost;
-
-    // Midtrans requires unique order_id — append retry suffix for new Snap
-    const midtransOrderId = `${order.id}-r${Date.now()}`;
-
-    const snapResult = await this.paymentService.createTransaction(
-      midtransOrderId,
-      grossAmount,
-      customerDetails,
-      paymentItems,
-    );
-
-    if (order.payment) {
-      await this.prisma.payment.update({
-        where: { id: order.payment.id },
-        data: {
-          snap_token: snapResult.token,
-          status: 'pending',
-          payment_gateway_id: midtransOrderId,
-        },
-      });
-    }
-
-    await this.prisma.order.update({
-      where: { id: order.id },
-      data: { payment_status: 'pending' },
-    });
-
-    this.logger.log(`Retry payment token generated for order ${orderId}`);
-
-    return {
-      orderId: order.id,
-      snapToken: snapResult.token,
-      redirectUrl: snapResult.redirect_url,
-    };
+    const items = order.items.map(item => ({ id: item.product_id || item.circular_product_id, price: item.price_per_kg, quantity: item.quantity_kg, name: item.product?.batch_code || item.circular_product?.name || 'Produk pesanan' }));
+    if (order.shipping_cost > 0) items.push({ id: 'shipping-fee', price: order.shipping_cost, quantity: 1, name: 'Pengiriman sesuai tarif server' });
+    const result = await this.paymentService.createTransaction(order.id, amount, { firstName: order.buyer.profile?.contact_person || 'Buyer', email: order.buyer.email, phone: order.buyer.profile?.phone || undefined }, items);
+    await this.prisma.payment.update({ where: { id: order.payment.id }, data: { snap_token: result.token } });
+    return { orderId: order.id, snapToken: result.token, redirectUrl: result.redirect_url };
   }
 
-  async completeOrder(userId: string, orderId: string) {
-    const order = await this.prisma.order.findUnique({
-      where: { id: orderId },
-    });
-    if (!order) throw new NotFoundException('Order not found');
-    if (order.buyer_id !== userId) throw new ForbiddenException('Not your order');
-
-    const updated = await this.prisma.order.update({
-      where: { id: orderId },
-      data: { status: 'COMPLETED' },
-    });
-
-    const shipment = await this.prisma.shipment.findFirst({
-      where: { order_id: orderId },
-    });
-    if (shipment) {
-      await this.prisma.shipmentTrackingLog.create({
-        data: {
-          shipment_id: shipment.id,
-          status: 'COMPLETED',
-          description:
-            'Pesanan telah diterima oleh pembeli. Transaksi berhasil diselesaikan.',
-        },
-      });
-    }
-
-    await this.addFundsToWallet(order.supplier_id, order.total_amount, order.id);
-
-    return updated;
-  }
+  completeOrder(userId: string, orderId: string) { return this.commerce.complete(userId, orderId); }
 
   async resetOrder(userId: string, orderId: string) {
-    const order = await this.prisma.order.findUnique({
-      where: { id: orderId },
-    });
-
-    if (!order) throw new NotFoundException('Order not found');
-    if (order.buyer_id !== userId && order.supplier_id !== userId) {
-      throw new ForbiddenException('Not your order');
-    }
-
-    const shipment = await this.prisma.shipment.findFirst({
-      where: { order_id: orderId },
-    });
-    if (shipment) {
-      await this.prisma.shipmentTrackingLog.deleteMany({
-        where: { shipment_id: shipment.id },
-      });
-      await this.prisma.shipment.delete({
-        where: { id: shipment.id },
-      });
-    }
-
-    const updated = await this.prisma.order.update({
-      where: { id: orderId },
-      data: {
-        status: 'PENDING',
-        shipping_cost: 0,
-        shipping_address: {},
-        payment_status: 'pending',
-      },
-    });
-
-    await this.prisma.payment.updateMany({
-      where: { order_id: orderId },
-      data: {
-        status: 'pending',
-        payment_method: null,
-        paid_at: null,
-      },
-    });
-
-    return updated;
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order || order.buyer_id !== userId && order.supplier_id !== userId) throw new ForbiddenException('Not your order');
+    throw new BadRequestException('Pesanan tidak dapat diulang melalui reset. Silakan buat pesanan baru.');
   }
 }

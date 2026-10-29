@@ -67,30 +67,20 @@ export function mergeMarketPrices(
   for (const row of live || []) {
     const grade = normalizeGrade(String(row.grade));
     if (!grade) continue;
+    if (!Number.isFinite(Number(row.price_per_kg)) || Number(row.price_per_kg) <= 0) continue;
     byGrade.set(grade, {
       id: row.id || `live-${grade}`,
       grade,
-      price_per_kg: Number(row.price_per_kg) || FALLBACK_PRICES[grade],
+      price_per_kg: Number(row.price_per_kg),
       currency: row.currency || 'IDR',
       updated_by: null,
-      updated_at: row.updated_at || new Date().toISOString(),
+      updated_at: row.updated_at || '',
     });
   }
 
-  return MARKET_GRADES.map((grade) => {
-    const existing = byGrade.get(grade);
-    if (existing) return existing;
-    return {
-      id: `fallback-${grade}`,
-      grade,
-      price_per_kg: FALLBACK_PRICES[grade],
-      currency: 'IDR',
-      updated_by: null,
-      updated_at: new Date().toISOString(),
-    };
-  });
+  return MARKET_GRADES.flatMap(grade => byGrade.has(grade) ? [byGrade.get(grade)!] : []);
 }
 
-export function gradeAPrice(prices: InsightMarketPrice[]): number {
-  return prices.find((p) => p.grade === 'A')?.price_per_kg ?? FALLBACK_PRICES.A;
+export function gradeAPrice(prices: InsightMarketPrice[]): number | null {
+  return prices.find(p => p.grade === 'A')?.price_per_kg ?? null;
 }

@@ -25,7 +25,7 @@ export class ChatService {
    * Returns the model's response text.
    */
   async chat(message: string, history?: ChatHistoryItemDto[]): Promise<string> {
-    if (!process.env.GROK_API_KEY) {
+    if (!process.env.GROK_API_KEY?.trim()) {
       throw new InternalServerErrorException(
         'Layanan chat belum dikonfigurasi. Silakan hubungi administrator.',
       );
@@ -62,7 +62,7 @@ export class ChatService {
 
       // Log for observability
       this.logger.log(
-        `[Nila Chat] User: "${sanitizedMessage.substring(0, 80)}..." → Response: ${responseText.length} chars`,
+        `[Nila Chat] Response: ${responseText.length} chars`,
       );
 
       return responseText;

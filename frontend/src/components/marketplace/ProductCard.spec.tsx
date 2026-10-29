@@ -2,6 +2,17 @@ import * as React from 'react';
 import { render, screen } from '@testing-library/react';
 import { ProductCard } from './ProductCard';
 
+// Isolate app routing and providers; render the real card with deterministic context.
+jest.mock('@/i18n/routing', () => ({
+  Link: ({ children, href, className }: React.ComponentProps<'a'>) =>
+    <a href={href} className={className}>{children}</a>,
+  useRouter: () => ({ push: jest.fn() }),
+}));
+jest.mock('next-intl', () => ({ useLocale: () => 'id' }));
+jest.mock('@/components/providers/AuthProvider', () => ({
+  useAuthContext: () => ({ isAuthenticated: false }),
+}));
+
 describe('ProductCard component', () => {
   const mockProduct = {
     id: 'prod-123',
@@ -26,20 +37,20 @@ describe('ProductCard component', () => {
     expect(screen.getByText(/Aceh Jaya/i)).toBeInTheDocument();
     
     // Check if PA percentage is displayed
-    expect(screen.getByText(/32.5%/i)).toBeInTheDocument();
+    expect(screen.getByText('32.5')).toHaveTextContent('32.5%');
     
     // Check if volume is displayed
     expect(screen.getByText(/500 kg/i)).toBeInTheDocument();
   });
 
-  it('displays verified badge if status is VERIFIED', () => {
-    render(<ProductCard product={mockProduct} />);
-    expect(screen.getByText('Terverifikasi Lab')).toBeInTheDocument();
+  it('displays verified badge only with explicit lab verification', () => {
+    render(<ProductCard product={{ ...mockProduct, lab_verified: true }} />);
+    expect(screen.getByText('Laporan uji diperiksa')).toBeInTheDocument();
   });
 
-  it('does not display verified badge if status is not VERIFIED', () => {
-    const unverifiedProduct = { ...mockProduct, status: 'IN_LAB' };
+  it('does not interpret catalogue publication status as lab verification', () => {
+    const unverifiedProduct = { ...mockProduct, status: 'VERIFIED' };
     render(<ProductCard product={unverifiedProduct} />);
-    expect(screen.queryByText('Terverifikasi Lab')).not.toBeInTheDocument();
+    expect(screen.queryByText('Laporan uji diperiksa')).not.toBeInTheDocument();
   });
 });

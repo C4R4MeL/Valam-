@@ -19,6 +19,7 @@ export default function CheckoutPage() {
   
   // Step 1 States
   const [address, setAddress] = useState('')
+  const checkoutKey = useRef('');
   const [contactName, setContactName] = useState('')
   const [contactPhone, setContactPhone] = useState('')
   
@@ -416,6 +417,7 @@ export default function CheckoutPage() {
         return
       }
 
+      if (!checkoutKey.current) checkoutKey.current = crypto.randomUUID();
       // 1. Call backend to create order + get Midtrans Snap token
       setPaymentStatus('processing')
       const res = await fetch(`${API_URL}/orders/checkout`, {
@@ -425,6 +427,7 @@ export default function CheckoutPage() {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
+          idempotency_key: checkoutKey.current,
           destinationAddress: {
             address: address.trim(),
             province: selectedProvince?.name,
@@ -436,7 +439,7 @@ export default function CheckoutPage() {
             phone: contactPhone.trim() || undefined,
           },
           selectedRates,
-          payment_method: isCircular ? 'DIRECT_TRANSFER' : 'ESCROW',
+          payment_method: 'MIDTRANS',
           ...(isDirect && directProduct ? {
             direct: true,
             product_id: directProduct.product_id,
@@ -1130,7 +1133,7 @@ export default function CheckoutPage() {
                     <ShieldCheck className="w-5 h-5 shrink-0" />
                     <h4>{isCircular 
                       ? (isId ? 'Proteksi Transaksi VALAM' : 'VALAM Transaction Protection')
-                      : (isId ? 'Pembayaran Rekening Bersama Escrow' : 'VALAM Escrow Payment')}
+                      : (isId ? 'Pembayaran melalui Midtrans' : 'Midtrans Gateway Payment')}
                     </h4>
                   </div>
                   <p className="text-xs text-zinc-600 leading-relaxed relative z-10 font-medium">
@@ -1139,8 +1142,8 @@ export default function CheckoutPage() {
                           ? 'Pembayaran pesanan produk turunan diteruskan langsung ke rekening resmi Mitra Pengolah untuk percepatan pengiriman lokal.'
                           : 'Payment for derivative products is processed directly to Processor Partners for rapid local dispatch.')
                       : (isId 
-                          ? 'Dana ditahan dengan aman oleh Rekening Bersama Platform VALAM dan baru dilepaskan ke koperasi setelah Anda mengonfirmasi barang diterima.'
-                          : 'Funds are held securely by VALAM Escrow and released to cooperatives only after you confirm batch arrival.')}
+                          ? 'Pembayaran diproses Midtrans. Wallet adalah catatan saldo internal setelah penerimaan buyer; bukan jaminan escrow pihak ketiga. Refund memerlukan konfirmasi gateway.'
+                          : 'Midtrans processes payments. Wallet balances are internal records after buyer receipt, not third-party escrow. Refunds require gateway confirmation.')}
                   </p>
                 </div>
 
@@ -1155,7 +1158,7 @@ export default function CheckoutPage() {
                   <span className="text-xs font-semibold text-zinc-600 group-hover:text-zinc-900 transition-colors leading-relaxed">
                     {isCircular 
                       ? (isId ? 'Saya menyetujui syarat & ketentuan transaksi pembelian produk olahan limbah sirkular VALAM.' : 'I agree to the VALAM circular product transaction terms & conditions.')
-                      : (isId ? 'Saya menyetujui syarat & ketentuan escrow VALAM untuk transaksi pembelian minyak nilam ini.' : 'I agree to the VALAM escrow terms & conditions for this patchouli oil transaction.')}
+                      : (isId ? 'Saya memahami proses pembayaran, konfirmasi penerimaan buyer, dan refund yang memerlukan konfirmasi gateway.' : 'I understand payment, buyer receipt confirmation and gateway-confirmed refund processing.')}
                   </span>
                 </label>
 

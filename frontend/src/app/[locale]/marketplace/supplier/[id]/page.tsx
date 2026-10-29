@@ -1,5 +1,7 @@
 'use client'
 
+import { whatsappNumber } from '@/lib/supplier-contact';
+
 import { SupplierProfileSkeleton } from '@/components/skeletons'
 
 import { useState, useEffect } from 'react'
@@ -15,166 +17,10 @@ import {
 import { Button } from '@/components/ui/button'
 import { Navbar } from '@/components/layout/Navbar'
 import { Footer } from '@/components/layout/Footer'
-import { mockProducts, mockCircularProducts, formatRupiah } from '@/lib/mock-data'
+import { formatRupiah } from '@/lib/mock-data'
 import { useLocale } from 'next-intl'
 import { Badge } from '@/components/ui/badge'
 import { getSupplierDisplayName } from '@/lib/utils'
-
-const getSupplierInfo = (id: string, locale: 'id' | 'en') => {
-  const suppliers: Record<string, any> = {
-    'sup_aceh_west': {
-      name: 'Koperasi Nilam Aceh Barat',
-      district: 'Woyla Barat',
-      village: 'Pasi Mali',
-      sales: '2.4 Ton',
-      rating: '4.9',
-      reviews: '128',
-      respons: '± 1 Jam',
-      desc: locale === 'id' 
-        ? 'Koperasi Nilam Aceh Barat adalah produsen minyak nilam terkemuka di Aceh Barat yang membina puluhan petani nilam lokal. Kami menggunakan standar distilasi uap modern untuk menghasilkan minyak nilam berkualitas tinggi dengan kadar Patchouli Alcohol (PA) yang stabil.'
-        : 'Koperasi Nilam Aceh Barat is a leading patchouli oil producer in West Aceh, fostering dozens of local patchouli farmers. We use modern steam distillation standards to produce high quality patchouli oil with stable Patchouli Alcohol (PA) content.',
-      founded: '2020',
-      members: '45 Petani',
-      legalitas: 'AHU-000123.AH.01.07.Tahun 2020',
-      npwp: '12.345.678.9-101.000',
-      alamat: 'Desa Pasi Mali, Kec. Woyla Barat, Aceh Barat, Aceh, 23654',
-      email: 'koperasinilam@acehbarat.co.id',
-      telp: '+62 812-3456-7890',
-      web: 'www.koperasinilamacehbarat.id',
-      produksi: '500 - 800 Kg',
-      minOrder: '50 Kg',
-      waktuProduksi: '7 - 14 Hari',
-      metode: 'Uap (Steam Distillation)',
-      bahanBaku: '100% Daun Nilam Segar (Pogostemon cablin)'
-    },
-    'sup_tani_makmur': {
-      name: 'Tani Makmur Jaya',
-      district: 'Pante Ceureumen',
-      village: 'Pante Ceureumen',
-      sales: '1.2 Ton',
-      rating: '4.8',
-      reviews: '56',
-      respons: '± 2 Jam',
-      desc: locale === 'id'
-        ? 'Tani Makmur Jaya adalah kelompok usaha tani penyuling minyak nilam murni berkualitas ekspor, menjaga keaslian 100% tanpa bahan campuran kimiawi.'
-        : 'Tani Makmur Jaya is an export-quality pure patchouli oil distillers joint business group, maintaining 100% purity without chemical additives.',
-      founded: '2021',
-      members: '20 Petani',
-      legalitas: 'AHU-000456.AH.02.04.Tahun 2021',
-      npwp: '34.567.890.1-202.000',
-      alamat: 'Desa Pante Ceureumen, Kec. Pante Ceureumen, Aceh Barat, Aceh',
-      email: 'tanimakmur@gmail.com',
-      telp: '+62 812-9876-5432',
-      web: 'www.tanimakmurjaya.co.id',
-      produksi: '300 - 500 Kg',
-      minOrder: '25 Kg',
-      waktuProduksi: '10 - 15 Hari',
-      metode: 'Uap (Steam Distillation)',
-      bahanBaku: '100% Daun Nilam Segar'
-    },
-    'sup_atsiri_gayo': {
-      name: 'Koperasi Atsiri Gayo',
-      district: 'Gayo Lues',
-      village: 'Terangun',
-      sales: '3.8 Ton',
-      rating: '4.7',
-      reviews: '194',
-      respons: '± 1 Jam',
-      desc: locale === 'id'
-        ? 'Koperasi Atsiri Gayo memproduksi minyak nilam dataran tinggi Gayo. Karakteristik aroma rempah yang kuat dan kadar PA tinggi khas pegunungan aceh.'
-        : 'Koperasi Atsiri Gayo produces highland Gayo patchouli oil. Characteristic strong herbal aroma and high PA content typical of the mountains of Aceh.',
-      founded: '2019',
-      members: '60 Petani',
-      legalitas: 'AHU-000789.AH.01.12.Tahun 2019',
-      npwp: '56.789.012.3-303.000',
-      alamat: 'Desa Terangun, Kec. Terangun, Gayo Lues, Aceh',
-      email: 'atsirigayo@gayo.co.id',
-      telp: '+62 852-1122-3344',
-      web: 'www.atsirigayocoop.id',
-      produksi: '800 - 1200 Kg',
-      minOrder: '100 Kg',
-      waktuProduksi: '7 - 10 Hari',
-      metode: 'Uap (Steam Distillation)',
-      bahanBaku: '100% Daun Nilam Dataran Tinggi'
-    },
-    'sup_nilam_south': {
-      name: 'Nilam Sejahtera Selatan',
-      district: 'Aceh Selatan',
-      village: 'Kluet Utara',
-      sales: '950 Kg',
-      rating: '4.9',
-      reviews: '42',
-      respons: '± 30 Menit',
-      desc: locale === 'id'
-        ? 'Spesialis penyulingan nilam kadar PA ultra-premium (>34%) bersertifikat lab independen untuk industri parfum mewah internasional.'
-        : 'Ultra-premium PA level (>34%) patchouli distillation specialist with independent laboratory certificate for international luxury perfume industry.',
-      founded: '2022',
-      members: '15 Petani',
-      legalitas: 'AHU-000321.AH.03.01.Tahun 2022',
-      npwp: '78.901.234.5-404.000',
-      alamat: 'Desa Kluet Utara, Kec. Kluet Utara, Aceh Selatan, Aceh',
-      email: 'nilamsejahtera@atsiri.id',
-      telp: '+62 813-4455-6677',
-      web: 'www.nilamsejahteraselatan.com',
-      produksi: '200 - 400 Kg',
-      minOrder: '20 Kg',
-      waktuProduksi: '7 - 10 Hari',
-      metode: 'Uap Tradisional Termodifikasi',
-      bahanBaku: '100% Daun Nilam Pilihan'
-    },
-    'sup_tani_nusantara': {
-      name: 'Koperasi Tani Nusantara',
-      district: 'Bireuen',
-      village: 'Peudada',
-      sales: '1.7 Ton',
-      rating: '4.6',
-      reviews: '87',
-      respons: '± 2 Jam',
-      desc: locale === 'id'
-        ? 'Koperasi tani terintegrasi penyedia komoditas rempah dan atsiri berkelanjutan bersertifikasi ketertelusuran penuh (traceability).'
-        : 'Integrated farmer cooperative providing sustainable spices and essential oils with complete traceability certification.',
-      founded: '2020',
-      members: '35 Petani',
-      legalitas: 'AHU-000213.AH.01.05.Tahun 2020',
-      npwp: '90.123.456.7-505.000',
-      alamat: 'Desa Peudada, Kec. Peudada, Bireuen, Aceh',
-      email: 'taninusantara@koperasi.id',
-      telp: '+62 821-6677-8899',
-      web: 'www.taninusantara.id',
-      produksi: '400 - 700 Kg',
-      minOrder: '50 Kg',
-      waktuProduksi: '10 - 12 Hari',
-      metode: 'Uap (Steam Distillation)',
-      bahanBaku: '100% Daun Nilam Unggul Nusantara'
-    }
-  }
-  
-  return suppliers[id] || {
-    name: decodeURIComponent(id).replace(/-/g, ' '),
-    district: 'Aceh',
-    village: 'Aceh',
-    sales: '350 Kg',
-    rating: '4.8',
-    reviews: '12',
-    respons: '± 1 Jam',
-    desc: locale === 'id'
-      ? 'Mitra pemasok minyak nilam murni terdaftar di platform B2B Valam.'
-      : 'Pure patchouli oil supply partner registered on the Valam B2B platform.',
-    founded: '2023',
-    members: '12 Petani',
-    legalitas: 'AHU-000999.AH.01.01.Tahun 2023',
-    npwp: '00.999.888.7-000.000',
-    alamat: 'Aceh, Indonesia',
-    email: 'supplier@valam.id',
-    telp: '+62 812-0000-0000',
-    web: 'www.valam.id',
-    produksi: '200 Kg',
-    minOrder: '10 Kg',
-    waktuProduksi: '7 Hari',
-    metode: 'Uap (Steam Distillation)',
-    bahanBaku: '100% Daun Nilam Pilihan'
-  }
-}
 
 export default function SupplierStorePage() {
   const params = useParams()
@@ -221,8 +67,8 @@ export default function SupplierStorePage() {
             status: p.status,
             origin_village: p.origin_village || '',
             origin_district: p.origin_district || '',
-            pa_percentage: p.qc_result?.pa_percentage || 0,
-            moisture: p.qc_result?.moisture || 0,
+            pa_percentage: p.qc_result?.pa_percentage ?? null,
+            moisture: p.qc_result?.moisture ?? null,
             price_per_kg: p.price_per_kg,
             available_volume_kg: p.available_volume_kg,
             images: p.images && p.images.length > 0 ? p.images : ["/images/premium_oil_dark.png"],
@@ -252,42 +98,8 @@ export default function SupplierStorePage() {
         } else {
           throw new Error('Fallback')
         }
-      } catch (err) {
-        // Fallback to mock info
-        const mockInfo = getSupplierInfo(supplierId, locale)
-        setSupplierUser({
-          id: supplierId,
-          supplier_profile: {
-            nama_koperasi: mockInfo.name,
-            alamat_lengkap: mockInfo.alamat,
-            kabupaten: mockInfo.district,
-            kecamatan: mockInfo.district,
-            desa: mockInfo.village,
-            whatsapp: mockInfo.telp,
-            nib: mockInfo.legalitas,
-            npwp: mockInfo.npwp,
-            kapasitas_produksi: parseFloat(mockInfo.produksi) || 500,
-            grade_nilam: ['GRADE_A', 'GRADE_B'],
-            nomor_rekening: '7123456789',
-            nama_bank: 'BSI',
-            nama_rekening: mockInfo.name
-          },
-          profile: {
-            email: mockInfo.email,
-            phone: mockInfo.telp,
-            address: mockInfo.alamat
-          }
-        })
-        
-        // Scan mockProducts
-        const list = mockProducts.filter(p => 
-          p.status === 'VERIFIED' && 
-          p.supplier_name.toLowerCase().replace(/\s+/g, '').includes(mockInfo.name.toLowerCase().replace(/\s+/g, ''))
-        )
-        const circularList = mockCircularProducts.filter(cp =>
-          ((cp as any).supplier_name || cp.mitra_pengolah_nama || '').toLowerCase().replace(/\s+/g, '').includes(mockInfo.name.toLowerCase().replace(/\s+/g, ''))
-        )
-        setBatches([...list, ...circularList])
+      } catch {
+        setSupplierUser(null); setBatches([]);
       } finally {
         setLoading(false)
       }
@@ -298,29 +110,23 @@ export default function SupplierStorePage() {
 
   // Dynamically compute info from supplierUser
   const info = {
-    name: supplierUser ? getSupplierDisplayName(supplierUser) : decodeURIComponent(supplierId).replace(/-/g, ' '),
-    district: supplierUser?.supplier_profile?.kabupaten || 'Aceh',
-    village: supplierUser?.supplier_profile?.desa || 'Aceh',
-    sales: supplierUser?.products ? `${supplierUser.products.length} Batch` : '2.4 Ton',
-    rating: '4.8',
-    reviews: '12',
-    respons: '± 1 Jam',
-    desc: locale === 'id'
-      ? `${supplierUser ? getSupplierDisplayName(supplierUser) : 'Supplier'} adalah penyedia minyak nilam terpercaya yang memproduksi nilam berkualitas tinggi di wilayah ${supplierUser?.supplier_profile?.kabupaten || 'Aceh'}.`
-      : `${supplierUser ? getSupplierDisplayName(supplierUser) : 'Supplier'} is a trusted patchouli oil provider producing high quality patchouli at ${supplierUser?.supplier_profile?.kabupaten || 'Aceh'} region.`,
-    founded: supplierUser?.supplier_profile?.tahun_berdiri || '2020',
-    members: supplierUser?.supplier_profile?.jumlah_anggota ? `${supplierUser.supplier_profile.jumlah_anggota} Petani` : '15 Petani',
-    legalitas: supplierUser?.supplier_profile?.nib || 'AHU-000123.AH.01.07.Tahun 2020',
-    npwp: supplierUser?.supplier_profile?.npwp || '12.345.678.9-101.000',
-    alamat: supplierUser?.supplier_profile?.alamat_lengkap || 'Aceh, Indonesia',
-    email: supplierUser?.email || 'koperasi@valam.id',
-    telp: supplierUser?.supplier_profile?.whatsapp || '+62 812-3456-7890',
-    web: supplierUser?.supplier_profile?.website || '-',
-    produksi: supplierUser?.supplier_profile?.kapasitas_produksi ? `${supplierUser.supplier_profile.kapasitas_produksi} Kg` : '500 - 800 Kg',
-    minOrder: supplierUser?.supplier_profile?.minimum_order ? `${supplierUser.supplier_profile.minimum_order} Kg` : '10 Kg',
-    waktuProduksi: supplierUser?.supplier_profile?.durasi_produksi || '7 - 14 Hari',
-    metode: supplierUser?.supplier_profile?.metode_distilasi || 'Uap (Steam Distillation)',
-    bahanBaku: supplierUser?.supplier_profile?.bahan_baku || '100% Daun Nilam Segar'
+    name: supplierUser ? getSupplierDisplayName(supplierUser) : 'Belum tersedia',
+    district: supplierUser?.supplier_profile?.kabupaten || 'Belum tersedia',
+    village: supplierUser?.supplier_profile?.desa || 'Belum tersedia',
+    sales: 'Belum tersedia', rating: '—', reviews: '—', respons: 'Belum tersedia',
+    desc: 'Profil pemasok berdasarkan data yang tersedia. Verifikasi identitas tidak menyatakan kelulusan mutu seluruh batch.',
+    founded: supplierUser?.supplier_profile?.tahun_berdiri || 'Belum tersedia',
+    members: supplierUser?.supplier_profile?.jumlah_anggota == null ? 'Belum tersedia' : String(supplierUser.supplier_profile.jumlah_anggota),
+    legalitas: 'Dokumen identitas tidak ditampilkan secara publik', npwp: 'Tidak ditampilkan secara publik',
+    alamat: supplierUser?.supplier_profile?.alamat_lengkap || 'Belum tersedia',
+    email: supplierUser?.email || '',
+    telp: supplierUser?.supplier_profile?.whatsapp || '',
+    web: supplierUser?.supplier_profile?.website || 'Belum tersedia',
+    produksi: supplierUser?.supplier_profile?.kapasitas_produksi == null ? 'Belum tersedia' : String(supplierUser.supplier_profile.kapasitas_produksi) + ' Kg',
+    minOrder: supplierUser?.supplier_profile?.minimum_order == null ? 'Belum tersedia' : String(supplierUser.supplier_profile.minimum_order) + ' Kg',
+    waktuProduksi: supplierUser?.supplier_profile?.durasi_produksi || 'Belum tersedia',
+    metode: supplierUser?.supplier_profile?.metode_distilasi || 'Belum tersedia',
+    bahanBaku: supplierUser?.supplier_profile?.bahan_baku || 'Belum tersedia',
   }
 
   const oilBatches = batches.filter(b => !b.is_circular)
@@ -332,7 +138,7 @@ export default function SupplierStorePage() {
     : 'N/A';
   const lastTestedDate = oilBatches.length > 0 && oilBatches[0].tested_at 
     ? new Date(oilBatches[0].tested_at).toLocaleDateString(locale === 'id' ? 'id-ID' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' }) 
-    : (locale === 'id' ? '12 Juni 2024' : 'June 12, 2024');
+    : 'Belum tersedia';
 
   const handleRequestQuote = () => {
     const role = localStorage.getItem('valam_role')
@@ -344,9 +150,8 @@ export default function SupplierStorePage() {
     router.push(`/${locale}/buyer/rfq?supplier=${supplierId}`)
   }
 
-  if (loading) {
-    return <SupplierProfileSkeleton />
-  }
+  if (loading) return <SupplierProfileSkeleton />;
+  if (!supplierUser) return <main className="p-8"><p role="alert">Profil pemasok tidak tersedia atau API gagal dihubungi. Tidak ada data contoh ditampilkan.</p><Link href="/marketplace">Kembali ke katalog</Link></main>;
 
   return (
     <div className="min-h-screen valam-grid-bg text-zinc-800 flex flex-col relative selection:bg-emerald-100 selection:text-emerald-950 font-sans">
@@ -434,18 +239,14 @@ export default function SupplierStorePage() {
               {/* CTAs Floating on the cover image */}
               <div className="flex items-center gap-3 shrink-0 mb-2 w-full md:w-auto">
                 <a 
-                  href={`https://wa.me/${
-                    info.telp.replace(/[^0-9]/g, '').startsWith('0') 
-                      ? '62' + info.telp.replace(/[^0-9]/g, '').slice(1) 
-                      : info.telp.replace(/[^0-9]/g, '')
-                  }?text=Halo%20${encodeURIComponent(info.name)},%20saya%20tertarik%2520dengan%2520katalog%2520minyak%2520nilam%2520di%2520Valam.`}
+                  href={whatsappNumber(info.telp) ? "https://wa.me/" + whatsappNumber(info.telp) : undefined}
                   target="_blank"
                   rel="noreferrer"
                   className="w-full sm:w-auto"
                 >
                   <Button className="w-full bg-[#f59e0b] hover:bg-[#d97706] text-white font-bold h-11 px-6 rounded-xl shadow-md gap-2 flex items-center justify-center border-none">
                     <MessageSquare className="w-4 h-4" />
-                    Hubungi WhatsApp
+                    {whatsappNumber(info.telp) ? "Hubungi WhatsApp" : "Kontak belum tersedia"}
                   </Button>
                 </a>
                 <Button 
@@ -827,7 +628,7 @@ export default function SupplierStorePage() {
                         <div className="border-r border-zinc-100 pr-2">
                           <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">{locale === 'id' ? 'Laboratorium Penguji' : 'Testing Laboratory'}</span>
                           <span className="text-sm font-bold text-zinc-800 mt-2 block">Lab Atsiri Terpadu (LAT-Valam)</span>
-                          <span className="text-[10px] text-zinc-500 mt-1 block">{locale === 'id' ? 'Akreditasi ISO/IEC 17025' : 'ISO/IEC 17025 Accredited'}</span>
+                          <span className="text-[10px] text-zinc-500 mt-1 block">{locale === 'id' ? 'Akreditasi belum dikonfirmasi' : 'Accreditation unconfirmed'}</span>
                         </div>
                         <div className="border-r border-zinc-100 pr-2">
                           <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">{locale === 'id' ? 'Rerata Patchouli Alcohol' : 'Average PA %'}</span>
@@ -842,9 +643,9 @@ export default function SupplierStorePage() {
                         <div>
                           <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">{locale === 'id' ? 'Sertifikat Analisis' : 'Certificate of Analysis'}</span>
                           <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 mt-2 block w-fit">
-                            {locale === 'id' ? 'CoA Terbit Otomatis' : 'CoA Auto-Generated'}
+                            {locale === 'id' ? 'Catatan hasil uji per batch' : 'Batch test records'}
                           </span>
-                          <span className="text-[10px] text-zinc-500 mt-1 block">{locale === 'id' ? 'Uji kromatografi gas (GC)' : 'Gas Chromatography verified'}</span>
+                          <span className="text-[10px] text-zinc-500 mt-1 block">{locale === 'id' ? 'Uji kromatografi gas (GC)' : 'Testing method unconfirmed'}</span>
                         </div>
                       </div>
                     )}
@@ -867,7 +668,7 @@ export default function SupplierStorePage() {
                         <div className="border-r border-zinc-100 pr-2">
                           <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">{locale === 'id' ? 'Sertifikat Keaslian' : 'Proof of Authenticity'}</span>
                           <span className="text-sm font-bold text-zinc-800 mt-2 block">{locale === 'id' ? 'Verifikasi QR Barcode' : 'Barcode QR Verified'}</span>
-                          <span className="text-[10px] text-zinc-500 mt-1 block">{locale === 'id' ? 'Jaminan minyak murni 100%' : '100% pure oil guaranteed'}</span>
+                          <span className="text-[10px] text-zinc-500 mt-1 block">{locale === 'id' ? 'Periksa hasil uji pada batch' : 'Check batch test records'}</span>
                         </div>
                         <div>
                           <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">{locale === 'id' ? 'Pelacakan Pengapalan' : 'Logistics Tracking'}</span>
@@ -967,168 +768,14 @@ export default function SupplierStorePage() {
             )}
 
             {/* Tab: SERTIFIKASI & UJI MUTU */}
-            {activeSubTab === 'sertifikasi' && (
-              <div className="space-y-6">
-                <div className="bg-[#FAF9F5] border border-zinc-250/60 rounded-3xl p-8 shadow-sm">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-zinc-200 pb-6 mb-6">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
-                        <FileCheck className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <h4 className="font-serif font-bold text-zinc-900 text-lg">Digital Certificate of Analysis (CoA)</h4>
-                        <p className="text-xs text-zinc-455">Tervalidasi Resmi GC-MS Spektrometri</p>
-                      </div>
-                    </div>
-                    <Badge className="bg-emerald-700 text-white font-mono text-[9px] border-none py-1 px-3 w-fit">
-                      Status: Active & Verified
-                    </Badge>
-                  </div>
-
-                  <div className="grid md:grid-cols-12 gap-6 items-center">
-                    <div className="md:col-span-8 space-y-4 text-xs font-sans">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-white border border-zinc-200/80 rounded-xl p-3">
-                          <span className="text-zinc-400 text-[10px]">Patchouli Alcohol (PA)</span>
-                          <p className="font-bold text-zinc-900 text-base mt-1">{avgPA}% (Min. Standard: 30%)</p>
-                        </div>
-                        <div className="bg-white border border-zinc-200/80 rounded-xl p-3">
-                          <span className="text-zinc-400 text-[10px]">Kadar Air (Moisture)</span>
-                          <p className="font-bold text-zinc-900 text-base mt-1">{avgMoisture}% (Max. Standard: 3%)</p>
-                        </div>
-                      </div>
-
-                      <div className="bg-white border border-zinc-200/80 rounded-xl p-3 space-y-2">
-                        <div className="flex justify-between border-b border-zinc-100 pb-1">
-                          <span className="text-zinc-550">Tanggal Pengujian</span>
-                          <span className="font-bold text-zinc-800">{lastTestedDate}</span>
-                        </div>
-                        <div className="flex justify-between border-b border-zinc-100 pb-1">
-                          <span className="text-zinc-550">Laboratorium Penguji</span>
-                          <span className="font-bold text-zinc-800">UPT Laboratorium Atsiri</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-zinc-550">Metode Analisis</span>
-                          <span className="font-bold text-zinc-800">GC-MS Spektroskopi</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="md:col-span-4 flex flex-col items-center justify-center bg-white border border-zinc-200/80 rounded-2xl p-6 text-center shadow-xs">
-                      <QrCode className="w-16 h-16 text-zinc-800 mb-2" />
-                      <span className="text-[10px] font-mono text-zinc-500">Scan QR Code untuk verifikasi CoA asli</span>
-                      <div className="flex items-center gap-1.5 text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-full py-0.5 px-3 mt-3 text-[10px] font-bold">
-                        <Check className="w-3.5 h-3.5" /> Quality Verified
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white border border-zinc-200 rounded-3xl p-8 space-y-6 shadow-sm">
-                  <h3 className="text-xl font-serif font-bold text-zinc-900 border-b border-zinc-100 pb-3">Sertifikasi Legal</h3>
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div className="bg-zinc-55 border border-zinc-200 rounded-2xl p-4 flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-750 flex items-center justify-center shrink-0">
-                        <FileText className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-zinc-800 text-sm">Certificate of Analysis (CoA)</h4>
-                        <p className="text-xs text-zinc-500 mt-1">Seluruh batch kami dilengkapi dengan lembar hasil uji laboratorium resmi pihak ketiga.</p>
-                      </div>
-                    </div>
-
-                    <div className="bg-zinc-55 border border-zinc-200 rounded-2xl p-4 flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-750 flex items-center justify-center shrink-0">
-                        <CheckCircle2 className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-zinc-800 text-sm">Uji GC-MS Terakreditasi</h4>
-                        <p className="text-xs text-zinc-500 mt-1">Uji kromatografi gas spektrometri massa menjamin tingkat kemurnian minyak nilam dari bahan pencampur.</p>
-                      </div>
-                    </div>
-
-                    <div className="bg-zinc-55 border border-zinc-200 rounded-2xl p-4 flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-750 flex items-center justify-center shrink-0">
-                        <Award className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-zinc-800 text-sm">Sertifikat Halal Kemenag</h4>
-                        <p className="text-xs text-zinc-500 mt-1">Proses pengolahan bersih dan higienis bersertifikasi Halal MUI / BPJPH Kementerian Agama.</p>
-                      </div>
-                    </div>
-
-                    <div className="bg-zinc-55 border border-zinc-200 rounded-2xl p-4 flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-750 flex items-center justify-center shrink-0">
-                        <Factory className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-zinc-800 text-sm">Sertifikat Badan Koperasi</h4>
-                        <p className="text-xs text-zinc-500 mt-1">Koperasi legal berizin resmi dengan asas gotong royong dan kemitraan berkelanjutan.</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
+            {activeSubTab === 'sertifikasi' && (<div className="bg-white border border-zinc-200 rounded-3xl p-8 text-sm text-zinc-600">Mutu diperiksa per batch, terpisah dari identitas pemasok. Buka detail batch untuk hasil uji, laboratorium, tanggal, nomor laporan dan dokumen sumber jika tersedia. Kelulusan mutu belum dievaluasi.</div>)}
 
             {/* Tab: ULASAN */}
-            {activeSubTab === 'ulasan' && (
-              <div className="bg-white border border-zinc-200 rounded-3xl p-8 space-y-6 shadow-sm">
-                <h3 className="text-xl font-serif font-bold text-zinc-900 border-b border-zinc-100 pb-3">Ulasan Buyer</h3>
-                
-                <div className="space-y-4">
-                  {[
-                    { nama: 'PT Aroma Nusantara', rating: 5, date: '12 Juni 2024', comment: 'Kualitas minyak nilam sangat baik, PA stabil dan pengiriman tepat waktu. Pemasok responsif dan profesional.' },
-                    { nama: 'CV Atsiri Utama Mandiri', rating: 5, date: '28 Mei 2024', comment: 'Pelayanan prima. CoA disertakan lengkap and kemurnian minyak teruji.' },
-                    { nama: 'IndoFragrance Co.', rating: 4, date: '10 Mei 2024', comment: 'Kadar PA sesuai pesanan (32.8%). Pengemasan drum kokoh dan aman.' }
-                  ].map((u, idx) => (
-                    <div key={idx} className="bg-zinc-50 border border-zinc-200 rounded-2xl p-5 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 bg-zinc-200 text-zinc-700 rounded-full flex items-center justify-center text-xs font-bold">{u.nama[0]}</div>
-                          <div>
-                            <p className="font-bold text-zinc-800 text-xs">{u.nama}</p>
-                            <p className="text-[10px] text-zinc-500">Buyer Industri Parfum</p>
-                          </div>
-                        </div>
-                        <span className="text-[10px] text-zinc-450">{u.date}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {Array.from({ length: u.rating }).map((_, i) => (
-                          <Star key={i} className="w-3.5 h-3.5 text-amber-500 fill-current" />
-                        ))}
-                      </div>
-                      <p className="text-xs text-zinc-650 leading-relaxed font-sans">{u.comment}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            {activeSubTab === 'ulasan' && (<div className="bg-white border border-zinc-200 rounded-3xl p-8 text-sm text-zinc-600">Ulasan buyer yang terverifikasi belum tersedia.</div>)}
 
             {/* Tab: RIWAYAT TRANSAKSI */}
-            {activeSubTab === 'riwayat' && (
-              <div className="bg-white border border-zinc-200 rounded-3xl p-8 space-y-6 shadow-sm">
-                <h3 className="text-xl font-serif font-bold text-zinc-900 border-b border-zinc-100 pb-3">Riwayat Transaksi B2B</h3>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center bg-zinc-50 border border-zinc-200 p-4 rounded-2xl text-xs">
-                    <div>
-                      <p className="font-bold text-zinc-800">Minyak Nilam Batch VAL-ACEH-001</p>
-                      <p className="text-[10px] text-zinc-500 mt-0.5">{locale === 'id' ? 'Dikirim ke Industri Kosmetik (Jakarta) • 500 Kg' : 'Shipped to Cosmetics Manufacturer (Jakarta) • 500 Kg'}</p>
-                    </div>
-                    <span className="text-emerald-700 font-bold bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-lg">{locale === 'id' ? 'Telah Terkirim' : 'Delivered'}</span>
-                  </div>
+            {activeSubTab === 'riwayat' && (<div className="bg-white border border-zinc-200 rounded-3xl p-8 text-sm text-zinc-600">Riwayat transaksi publik terverifikasi belum tersedia.</div>)}
 
-                  <div className="flex justify-between items-center bg-zinc-50 border border-zinc-200 p-4 rounded-2xl text-xs">
-                    <div>
-                      <p className="font-bold text-zinc-800">Minyak Nilam Batch VAL-ACEH-002</p>
-                      <p className="text-[10px] text-zinc-500 mt-0.5">{locale === 'id' ? 'Dikirim ke Produsen Parfum & Wewangian (Surabaya) • 300 Kg' : 'Shipped to Fragrance Producer (Surabaya) • 300 Kg'}</p>
-                    </div>
-                    <span className="text-emerald-700 font-bold bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-lg">{locale === 'id' ? 'Telah Terkirim' : 'Delivered'}</span>
-                  </div>
-                </div>
-              </div>
-            )}
 
           </div>
 
@@ -1154,13 +801,13 @@ export default function SupplierStorePage() {
 
         <div className="flex items-center gap-2">
           <a 
-            href={`https://wa.me/628123456789?text=Halo%20${encodeURIComponent(info.name)},%20saya%20tertarik%20dengan%2520katalog%20minyak%20nilam%20di%20Valam.`}
+            href={whatsappNumber(info.telp) ? "https://wa.me/" + whatsappNumber(info.telp) : undefined}
             target="_blank"
             rel="noreferrer"
             className="hidden sm:inline-block"
           >
             <Button size="sm" variant="outline" className="border-zinc-250 text-zinc-700 h-10 px-4 rounded-xl text-xs gap-1.5 font-bold">
-              <Phone className="w-3.5 h-3.5 text-zinc-550" /> WhatsApp
+              <Phone className="w-3.5 h-3.5 text-zinc-550" /> {whatsappNumber(info.telp) ? "WhatsApp" : "Kontak belum tersedia"}
             </Button>
           </a>
           

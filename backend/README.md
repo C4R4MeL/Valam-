@@ -28,8 +28,53 @@
 ## Project setup
 
 ```bash
-$ npm install
+$ npm ci
 ```
+
+## VALAM: Prisma dan konfigurasi lokal
+
+Integrasi main dan Supabase public terakhir: [catatan rilis 29 Oktober 2026](../docs/main-integration-2026-10-29.md).
+`npm run db:audit` memverifikasi metadata menggunakan schema pembanding sementara;
+`npm run db:release` menjalankan migrasi public yang telah ditinjau dalam
+transaksi, memeriksa data lama tetap utuh, dan mencatat riwayat migrasi Prisma.
+Startup tetap tidak memigrasi database otomatis.
+
+Untuk demo yang berhenti dengan `DATABASE_SCHEMA_MISMATCH` pada tabel mutu:
+
+```bash
+npm run demo:migrate:quality
+npm run demo:start
+```
+
+`demo:migrate:quality` menambah/memeriksa struktur mutu dan mitra awal ARC USK
+hanya pada schema `pertamuda_test`, tanpa reset data. Perintah dapat dijalankan
+ulang; jumlah baris tabel lama diperiksa di dalam transaksi. `demo:prepare`
+juga menjalankan langkah ini setelah persiapan schema berhasil. Startup sendiri
+tetap hanya memeriksa schema dan tidak melakukan migrasi otomatis.
+
+Mode demo sengaja menonaktifkan NILA/Grok, Midtrans, dan Biteship eksternal;
+ketiadaan kunci layanan tersebut bukan penyebab kegagalan pemeriksaan schema.
+
+Jalankan perintah dari direktori backend. npm ci memakai versi pada lockfile.
+Prisma Client digenerate melalui postinstall dan sebelum start/start:dev.
+Generate tidak menjalankan migrasi atau mengubah isi database.
+Jika install memakai --ignore-scripts, jalankan npm run prisma:generate secara manual.
+
+File .env lokal memerlukan JWT_SECRET acak minimal 32 karakter dan koneksi database
+sesuai lingkungan. Jangan commit atau menampilkan secret saat demo.
+Untuk demonstrasi terisolasi Pertamuda, gunakan npm run demo:start;
+perintah start biasa tetap memakai konfigurasi .env, bukan otomatis schema pengujian.
+Schema database yang dipakai harus sudah sesuai migration yang ditinjau.
+Startup memeriksa keberadaan kolom menggunakan metadata read-only sebelum
+provider, scheduler, dan HTTP server dimulai. DATABASE_SCHEMA_MISMATCH berarti
+koneksi masih menuju schema lama; gunakan demo:start untuk schema pengujian.
+Tidak ada migration otomatis atau fallback ke schema lain.
+
+Jika model Prisma hilang atau tipe paket openai tidak ditemukan, hentikan server
+backend terkait, jalankan npm ci lalu npm run prisma:generate. Paket openai sudah
+menyediakan deklarasi tipe; jangan menambahkan deklarasi any atau paket @types/openai.
+
+Panduan: [demo Pertamuda](../docs/pertamuda-demo-guide.md).
 
 ## Compile and run the project
 

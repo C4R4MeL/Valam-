@@ -58,7 +58,7 @@ export function InsightsTeaser() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
               </span>
-              <span>{isId ? 'VALAM INSIGHTS' : 'VALAM INSIGHTS'}</span>
+              <span>{isId ? 'CONTOH KONTEN INSIGHTS' : 'EXAMPLE INSIGHTS CONTENT'}</span>
             </div>
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold font-serif text-zinc-900 tracking-tight leading-tight">
               {isId ? 'Tetap Terdepan di Industri Nilam' : 'Stay Ahead in the Patchouli Industry'}
@@ -166,16 +166,16 @@ export function InsightsTeaser() {
                   </div>
                   <div>
                     <h5 className="text-xs font-bold text-white uppercase tracking-wider">
-                      {isId ? 'Harga Nilam Terkini' : 'Live Patchouli Prices'}
+                      {isId ? 'Contoh Harga Demonstrasi' : 'Example Demo Prices'}
                     </h5>
                     <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-widest mt-0.5">
-                      {isId ? 'Rata-rata Pasar Terverifikasi' : 'Verified Average Market'}
+                      {isId ? 'Data contoh, bukan harga pasar' : 'Example data, not market prices'}
                     </p>
                   </div>
                 </div>
                 <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[9px] text-emerald-400 font-bold uppercase tracking-wider">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                  <span>Live</span>
+                  <span>DEMO</span>
                 </div>
               </div>
 
@@ -184,17 +184,17 @@ export function InsightsTeaser() {
                 <div className="bg-white/[0.03] border border-white/[0.05] p-3 rounded-2xl">
                   <div className="text-[10px] text-zinc-400 font-semibold mb-1">Grade A</div>
                   <div className="text-sm font-bold text-amber-400">Rp 850k</div>
-                  <div className="text-[8px] text-emerald-400 font-bold mt-0.5">↑ +2.5%</div>
+                  <div className="text-[8px] text-emerald-400 font-bold mt-0.5">DEMO</div>
                 </div>
                 <div className="bg-white/[0.03] border border-white/[0.05] p-3 rounded-2xl">
                   <div className="text-[10px] text-zinc-400 font-semibold mb-1">Grade B</div>
                   <div className="text-sm font-bold text-zinc-100">Rp 780k</div>
-                  <div className="text-[8px] text-emerald-400 font-bold mt-0.5">↑ +1.8%</div>
+                  <div className="text-[8px] text-emerald-400 font-bold mt-0.5">DEMO</div>
                 </div>
                 <div className="bg-white/[0.03] border border-white/[0.05] p-3 rounded-2xl">
                   <div className="text-[10px] text-zinc-400 font-semibold mb-1">Grade C</div>
                   <div className="text-sm font-bold text-zinc-400">Rp 680k</div>
-                  <div className="text-[8px] text-zinc-400 font-semibold mt-0.5">Stable</div>
+                  <div className="text-[8px] text-zinc-400 font-semibold mt-0.5">DEMO</div>
                 </div>
               </div>
             </motion.div>

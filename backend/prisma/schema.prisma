@@ -32,8 +32,22 @@ model User {
   role            Role           @relation(fields: [role_id], references: [id])
   wallet          Wallet?
   supplier_profile SupplierProfile?
+  auth_sessions   AuthSession[]
+  quality_requests TestingRequest[]
 
   @@map("users")
+}
+
+model AuthSession {
+  id         String   @id @default(uuid()) @db.Uuid
+  user_id    String   @db.Uuid
+  expires_at DateTime
+  revoked_at DateTime?
+  created_at DateTime @default(now())
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@map("auth_sessions")
 }
 
 model Role {
@@ -80,6 +94,8 @@ model Product {
   price_per_kg        Float
   images              String[]           @default([])
   is_featured         Boolean            @default(false)
+  is_demo             Boolean            @default(false)
+  price_type          String             @default("OFFER")
   created_at          DateTime           @default(now())
   updated_at          DateTime           @updatedAt
   cart_items          CartItem[]
@@ -88,7 +104,11 @@ model Product {
   parameters          ProductParameter[]
   supplier            User               @relation(fields: [supplier_id], references: [id])
   qc_result           QcResult?
+  rfq_responses       RfqResponse[]
   trace_logs          TraceLog[]
+  testing_requests    TestingRequest[]
+  lab_reports         LabReport[]
+  quality_files       QualityFile[]
 
   @@map("products")
 }
@@ -101,7 +121,7 @@ model ProductParameter {
   unit           String
   standard_min   Float?
   standard_max   Float?
-  status         String  @default("pass")
+  status         String  @default("UNEVALUATED")
   product        Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
 
   @@map("product_parameters")
@@ -111,13 +131,17 @@ model QcResult {
   id               String       @id @default(uuid()) @db.Uuid
   product_id       String       @unique @db.Uuid
   admin_id         String       @db.Uuid
-  pa_percentage    Float
-  moisture         Float
-  specific_gravity Float
-  refractive_index Float
-  optical_rotation Float
-  overall_status   String       @default("pass")
-  tested_at        DateTime     @default(now())
+  pa_percentage    Float?
+  moisture         Float?
+  specific_gravity Float?
+  refractive_index Float?
+  optical_rotation Float?
+  overall_status   String       @default("UNEVALUATED")
+  tested_at        DateTime?
+  lab_name         String?
+  report_number    String?
+  source_document_url String?
+  evaluation_rule_version String?
   lab_notes        String?
   certificate      Certificate?
   admin            User         @relation(fields: [admin_id], references: [id])
@@ -136,10 +160,133 @@ model Certificate {
   admin_signature_url String?
   pdf_url             String?
   qr_code_url         String?
+  review_status       String   @default("NEEDS_REVIEW")
   product             Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
   qc_result           QcResult @relation(fields: [qc_result_id], references: [id], onDelete: Cascade)
 
   @@map("certificates")
+}
+
+model TestingPartner {
+  id String @id @default(uuid()) @db.Uuid
+  name String
+  kind String @default("LABORATORY")
+  logo_url String?
+  address String?
+  contact String?
+  services String[] @default([])
+  instructions String?
+  fees String?
+  sample_requirements String?
+  turnaround String?
+  result_channel String?
+  permission_notes String?
+  publish_name Boolean @default(false)
+  publish_logo Boolean @default(false)
+  publish_reports Boolean @default(false)
+  visible Boolean @default(false)
+  accepting_requests Boolean @default(false)
+  status String @default("EXPLORATORY")
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  requests TestingRequest[]
+  reports LabReport[]
+  files QualityFile[]
+  @@map("testing_partners")
+}
+
+model TestingRequest {
+  id String @id @default(uuid()) @db.Uuid
+  number String @unique
+  supplier_id String @db.Uuid
+  product_id String @db.Uuid
+  partner_id String @db.Uuid
+  partner_snapshot Json
+  service String
+  sample_identity String?
+  notes String?
+  shipping_info String?
+  shipping_evidence String?
+  status String @default("SUBMITTED")
+  request_key String @unique
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  supplier User @relation(fields: [supplier_id], references: [id], onDelete: Restrict)
+  product Product @relation(fields: [product_id], references: [id], onDelete: Restrict)
+  partner TestingPartner @relation(fields: [partner_id], references: [id], onDelete: Restrict)
+  reports LabReport[]
+  events QualityEvent[]
+  @@index([supplier_id, created_at])
+  @@map("testing_requests")
+}
+
+model QualityFile {
+  id String @id @default(uuid()) @db.Uuid
+  product_id String? @db.Uuid
+  partner_id String? @db.Uuid
+  uploaded_by String @db.Uuid
+  storage_path String @unique
+  name String
+  size Int
+  sha256 String
+  created_at DateTime @default(now())
+  partner TestingPartner? @relation(fields: [partner_id], references: [id], onDelete: Restrict)
+  reports LabReport[]
+  product Product? @relation(fields: [product_id], references: [id], onDelete: Restrict, map: "quality_files_product_fk")
+  @@map("quality_files")
+}
+
+model LabReport {
+  id String @id @default(uuid()) @db.Uuid
+  product_id String @db.Uuid
+  request_id String? @db.Uuid
+  partner_id String @db.Uuid
+  issuer_snapshot Json
+  report_number String
+  sample_identity String
+  tested_at DateTime?
+  issued_at DateTime?
+  file_id String @db.Uuid
+  parameters Json @default("[]")
+  conclusion String?
+  source String
+  uploaded_by String @db.Uuid
+  review_status String @default("PENDING")
+  review_notes String?
+  review_checklist Json?
+  reviewed_by String? @db.Uuid
+  reviewed_at DateTime?
+  publication_allowed Boolean @default(false)
+  is_demo Boolean @default(false)
+  evaluation_status String @default("UNEVALUATED")
+  replaces_id String? @db.Uuid
+  request_key String @unique
+  created_at DateTime @default(now())
+  product Product @relation(fields: [product_id], references: [id], onDelete: Restrict)
+  request TestingRequest? @relation(fields: [request_id], references: [id], onDelete: Restrict)
+  partner TestingPartner @relation(fields: [partner_id], references: [id], onDelete: Restrict)
+  file QualityFile @relation(fields: [file_id], references: [id], onDelete: Restrict)
+  replaces LabReport? @relation("ReportVersions", fields: [replaces_id], references: [id], onDelete: Restrict)
+  replacements LabReport[] @relation("ReportVersions")
+  events QualityEvent[]
+  @@index([product_id, review_status])
+  @@map("lab_reports")
+}
+
+model QualityEvent {
+  id String @id @default(uuid()) @db.Uuid
+  request_id String? @db.Uuid
+  report_id String? @db.Uuid
+  actor_id String @db.Uuid
+  actor_role String
+  action String
+  notes String?
+  evidence String?
+  action_key String @unique
+  created_at DateTime @default(now())
+  request TestingRequest? @relation(fields: [request_id], references: [id], onDelete: Restrict)
+  report LabReport? @relation(fields: [report_id], references: [id], onDelete: Restrict)
+  @@map("quality_events")
 }
 
 model TraceLog {
@@ -169,6 +316,12 @@ model Order {
   shipping_address Json        @default("{}")
   payment_status   String      @default("PENDING")
   delivery_proof_url String?
+  stock_state      String      @default("NONE")
+  reservation_expires_at DateTime?
+  checkout_key     String?     @unique
+  checkout_fingerprint String?
+  rfq_id           String?     @unique @db.Uuid
+  rfq              RfqRequest? @relation(fields: [rfq_id], references: [id])
   created_at       DateTime    @default(now())
   items            OrderItem[]
   buyer            User        @relation("BuyerOrders", fields: [buyer_id], references: [id])
@@ -188,7 +341,7 @@ model OrderItem {
   price_per_kg        Float
   subtotal            Float
   order               Order            @relation(fields: [order_id], references: [id], onDelete: Cascade)
-  product             Product?         @relation(fields: [product_id], references: [id])
+  product             Product?         @relation(fields: [product_id], references: [id], onDelete: Restrict)
   circular_product    CircularProduct? @relation(fields: [circular_product_id], references: [id])
 
   @@map("order_items")
@@ -199,6 +352,7 @@ model Payment {
   order_id           String    @unique @db.Uuid
   payment_method     String?
   payment_gateway_id String?
+  gateway_order_id   String?   @unique
   snap_token         String?
   amount             Float
   status             String    @default("pending")
@@ -321,6 +475,8 @@ model Wallet {
   id           String              @id @default(uuid()) @db.Uuid
   user_id      String              @unique @db.Uuid
   balance      Decimal             @default(0.0) @db.Decimal(15, 2)
+  refund_due   Decimal             @default(0.0) @db.Decimal(15, 2)
+  frozen       Boolean             @default(false)
   updated_at   DateTime            @updatedAt
   transactions WalletTransaction[]
   user         User                @relation(fields: [user_id], references: [id], onDelete: Cascade)
@@ -339,6 +495,8 @@ model WalletTransaction {
   created_at         DateTime @default(now())
   wallet             Wallet   @relation(fields: [wallet_id], references: [id], onDelete: Cascade)
 
+  @@unique([reference_order_id, type])
+
   @@map("wallet_transactions")
 }
 
@@ -350,6 +508,7 @@ model Withdrawal {
   account_number      String
   account_holder_name String
   status              String    @default("PENDING")
+  request_key         String?   @unique
   requested_at        DateTime  @default(now())
   processed_at        DateTime?
   wallet              Wallet    @relation(fields: [wallet_id], references: [id], onDelete: Cascade)
@@ -372,6 +531,7 @@ model RfqRequest {
   buyer             User         @relation("BuyerRfqs", fields: [buyer_id], references: [id])
   supplier          User         @relation("SupplierRfqs", fields: [supplier_id], references: [id])
   response          RfqResponse?
+  order             Order?
 
   @@map("rfq_requests")
 }
@@ -385,6 +545,9 @@ model RfqResponse {
   message               String?
   status                String     @default("RESPONDED")
   responded_at          DateTime   @default(now())
+  product_id            String?    @db.Uuid
+  expires_at            DateTime?
+  product               Product?   @relation(fields: [product_id], references: [id])
   rfq_request           RfqRequest @relation(fields: [rfq_id], references: [id], onDelete: Cascade)
   supplier              User       @relation(fields: [supplier_id], references: [id])
 
@@ -564,7 +727,7 @@ model VerificationLog {
 }
 
 model CircularProduct {
-  id               String      @id @default(uuid()) @db.Uuid
+  id               String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   supplier_id      String      @db.Uuid
   name             String
   category         String      // Organic Compost, Biochar, Patchouli Hydrosol
@@ -576,8 +739,8 @@ model CircularProduct {
   image            String?     @default("")
   status           String      @default("DRAFT") // DRAFT, PENDING, APPROVED, REJECTED
   rejection_reason String?     
-  created_at       DateTime    @default(now())
-  updated_at       DateTime    @updatedAt
+  created_at       DateTime    @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime    @default(now()) @updatedAt @db.Timestamptz(6)
   supplier         User        @relation(fields: [supplier_id], references: [id], onDelete: Cascade)
   cart_items       CartItem[]
   order_items      OrderItem[]

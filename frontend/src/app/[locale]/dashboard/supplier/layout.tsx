@@ -5,7 +5,7 @@ import { Navbar } from '@/components/layout/Navbar'
 import { Footer } from '@/components/layout/Footer'
 import { usePathname, Link } from '@/i18n/routing'
 import { useLocale } from 'next-intl'
-import { LayoutDashboard, FileCheck, ClipboardList, Wallet, Send, ShoppingBag, Recycle } from 'lucide-react'
+import { LayoutDashboard, FileCheck, ClipboardList, Wallet, Send, ShoppingBag, Recycle, Settings } from 'lucide-react'
 import { RouteGuard } from '@/components/auth/RouteGuard'
  
 export default function SupplierDashboardLayout({
@@ -55,6 +55,7 @@ export default function SupplierDashboardLayout({
   }, [])
  
   const menuItems = [
+    { name: locale === 'id' ? 'Pengujian & Hasil' : 'Testing & Results', href: '/dashboard/supplier/testing', icon: FileCheck },
     { name: locale === 'id' ? 'Ringkasan' : 'Overview', href: '/dashboard/supplier', icon: LayoutDashboard, exact: true },
     { name: locale === 'id' ? 'Tambah Batch' : 'Add Batch', href: '/dashboard/supplier/add-batch', icon: FileCheck },
     { name: locale === 'id' ? 'Inventori' : 'Inventory', href: '/dashboard/supplier/inventory', icon: ClipboardList },
@@ -62,21 +63,22 @@ export default function SupplierDashboardLayout({
     { name: locale === 'id' ? 'Peluang RFQ' : 'RFQ Opportunities', href: '/dashboard/supplier/rfq', icon: Send },
     { name: locale === 'id' ? 'Pesanan Masuk' : 'Incoming Orders', href: '/dashboard/supplier/orders', icon: ShoppingBag },
     { name: locale === 'id' ? 'Dompet Digital' : 'Digital Wallet', href: '/dashboard/supplier/wallet', icon: Wallet },
+    { name: locale === 'id' ? 'Pengaturan Profil' : 'Profile Settings', href: '/dashboard/supplier/settings', icon: Settings },
   ]
 
   return (
     <RouteGuard requiredRole="supplier">
     <div className="min-h-screen bg-zinc-50 flex flex-col">
       <Navbar />
-      <div className="flex-1 mt-14 flex flex-col lg:flex-row">
+      <div className="flex-1 mt-14 md:mt-16 flex flex-col lg:flex-row">
         
         {/* LEFT SIDEBAR - Desktop only */}
-        <aside className="hidden lg:block w-64 border-r border-zinc-200 bg-white min-h-[calc(100vh-3.5rem)] shrink-0 sticky top-14">
+        <aside className="hidden lg:block w-64 border-r border-zinc-200 bg-white min-h-[calc(100vh-3.5rem)] md:min-h-[calc(100vh-4rem)] shrink-0 sticky top-14 md:top-16">
           <div className="p-6">
             <p className="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-4">
               {locale === 'id' ? 'MENU UTAMA' : 'MAIN MENU'}
             </p>
-            <nav className="space-y-1.5">
+            <nav aria-label={locale === 'id' ? 'Menu pemasok' : 'Supplier menu'} className="space-y-1.5">
               {menuItems.map((item) => {
                 const Icon = item.icon
                 const isActive = item.exact
@@ -115,7 +117,7 @@ export default function SupplierDashboardLayout({
         </aside>
 
         {/* MOBILE NAVIGATION BAR - Visible only on mobile/tablet */}
-        <div className="lg:hidden border-b border-zinc-200 bg-white sticky top-14 z-20 overflow-x-auto no-scrollbar">
+        <nav aria-label={locale === 'id' ? 'Menu pemasok seluler' : 'Mobile supplier menu'} className="lg:hidden border-b border-zinc-200 bg-white sticky top-14 md:top-16 z-20 overflow-x-auto no-scrollbar">
           <div className="flex px-4 py-2 gap-1">
             {menuItems.map((item) => {
               const Icon = item.icon
@@ -149,7 +151,7 @@ export default function SupplierDashboardLayout({
               )
             })}
           </div>
-        </div>
+        </nav>
 
         {/* MAIN CONTENT AREA */}
         <main className="flex-1 w-full overflow-hidden">

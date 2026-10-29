@@ -174,7 +174,7 @@ export default function SupplierDashboardPage() {
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api'
     try {
-      const res = await fetch(`${apiUrl}/products?supplier_id=${targetId}`, {
+      const res = await fetch(`${apiUrl}/products/mine`, {
         headers: getAuthHeaders(),
         cache: 'no-store'
       })
@@ -867,8 +867,8 @@ export default function SupplierDashboardPage() {
               <div className="flex gap-3">
                 <div className="w-6 h-6 rounded-full bg-emerald-50 text-emerald-800 font-bold flex items-center justify-center text-xs shrink-0 mt-0.5">1</div>
                 <div>
-                  <p className="font-semibold text-zinc-900">Siapkan 50ml Sampel</p>
-                  <p className="text-zinc-500 text-xs mt-0.5">Masukkan minyak nilam hasil sulingan Anda ke dalam botol kaca gelap (vial amber) berkapasitas 50ml agar terlindung dari cahaya.</p>
+                  <p className="font-semibold text-zinc-900">Konfirmasi volume dan kemasan sampel</p>
+                  <p className="text-zinc-500 text-xs mt-0.5">Volume dan kemasan harus mengikuti instruksi laboratorium yang benar-benar menerima batch ini; instruksi belum tersedia.</p>
                 </div>
               </div>
 
@@ -883,13 +883,10 @@ export default function SupplierDashboardPage() {
               <div className="flex gap-3">
                 <div className="w-6 h-6 rounded-full bg-emerald-50 text-emerald-800 font-bold flex items-center justify-center text-xs shrink-0 mt-0.5">3</div>
                 <div>
-                  <p className="font-semibold text-zinc-900">Kirim Fisik ke Hub Atsiri ARC USK</p>
-                  <p className="text-zinc-500 text-xs mt-0.5">Kirimkan botol sampel tersebut ke alamat berikut:</p>
+                  <p className="font-semibold text-zinc-900">Konfirmasi alamat laboratorium</p>
+                  <p className="text-zinc-500 text-xs mt-0.5">Tujuan pengiriman belum dikonfirmasi untuk batch ini.</p>
                   <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-3 mt-1.5 text-xs text-emerald-950 font-serif leading-relaxed">
-                    <strong>Pusat Lab QC Atsiri ARC USK</strong><br />
-                    Gedung Atsiri Research Center (ARC) Lantai 1,<br />
-                    Universitas Syiah Kuala, Kopelma Darussalam,<br />
-                    Kec. Syiah Kuala, Kota Banda Aceh, Aceh 23111
+                    Alamat laboratorium belum tersedia. Konfirmasikan laboratorium, alamat, kontak penerima, dan kode batch dengan admin sebelum mengirim sampel.
                   </div>
                 </div>
               </div>
@@ -897,7 +894,7 @@ export default function SupplierDashboardPage() {
               <div className="flex gap-3">
                 <div className="w-6 h-6 rounded-full bg-emerald-50 text-emerald-800 font-bold flex items-center justify-center text-xs shrink-0 mt-0.5">4</div>
                 <div>
-                  <p className="font-semibold text-zinc-900">Pantau Hasil Uji GC-MS</p>
+                  <p className="font-semibold text-zinc-900">Pantau Laporan Pengujian</p>
                   <p className="text-zinc-500 text-xs mt-0.5">Setelah sampel diterima oleh tim Lab, status pengujian dapat Anda pantau langsung melalui Dashboard Supplier.</p>
                 </div>
               </div>

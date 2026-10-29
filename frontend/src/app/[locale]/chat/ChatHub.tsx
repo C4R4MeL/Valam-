@@ -44,51 +44,51 @@ const content = {
     title: 'Nila',
     subtitle: 'Asisten AI Valam',
     placeholder: 'Ketik pertanyaan Anda di sini...',
-    welcome: 'Halo! 👋 Saya **Nila**, asisten digital Valam. Saya siap membantu Anda dengan informasi harga minyak nilam terkini, standar mutu (grade), cara melakukan transaksi, prosedur ekspor, hingga pendaftaran kemitraan koperasi. Apa yang bisa saya bantu hari ini?',
+    welcome: 'Halo! 👋 Saya **Nila**, asisten digital Valam. Saya siap membantu Anda dengan panduan membaca informasi batch, proses pemesanan, dan pendaftaran. Apa yang bisa saya bantu hari ini?',
     error: 'Maaf, sedang terjadi kendala teknis. Silakan coba kembali.',
     rateLimited: 'Anda mengirimkan pesan terlalu cepat. Mohon tunggu sesaat.',
     typing: 'Nila sedang mengetik',
     clearConfirm: 'Apakah Anda yakin ingin menghapus semua riwayat percakapan?',
     chips: [
-      'Harga nilam terkini',
+      'Cara membaca harga batch',
       'Grade minyak nilam',
       'Cara pesan',
       'Proses ekspor',
       'Daftar sebagai supplier',
     ],
     infoTitle: 'Tentang Nila',
-    infoDesc: 'Nila adalah asisten pintar berbasis AI yang dirancang khusus untuk mendampingi pelaku industri minyak nilam di platform Valam. Nila dapat menjawab pertanyaan seputar operasional platform secara instan 24/7.',
+    infoDesc: 'Nila adalah asisten pintar berbasis AI yang dirancang khusus untuk mendampingi pelaku industri minyak nilam di platform Valam. Akses data produk dan akun langsung belum tersedia. Jawaban memerlukan layanan AI yang dikonfigurasi.',
     guideTitle: 'Panduan Pertanyaan',
     guideDesc: 'Anda bisa menanyakan berbagai hal seputar ekosistem minyak nilam:',
     guides: [
-      'Berapa harga pasaran minyak nilam saat ini?',
+      'Di mana saya bisa memeriksa harga penawaran batch?',
       'Bagaimana kriteria kualitas minyak nilam Grade A?',
       'Langkah-langkah mengirimkan minyak ke QC Valam',
-      'Bagaimana sistem bagi hasil transaksi circular economy?'
+      'Bagaimana memeriksa dokumen produk sampingan?'
     ]
   },
   en: {
     title: 'Nila',
     subtitle: 'Valam AI Assistant',
     placeholder: 'Type your question here...',
-    welcome: 'Hello! 👋 I\'m **Nila**, Valam\'s digital assistant. I\'m here to help you with current patchouli oil prices, quality standards (grades), ordering/transaction steps, export procedures, and cooperative registration. How can I assist you today?',
+    welcome: 'Hello! 👋 I\'m **Nila**, Valam\'s digital assistant. I\'m here to help you with guidance on batch information, ordering, and registration. How can I assist you today?',
     error: 'Sorry, something went wrong. Please try again.',
     rateLimited: 'You are sending messages too quickly. Please wait a moment.',
     typing: 'Nila is typing',
     clearConfirm: 'Are you sure you want to clear your entire chat history?',
     chips: [
-      'Current patchouli prices',
+      'How to read batch prices',
       'Patchouli oil grades',
       'How to order',
       'Export process',
       'Register as supplier',
     ],
     infoTitle: 'About Nila',
-    infoDesc: 'Nila is an AI-powered smart assistant specifically built to assist patchouli oil industry participants on the Valam platform. Nila answers operational and platform questions instantly 24/7.',
+    infoDesc: 'Nila is an AI-powered smart assistant specifically built to assist patchouli oil industry participants on the Valam platform. Live product and account access is unavailable. Responses require a configured AI service.',
     guideTitle: 'Sample Queries',
     guideDesc: 'You can ask about various topics in the patchouli oil ecosystem:',
     guides: [
-      'What is the current market price for patchouli oil?',
+      'Where can I check batch offer prices?',
       'What are the quality specifications for Grade A oil?',
       'How do I submit my oil batches to Valam QC?',
       'How does the revenue-sharing model work for circular economy?'
@@ -288,8 +288,8 @@ export function ChatHub() {
               </h1>
               <p className="text-zinc-600 text-xs sm:text-sm mt-1.5 max-w-2xl leading-relaxed">
                 {locale === 'id' 
-                  ? 'Konsultasi instan seputar standar mutu minyak nilam, harga pasar terkini, dan panduan platform Valam.'
-                  : 'Instant consultation on patchouli oil quality standards, current market prices, and Valam guides.'}
+                  ? 'Panduan umum platform; data batch dan akun langsung belum terhubung.'
+                  : 'General platform guidance; live batch and account data are not connected.'}
               </p>
             </div>
             
@@ -318,7 +318,7 @@ export function ChatHub() {
                     <p className="text-zinc-500 text-xs font-medium">{t.subtitle}</p>
                     <div className="flex items-center gap-1.5 mt-1">
                       <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      <span className="text-[10px] text-[#1B5E3A] font-bold uppercase tracking-wider">Online</span>
+                      <span className="text-[10px] text-[#1B5E3A] font-bold uppercase tracking-wider">{locale === 'id' ? 'Panduan AI' : 'AI guidance'}</span>
                     </div>
                   </div>
                 </div>
@@ -457,7 +457,8 @@ export function ChatHub() {
               </div>
 
               {/* 10. Chat Input */}
-              <form
+              <p role="note" className="px-4 py-2 text-xs text-zinc-600 bg-amber-50 shrink-0">{locale === 'id' ? 'NILA memberi panduan umum. Belum membaca stok, harga batch, dokumen QC, pesanan, atau wallet Anda. Periksa data pada halaman batch dan dashboard.' : 'NILA provides general guidance. It cannot read live stock, batch prices, QC documents, orders, or your wallet. Check batch pages and your dashboard.'}</p>
+            <form
                 onSubmit={handleSubmit}
                 className="flex items-center gap-2.5 px-5 py-3.5 border-t border-zinc-100 bg-white shrink-0"
               >

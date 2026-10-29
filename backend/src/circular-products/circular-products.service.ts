@@ -1,3 +1,4 @@
+import { PUBLIC_USER_SELECT } from '../users/public-user.select';
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -24,12 +25,7 @@ export class CircularProductsService {
     return this.prisma.circularProduct.findMany({
       where: whereClause,
       include: {
-        supplier: {
-          include: {
-            profile: true,
-            supplier_profile: true,
-          },
-        },
+        supplier: { select: PUBLIC_USER_SELECT },
       },
       orderBy: { created_at: 'desc' },
     });
@@ -41,20 +37,15 @@ export class CircularProductsService {
       where: isUuid
         ? {
             OR: [
-              { id },
-              { name: id }
+              { id, status: 'APPROVED' },
+              { name: id, status: 'APPROVED' }
             ]
           }
         : {
-            name: id
+            name: id, status: 'APPROVED'
           },
       include: {
-        supplier: {
-          include: {
-            profile: true,
-            supplier_profile: true,
-          },
-        },
+        supplier: { select: PUBLIC_USER_SELECT },
       },
     });
 
@@ -104,6 +95,7 @@ export class CircularProductsService {
   }
 
   async create(supplierId: string, dto: any) {
+    if (!Number.isFinite(Number(dto.price)) || Number(dto.price) <= 0 || !Number.isFinite(Number(dto.stock)) || Number(dto.stock) < 0) throw new BadRequestException('Harga atau stok tidak valid');
     return this.prisma.circularProduct.create({
       data: {
         supplier_id: supplierId,
@@ -133,22 +125,14 @@ export class CircularProductsService {
       throw new BadRequestException('Not authorized to edit this product');
     }
 
-    return this.prisma.circularProduct.update({
-      where: { id },
-      data: {
-        name: dto.name,
-        category: dto.category,
-        description: dto.description,
-        benefit: dto.benefit,
-        price: Number(dto.price),
-        stock: Number(dto.stock),
-        unit: dto.unit,
-        image: dto.image !== undefined ? dto.image : product.image,
-        // If updating a rejected product, reset it to DRAFT
-        status: product.status === 'REJECTED' ? 'DRAFT' : product.status,
-        rejection_reason: product.status === 'REJECTED' ? '' : product.rejection_reason,
-      },
-    });
+    const price = Number(dto.price), stock = Number(dto.stock);
+    if (!Number.isFinite(price) || price <= 0 || !Number.isFinite(stock) || stock < 0) throw new BadRequestException('Harga atau stok tidak valid');
+    const changed = await this.prisma.circularProduct.updateMany({ where: { id, supplier_id: supplierId, status: { in: ['DRAFT', 'REJECTED'] }, order_items: { none: {} } }, data: {
+      name: dto.name, category: dto.category, description: dto.description, benefit: dto.benefit,
+      price, stock, unit: dto.unit, image: dto.image ?? product.image, status: 'DRAFT', rejection_reason: '',
+    } });
+    if (changed.count !== 1) throw new BadRequestException('Stok produk yang dipublikasikan atau dipesan tidak dapat ditimpa; buat produk baru');
+    return this.prisma.circularProduct.findUnique({ where: { id } });
   }
 
   async delete(supplierId: string, id: string) {
@@ -199,12 +183,7 @@ export class CircularProductsService {
   async findAllAdmin() {
     return this.prisma.circularProduct.findMany({
       include: {
-        supplier: {
-          include: {
-            profile: true,
-            supplier_profile: true,
-          },
-        },
+        supplier: { select: PUBLIC_USER_SELECT },
       },
       orderBy: { created_at: 'desc' },
     });

@@ -14,17 +14,19 @@ import { Label } from '@/components/ui/label'
 import { TablePageSkeleton } from '@/components/skeletons'
 import { getSupplierDisplayName } from '@/lib/utils'
 
+type DocumentRequirement = { tipe: string; required: number; approved: number; approvalComplete: boolean; approvalIssues: string[] };
+
 const contentMap = {
   id: {
     header: {
       title: "Validasi Pendaftaran Supplier",
-      desc: "Tinjau kelengkapan dokumen legalitas dan berikan persetujuan akun koperasi baru."
+      desc: "Tinjau persyaratan dokumen sesuai jenis pemasok sebelum menyetujui profil."
     },
     toolbar: {
-      searchPlaceholder: "Cari nama koperasi..."
+      searchPlaceholder: "Cari nama pemasok..."
     },
     table: {
-      colName: "Nama Koperasi",
+      colName: "Nama Pemasok",
       colEmail: "Email Kontak",
       colDoc: "Status Dokumen",
       colDate: "Tanggal Daftar",
@@ -36,9 +38,9 @@ const contentMap = {
     modal: {
       title: "Review Profil Supplier",
       desc: "Pastikan legalitas terverifikasi sebelum menyetujui akses.",
-      docTitle: "Dokumen Legalitas & Mutu",
+      docTitle: "Dokumen Verifikasi Profil",
       btnViewDoc: "Lihat Berkas",
-      alertDesc: "Dengan menyetujui, Anda memberikan akses penuh kepada koperasi ini untuk menambahkan batch minyak nilam ke dalam sistem Valam.",
+      alertDesc: "Persetujuan mengaktifkan profil supplier sesuai perannya; evaluasi mutu batch tetap terpisah.",
       btnReject: "Tolak Akun",
       btnApprove: "Finalisasi & Setujui Akun",
       successApprove: "Akun supplier {name} telah disetujui! Status berubah menjadi TERVERIFIKASI.",
@@ -48,13 +50,13 @@ const contentMap = {
   en: {
     header: {
       title: "Supplier Registration Validation",
-      desc: "Review legal document completeness and approve new cooperative accounts."
+      desc: "Review document requirements for each supplier type before approving the profile."
     },
     toolbar: {
-      searchPlaceholder: "Search cooperative name..."
+      searchPlaceholder: "Search supplier name..."
     },
     table: {
-      colName: "Cooperative Name",
+      colName: "Supplier Name",
       colEmail: "Contact Email",
       colDoc: "Document Status",
       colDate: "Registration Date",
@@ -66,9 +68,9 @@ const contentMap = {
     modal: {
       title: "Review Supplier Profile",
       desc: "Ensure verified legality before granting access.",
-      docTitle: "Legality & Quality Documents",
+      docTitle: "Supplier Verification Documents",
       btnViewDoc: "View File",
-      alertDesc: "By approving, you grant full access to this cooperative to add patchouli oil batches into the Valam system.",
+      alertDesc: "Approval activates the supplier profile for its role; batch quality evaluation remains separate.",
       btnReject: "Reject Account",
       btnApprove: "Finalize & Approve Account",
       successApprove: "Supplier account {name} has been approved! Status updated to TERVERIFIKASI.",
@@ -87,6 +89,10 @@ export default function AdminSuppliersPage() {
   // Specific Review form state
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({})
   const [submittingReview, setSubmittingReview] = useState<Record<string, boolean>>({})
+  const [finalizing, setFinalizing] = useState(false)
+  const reviewInProgress = Object.values(submittingReview).some(Boolean)
+  const requirements: DocumentRequirement[] = selectedSupplier?.documentCompleteness || []
+  const canFinalize = requirements.length > 0 && requirements.every(item => item.approvalComplete)
   
   const locale = useLocale() as 'id' | 'en'
   const t = contentMap[locale] || contentMap.id
@@ -203,7 +209,8 @@ export default function AdminSuppliersPage() {
       })
 
       // Refresh selected supplier detail
-      handleOpenReviewModal(selectedSupplier)
+      if (data.data) setSelectedSupplier(data.data)
+      else await handleOpenReviewModal(selectedSupplier)
     } catch (err: any) {
       toast({
         title: "Gagal Review",
@@ -217,6 +224,8 @@ export default function AdminSuppliersPage() {
 
   // Finalize verification (All documents must be APPROVED)
   const handleFinalizeVerify = async () => {
+    if (!selectedSupplier || finalizing || reviewInProgress) return
+    setFinalizing(true)
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api'
     try {
       const res = await fetch(`${apiUrl}/admin/suppliers/${selectedSupplier.id}/verify`, {
@@ -226,6 +235,7 @@ export default function AdminSuppliersPage() {
 
       const data = await res.json()
       if (!res.ok) {
+        if (data.documentRequirements) setSelectedSupplier((current: any) => ({ ...current, documentCompleteness: data.documentRequirements }))
         let errDesc = data.message
         if (data.unapprovedDocuments) {
           errDesc = `Masih ada berkas yang belum disetujui: ${data.unapprovedDocuments.join(', ')}`
@@ -234,7 +244,7 @@ export default function AdminSuppliersPage() {
       }
 
       toast({
-        title: "Koperasi Terverifikasi",
+        title: "Profil Supplier Terverifikasi",
         description: t.modal.successApprove.replace('{name}', getSupplierDisplayName(selectedSupplier)),
       })
 
@@ -246,6 +256,8 @@ export default function AdminSuppliersPage() {
         description: err.message,
         variant: "destructive"
       })
+    } finally {
+      setFinalizing(false)
     }
   }
 
@@ -449,6 +461,17 @@ export default function AdminSuppliersPage() {
                 </div>
               </div>
 
+              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 space-y-2 text-sm">
+                <p className="font-semibold">{locale === 'id' ? 'Persyaratan sesuai jenis supplier' : 'Requirements for this supplier type'}: {selectedSupplier.supplier_subtype}</p>
+                {selectedSupplier.supplier_subtype === 'PETANI' && <p>{locale === 'id' ? 'Memiliki alat suling' : 'Owns distillation equipment'}: {selectedSupplier.punya_alat_suling ? 'Ya / Yes' : 'Tidak / No'}</p>}
+                {requirements.length === 0 && <p>{locale === 'id' ? 'Persyaratan belum dimuat. Muat ulang detail setelah backend diperbarui.' : 'Requirements unavailable. Reload details after updating the backend.'}</p>}
+                <ul className="space-y-1">{requirements.map(item => <li key={item.tipe} className={item.approvalComplete ? 'text-emerald-800' : 'text-amber-800'}>
+                  {formatDocType(item.tipe)}: {item.approved}/{item.required} {locale === 'id' ? 'disetujui (minimum)' : 'approved (minimum)'}
+                  {item.approvalIssues?.map(issue => <span key={issue} className="block text-xs">{issue}</span>)}
+                </li>)}</ul>
+                <p className="text-xs text-zinc-600">{locale === 'id' ? 'Verifikasi ini berlaku untuk profil pemasok, bukan kelulusan mutu setiap batch.' : 'This verifies the supplier profile, not the quality of every batch.'}</p>
+              </div>
+
               {/* Documents List */}
               <div className="space-y-4">
                 <h4 className="font-bold text-zinc-800">{t.modal.docTitle}</h4>
@@ -505,7 +528,7 @@ export default function AdminSuppliersPage() {
                               variant="outline"
                               className="text-rose-600 border-rose-200 hover:bg-rose-50 rounded-lg text-xs"
                               onClick={() => handleReviewDocAction(doc.id, 'REJECT')}
-                              disabled={submittingReview[doc.id]}
+                              disabled={reviewInProgress || finalizing}
                             >
                               Tolak
                             </Button>
@@ -543,7 +566,7 @@ export default function AdminSuppliersPage() {
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3 text-xs text-amber-800">
                   <AlertTriangle className="w-5 h-5 flex-shrink-0 text-amber-600 mt-0.5" />
                   <p>
-                    {t.modal.alertDesc} Pastikan semua dokumen utama (Akta, COA valid, Foto Fasilitas, dan Surat Pernyataan) disetujui sebelum mengaktifkan akun.
+                    {t.modal.alertDesc} Pastikan persyaratan untuk jenis supplier di atas terpenuhi sebelum finalisasi.
                   </p>
                 </div>
               )}
@@ -557,8 +580,8 @@ export default function AdminSuppliersPage() {
                   <Button variant="outline" className="text-zinc-655 border-zinc-300 rounded-xl" onClick={() => setSelectedSupplier(null)}>
                     Batal
                   </Button>
-                  <Button className="bg-emerald-800 hover:bg-emerald-900 text-white shadow-md rounded-xl border-none font-bold" onClick={handleFinalizeVerify}>
-                    {t.modal.btnApprove}
+                  <Button className="bg-emerald-800 hover:bg-emerald-900 text-white shadow-md rounded-xl border-none font-bold" onClick={handleFinalizeVerify} disabled={finalizing || reviewInProgress || !canFinalize}>
+                    {finalizing ? (locale === 'id' ? 'Memproses...' : 'Processing...') : t.modal.btnApprove}
                   </Button>
                 </>
               ) : (

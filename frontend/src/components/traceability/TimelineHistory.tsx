@@ -15,10 +15,10 @@ export function TimelineHistory({ batch }: { batch: any }) {
     
     return {
       id: log.id || index,
-      title: log.event_type,
+      title: log.event_type === 'LAB_VERIFIED' ? 'Catatan verifikasi lama — belum divalidasi' : log.event_type,
       location: log.location_name || log.location_district,
       date: new Date(log.event_date).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) + ' WIB',
-      description: log.description || '',
+      description: log.event_type === 'LAB_VERIFIED' ? 'Klaim pada catatan lama belum didukung evaluasi dan provenance yang tervalidasi.' : log.description || '',
       icon: icon,
       status: 'completed'
     }

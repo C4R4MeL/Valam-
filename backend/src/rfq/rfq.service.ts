@@ -1,194 +1,102 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { PUBLIC_USER_SELECT } from '../users/public-user.select';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { IsString, IsNumber, IsOptional, IsEnum, IsUUID } from 'class-validator';
+import { CommerceService, rupiah } from '../commerce/commerce.service';
+import { IsString, IsNumber, IsOptional, IsIn, IsUUID, IsDateString, Min, Max, ValidateIf, MaxLength } from 'class-validator';
+import { randomUUID } from 'node:crypto';
 
 export class SubmitRfqDto {
-  @IsUUID()
-  supplier_id: string;
-
-  @IsNumber()
-  volume_kg: number;
-
-  @IsNumber()
-  budget_per_kg: number;
-
-  @IsNumber()
-  min_pa_percentage: number;
-
-  @IsNumber()
-  max_moisture: number;
-
-  @IsString()
-  @IsOptional()
-  notes?: string;
+  @IsUUID() supplier_id: string;
+  @IsNumber() @Min(0.001) volume_kg: number;
+  @IsNumber() @Min(1) budget_per_kg: number;
+  @IsNumber() @Min(0) @Max(100) min_pa_percentage: number;
+  @IsNumber() @Min(0) @Max(100) max_moisture: number;
+  @IsString() @IsOptional() @MaxLength(10000) notes?: string;
 }
-
 export class RespondRfqDto {
-  @IsNumber()
-  proposed_price_per_kg: number;
-
-  @IsNumber()
-  proposed_volume_kg: number;
-
-  @IsString()
-  @IsOptional()
-  message?: string;
-
-  @IsEnum(['ACCEPT', 'COUNTER', 'REJECT'])
-  action: 'ACCEPT' | 'COUNTER' | 'REJECT';
+  @ValidateIf(o => o.action !== 'REJECT') @IsUUID() product_id?: string;
+  @ValidateIf(o => o.action !== 'REJECT') @IsDateString() expires_at?: string;
+  @ValidateIf(o => o.action !== 'REJECT') @IsNumber() @Min(1) proposed_price_per_kg: number;
+  @ValidateIf(o => o.action !== 'REJECT') @IsNumber() @Min(0.001) proposed_volume_kg: number;
+  @IsString() @IsOptional() @MaxLength(10000) message?: string;
+  @IsIn(['ACCEPT', 'COUNTER', 'REJECT']) action: 'ACCEPT' | 'COUNTER' | 'REJECT';
+}
+export class CloseRfqDto {
+  @IsIn(['ACCEPTED', 'REJECTED']) status: 'ACCEPTED' | 'REJECTED';
 }
 
 @Injectable()
 export class RfqService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly commerce: CommerceService) {}
 
   async submitRfq(buyerId: string, dto: SubmitRfqDto) {
-    const rfqNumber = 'RFQ-' + Date.now().toString();
-    
-    return this.prisma.rfqRequest.create({
-      data: {
-        rfq_number: rfqNumber,
-        buyer_id: buyerId,
-        supplier_id: dto.supplier_id,
-        volume_kg: dto.volume_kg,
-        budget_per_kg: dto.budget_per_kg,
-        min_pa_percentage: dto.min_pa_percentage,
-        max_moisture: dto.max_moisture,
-        notes: dto.notes,
-        status: 'SENT'
-      }
-    });
+    const supplier = await this.prisma.user.findUnique({ where: { id: dto.supplier_id }, include: { role: true } });
+    if (!supplier || supplier.role.name !== 'supplier' || supplier.status !== 'active') throw new BadRequestException('Pilih pemasok aktif yang sebenarnya');
+    return this.prisma.rfqRequest.create({ data: { ...dto, rfq_number: 'RFQ-' + randomUUID(), buyer_id: buyerId, status: 'SENT' } });
   }
 
-  async getBuyerRfqs(buyerId: string) {
-    return this.prisma.rfqRequest.findMany({
-      where: { buyer_id: buyerId },
-      include: {
-        supplier: { include: { profile: true, supplier_profile: true } },
-        response: true
-      },
-      orderBy: { created_at: 'desc' }
-    });
+  getBuyerRfqs(buyerId: string) {
+    return this.prisma.rfqRequest.findMany({ where: { buyer_id: buyerId },
+      include: { supplier: { select: PUBLIC_USER_SELECT }, response: { include: { product: { select: { id: true, batch_code: true, is_demo: true } } } }, order: { select: { id: true, order_number: true, status: true } } }, orderBy: { created_at: 'desc' } });
   }
-
-  async getSupplierRfqs(supplierId: string) {
-    return this.prisma.rfqRequest.findMany({
-      where: { supplier_id: supplierId },
-      include: {
-        buyer: { include: { profile: true } },
-        response: true
-      },
-      orderBy: { created_at: 'desc' }
-    });
+  getSupplierRfqs(supplierId: string) {
+    return this.prisma.rfqRequest.findMany({ where: { supplier_id: supplierId },
+      include: { buyer: { select: PUBLIC_USER_SELECT }, response: { include: { product: { select: { id: true, batch_code: true } } } }, order: { select: { id: true, order_number: true } } }, orderBy: { created_at: 'desc' } });
   }
 
   async respondToRfq(supplierId: string, rfqId: string, dto: RespondRfqDto) {
-    const rfq = await this.prisma.rfqRequest.findUnique({
-      where: { id: rfqId }
-    });
-
-    if (!rfq) throw new NotFoundException('RFQ not found');
-    if (rfq.supplier_id !== supplierId) throw new ForbiddenException('Not your RFQ');
-    if (rfq.status !== 'SENT') throw new BadRequestException('RFQ already responded');
-
-    const newStatus = dto.action === 'ACCEPT' ? 'ACCEPTED' : 
-                      dto.action === 'REJECT' ? 'REJECTED' : 'COUNTER_OFFER';
-
-    // Update RFQ status
-    await this.prisma.rfqRequest.update({
-      where: { id: rfqId },
-      data: { status: newStatus }
-    });
-
-    // Create Response
-    return this.prisma.rfqResponse.create({
-      data: {
-        rfq_id: rfqId,
-        supplier_id: supplierId,
-        proposed_price_per_kg: dto.proposed_price_per_kg,
-        proposed_volume_kg: dto.proposed_volume_kg,
-        message: dto.message,
-        status: newStatus
+    return this.prisma.$transaction(async tx => {
+      await this.commerce.lock(tx, 'rfq:' + rfqId);
+      const rfq = await tx.rfqRequest.findUnique({ where: { id: rfqId }, include: { response: true } });
+      if (!rfq) throw new NotFoundException('RFQ not found');
+      if (rfq.supplier_id !== supplierId) throw new ForbiddenException('Not your RFQ');
+      if (rfq.status !== 'SENT') throw new ConflictException('RFQ sudah mendapat respons atau telah ditutup');
+      let expiry: Date | null = null;
+      if (dto.action !== 'REJECT') {
+        expiry = new Date(dto.expires_at || '');
+        if (!dto.product_id || !Number.isFinite(expiry.getTime()) || expiry <= new Date() || expiry.getTime() > Date.now() + 30 * 86400000 || !Number.isFinite(dto.proposed_price_per_kg) || dto.proposed_price_per_kg <= 0 || !Number.isFinite(dto.proposed_volume_kg) || dto.proposed_volume_kg <= 0) throw new BadRequestException('Batch, masa berlaku, harga dan volume wajib valid');
+        const batch = await tx.product.findUnique({ where: { id: dto.product_id } });
+        if (!batch || batch.supplier_id !== supplierId || batch.status !== 'VERIFIED') throw new BadRequestException('Batch penawaran tidak dimiliki pemasok atau tidak tersedia');
+        if (dto.proposed_volume_kg > batch.available_volume_kg || dto.proposed_volume_kg < batch.moq_kg) throw new BadRequestException('Volume penawaran melanggar stok atau MOQ');
       }
-    });
+      const status = dto.action === 'REJECT' ? 'REJECTED' : dto.action === 'COUNTER' ? 'COUNTER_OFFER' : 'OFFERED';
+      const response = await tx.rfqResponse.create({ data: { rfq_id: rfqId, supplier_id: supplierId,
+        product_id: dto.action === 'REJECT' ? null : dto.product_id, expires_at: expiry,
+        proposed_price_per_kg: dto.action === 'REJECT' ? rfq.budget_per_kg : dto.proposed_price_per_kg,
+        proposed_volume_kg: dto.action === 'REJECT' ? rfq.volume_kg : dto.proposed_volume_kg,
+        message: dto.message, status } });
+      await tx.rfqRequest.update({ where: { id: rfqId }, data: { status } });
+      return response;
+    }, { timeout: 30000, maxWait: 10000 });
   }
 
   async closeRfq(buyerId: string, rfqId: string, status: 'ACCEPTED' | 'REJECTED') {
-    const rfq = await this.prisma.rfqRequest.findUnique({
-      where: { id: rfqId },
-      include: { response: true }
-    });
-
-    if (!rfq) throw new NotFoundException('RFQ not found');
-    if (rfq.buyer_id !== buyerId) throw new ForbiddenException('Not your RFQ');
-    
-    // Update RFQ status
-    const updated = await this.prisma.rfqRequest.update({
-      where: { id: rfqId },
-      data: { status }
-    });
-
-    // If accepted and has response, create a real Order in the system
-    if (status === 'ACCEPTED' && rfq.response) {
-      // Find or create product
-      let product = await this.prisma.product.findFirst({
-        where: { supplier_id: rfq.supplier_id }
-      });
-
-      if (!product) {
-        product = await this.prisma.product.create({
-          data: {
-            supplier_id: rfq.supplier_id,
-            batch_code: 'BATCH-RFQ-' + Date.now().toString().slice(-6),
-            total_volume_kg: rfq.response.proposed_volume_kg,
-            available_volume_kg: 0, // All goes to the RFQ order
-            price_per_kg: rfq.response.proposed_price_per_kg,
-            status: 'VERIFIED'
-          }
-        });
-      } else {
-        // Decrement available volume of the matched product
-        await this.prisma.product.update({
-          where: { id: product.id },
-          data: {
-            available_volume_kg: {
-              decrement: rfq.response.proposed_volume_kg
-            }
-          }
-        });
+    if (!['ACCEPTED', 'REJECTED'].includes(status)) throw new BadRequestException('Status penutupan RFQ tidak valid');
+    return this.prisma.$transaction(async tx => {
+      await this.commerce.lock(tx, 'rfq:' + rfqId);
+      const rfq = await tx.rfqRequest.findUnique({ where: { id: rfqId }, include: { response: true, order: true, buyer: { select: { profile: true } } } });
+      if (!rfq) throw new NotFoundException('RFQ not found');
+      if (rfq.buyer_id !== buyerId) throw new ForbiddenException('Not your RFQ');
+      if (rfq.status === 'ACCEPTED' && rfq.order && status === 'ACCEPTED') return { ...rfq, order: rfq.order };
+      if (rfq.status === 'ACCEPTED') throw new ConflictException('RFQ sudah menjadi pesanan');
+      if (status === 'REJECTED') {
+        if (rfq.status === 'REJECTED') return rfq;
+        return tx.rfqRequest.update({ where: { id: rfqId }, data: { status } });
       }
-
-      const totalAmount = rfq.response.proposed_volume_kg * rfq.response.proposed_price_per_kg;
-
-      // Create Order
-      const order = await this.prisma.order.create({
-        data: {
-          order_number: 'ORD-RFQ-' + Date.now().toString().slice(-8),
-          buyer_id: buyerId,
-          supplier_id: rfq.supplier_id,
-          total_amount: totalAmount,
-          status: 'UNPAID',
-          items: {
-            create: [{
-              product_id: product.id,
-              quantity_kg: rfq.response.proposed_volume_kg,
-              price_per_kg: rfq.response.proposed_price_per_kg,
-              subtotal: totalAmount
-            }]
-          }
-        }
-      });
-
-      // Create Payment record
-      await this.prisma.payment.create({
-        data: {
-          order_id: order.id,
-          amount: totalAmount,
-          status: 'pending'
-        }
-      });
-    }
-
-    return updated;
+      const offer = rfq.response;
+      if (!['OFFERED', 'COUNTER_OFFER'].includes(rfq.status) || !offer?.product_id || !offer.expires_at || offer.expires_at <= new Date()) throw new BadRequestException('Penawaran belum lengkap atau kedaluwarsa');
+      const line = { product_id: offer.product_id, circular_product_id: null, quantity_kg: offer.proposed_volume_kg, price_per_kg: offer.proposed_price_per_kg };
+      await this.commerce.reserve(tx, [line], rfq.supplier_id);
+      const amount = rupiah(line.quantity_kg * line.price_per_kg);
+      const profile = rfq.buyer.profile;
+      const order = await tx.order.create({ data: { rfq_id: rfq.id, order_number: 'ORD-RFQ-' + randomUUID(), buyer_id: buyerId, supplier_id: rfq.supplier_id,
+        total_amount: amount, status: 'PENDING', payment_status: 'pending', stock_state: 'RESERVED',
+        reservation_expires_at: new Date(Math.min(offer.expires_at.getTime(), Date.now() + 30 * 60000)),
+        shipping_address: { checkout_mode: 'rfq', offer_id: offer.id, address: profile?.address || '', postal_code: profile?.postal_code || null, area_id: profile?.area_id || null, contact_name: profile?.contact_person || null, phone: profile?.phone || null },
+        items: { create: { ...line, subtotal: amount } }, payment: { create: { amount, status: 'pending' } },
+      } });
+      const updated = await tx.rfqRequest.update({ where: { id: rfqId }, data: { status: 'ACCEPTED' } });
+      return { ...updated, order };
+    }, { timeout: 30000, maxWait: 10000 });
   }
 }

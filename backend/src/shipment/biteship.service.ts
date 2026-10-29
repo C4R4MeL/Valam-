@@ -325,12 +325,6 @@ export class BiteshipService {
    * with its value equal to the token/secret.
    */
   verifyWebhook(headers: Record<string, string>): boolean {
-    // In sandbox mode without a webhook token configured, allow all
-    if (this.isSandbox() && !this.webhookToken) {
-      this.logger.warn('Sandbox mode: skipping webhook verification (no token configured)');
-      return true;
-    }
-
     if (!this.webhookToken) {
       this.logger.error('BITESHIP_WEBHOOK_TOKEN is not configured — rejecting webhook');
       return false;

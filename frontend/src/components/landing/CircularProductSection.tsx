@@ -12,20 +12,20 @@ export function CircularProductSection() {
 
   const content = {
     badge: 'ECO PRODUCTS',
-    title: isId ? 'Zero-Waste & Produk Olahan Sampingan' : 'Zero-Waste & Valued Co-Products',
+    title: isId ? 'Produk Sampingan dari Pemasok' : 'Supplier Co-Products',
     subtitle: isId
-      ? 'Kami mengolah 100% residu penyulingan daun nilam menjadi produk sekunder bernilai guna tinggi, mendukung pertanian berkelanjutan dan menjaga kelestarian lingkungan.'
-      : 'We upcycle 100% of patchouli distillation residues into high-value agricultural co-products, championing sustainability and soil regeneration.',
+      ? 'VALAM memfasilitasi penawaran produk sampingan pemasok. Berikut contoh kategori; ketersediaan, mutu, dan dokumen harus diperiksa pada produk terkait. Dampak lingkungan belum diukur atau diverifikasi.'
+      : 'VALAM connects buyers with supplier co-products. These are example categories; check each listing for availability, quality and supporting documents. Environmental impact has not been measured or verified.',
     cta: isId ? 'Jelajahi Eco Products' : 'Explore Eco Products',
     
     products: [
       {
         icon: Leaf,
         title: isId ? 'Organic Compost' : 'Organic Compost',
-        tag: isId ? '100% Organik' : '100% Organic',
+        tag: isId ? 'Contoh Kategori' : 'Example Category',
         desc: isId
-          ? 'Pupuk organik premium hasil dekomposisi fermentasi ampas daun dan batang nilam. Sangat kaya unsur hara makro untuk menyehatkan tanah perkebunan.'
-          : 'Premium organic fertilizer fermented from patchouli leaf and stem residuals. Rich in macro-nutrients to restore soil fertility.',
+          ? 'Kategori kompos dari residu nilam. Komposisi, proses, dan sertifikasi organik bergantung pada dokumen pemasok.'
+          : 'Compost from patchouli residues. Composition, processing and organic certification depend on supplier documentation.',
         bgHover: 'group-hover:border-emerald-500/30 group-hover:shadow-emerald-950/[0.02]',
         iconBg: 'bg-emerald-50 text-emerald-700 border-emerald-100',
       },
@@ -34,8 +34,8 @@ export function CircularProductSection() {
         title: isId ? 'Active Biochar' : 'Active Biochar',
         tag: isId ? 'Pembenah Tanah' : 'Soil Conditioner',
         desc: isId
-          ? 'Karbon aktif hasil pirolisis lambat (slow pyrolysis) dari sisa ranting penyulingan nilam. Meningkatkan kapasitas retensi air dan porositas tanah.'
-          : 'High-surface-area active carbon produced via slow pyrolysis of wood residues. Dramatically improves water retention and soil aeration.',
+          ? 'Kategori biochar dari residu penyulingan. Metode pengolahan dan kesesuaian penggunaan perlu diperiksa pada produk.'
+          : 'Biochar from distillation residues. Check each product for processing methods and suitability.',
         bgHover: 'group-hover:border-amber-500/30 group-hover:shadow-amber-950/[0.02]',
         iconBg: 'bg-amber-50 text-amber-700 border-amber-100',
       },
@@ -44,8 +44,8 @@ export function CircularProductSection() {
         title: isId ? 'Patchouli Hydrosol' : 'Patchouli Hydrosol',
         tag: isId ? 'Bahan Baku Kosmetik' : 'Cosmetic Raw Material',
         desc: isId
-          ? 'Air destilasi murni hasil kondensasi uap minyak nilam. Mengandung molekul aktif menenangkan untuk sabun organik, toner, dan antiseptik alami.'
-          : 'Pure steam distillate water co-produced during extraction. Retains soothing botanical active compounds ideal for organic skincare and soaps.',
+          ? 'Kategori air hasil penyulingan nilam. Keamanan dan kesesuaian penggunaan memerlukan dokumen produk; tidak ada klaim antiseptik yang diverifikasi.'
+          : 'Water co-produced during patchouli distillation. Product documentation is needed to assess safety and suitability; antiseptic claims have not been verified.',
         bgHover: 'group-hover:border-blue-500/30 group-hover:shadow-blue-950/[0.02]',
         iconBg: 'bg-blue-50 text-blue-700 border-blue-100',
       }

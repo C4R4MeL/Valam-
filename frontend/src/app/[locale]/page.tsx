@@ -11,6 +11,7 @@ import { useLocale } from "next-intl";
 import { landingContent } from "./pageContent";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight } from "lucide-react";
+import { TestingPartners } from "@/components/landing/TestingPartners";
 import { PriceSection } from "@/components/landing/PriceSection";
 import { SupplierProofSection } from "@/components/landing/SupplierProofSection";
 import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
@@ -21,30 +22,6 @@ import { FAQSection } from "@/components/landing/FAQSection";
 import { getLatestMarketPrices } from "@/lib/valam-insights/insights-api";
 import { mergeMarketPrices } from "@/lib/market-grades";
 import { formatPrice } from "@/lib/valam-insights/utils";
-
-/* ── Animated counter hook ── */
-function useCounter(target: number, duration: number = 2000) {
-  const [count, setCount] = useState(0);
-  const [started, setStarted] = useState(false);
-
-  useEffect(() => {
-    if (!started) return;
-    let start = 0;
-    const increment = target / (duration / 16);
-    const timer = setInterval(() => {
-      start += increment;
-      if (start >= target) {
-        setCount(target);
-        clearInterval(timer);
-      } else {
-        setCount(Math.floor(start));
-      }
-    }, 16);
-    return () => clearInterval(timer);
-  }, [started, target, duration]);
-
-  return { count, start: () => setStarted(true) };
-}
 
 /* ── Icons ── */
 function IconShield({ className }: { className?: string }) { return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="m9 12 2 2 4-4" /></svg>; }
@@ -73,7 +50,7 @@ export default function Home() {
   const { isAuthenticated, role, isLoading } = useAuthContext();
   
   // State untuk Grade A price
-  const [gradeAPrice, setGradeAPrice] = useState<string>(isId ? "Rp 850k" : "IDR 850k");
+  const [gradeAPrice, setGradeAPrice] = useState<string>(isId ? "Belum tersedia" : "Unavailable");
 
   // Fetch Grade A price saat mount
   useEffect(() => {
@@ -103,9 +80,6 @@ export default function Home() {
     }
   }, [isLoading, isAuthenticated, role, router]);
   
-  const suppliersCounter = useCounter(154);
-  const destinationsCounter = useCounter(28);
-  const verifiedCounter = useCounter(4320);
 
   const [currentSlide, setCurrentSlide] = useState(0);
 
@@ -215,16 +189,16 @@ export default function Home() {
 
             </div>
 
+            <p className="text-xs text-emerald-100 mt-4">{isId ? 'Statistik operasional terverifikasi belum tersedia.' : 'Verified operational statistics are unavailable.'}</p>
             {/* Floating Stats Bar */}
             <motion.div
-              onViewportEnter={() => { suppliersCounter.start(); destinationsCounter.start(); verifiedCounter.start(); }}
               className="mt-8 sm:mt-10 w-full max-w-3xl mx-auto rounded-2xl p-4 sm:p-5 shadow-2xl shadow-emerald-950/40 animate-fade-up bg-emerald-950/55 backdrop-blur-xl border border-emerald-700/25"
               style={{ animationDelay: "0.5s" }}
             >
               <div className="grid grid-cols-3 divide-x divide-emerald-700/35">
                 <div className="flex flex-col items-center px-2 sm:px-4">
                   <span className="text-2xl sm:text-3xl md:text-[2.25rem] font-bold text-white tracking-tight tabular-nums">
-                    {suppliersCounter.count}+
+                    —
                   </span>
                   <span className="text-[10px] sm:text-[11px] text-emerald-200/75 mt-1 uppercase tracking-[0.1em] text-center font-medium">
                     {content.stats.suppliers}
@@ -232,7 +206,7 @@ export default function Home() {
                 </div>
                 <div className="flex flex-col items-center px-2 sm:px-4">
                   <span className="text-2xl sm:text-3xl md:text-[2.25rem] font-bold text-white tracking-tight tabular-nums">
-                    {destinationsCounter.count}
+                    —
                   </span>
                   <span className="text-[10px] sm:text-[11px] text-emerald-200/75 mt-1 uppercase tracking-[0.1em] text-center font-medium">
                     {content.stats.destinations}
@@ -240,7 +214,7 @@ export default function Home() {
                 </div>
                 <div className="flex flex-col items-center px-2 sm:px-4">
                   <span className="text-2xl sm:text-3xl md:text-[2.25rem] font-bold text-white tracking-tight tabular-nums">
-                    {verifiedCounter.count.toLocaleString()}
+                    —
                   </span>
                   <span className="text-[10px] sm:text-[11px] text-emerald-200/75 mt-1 uppercase tracking-[0.1em] text-center font-medium">
                     {content.stats.verified}
@@ -268,21 +242,21 @@ export default function Home() {
                 </div>
                 <motion.p variants={fadeInUp} className="text-sm sm:text-[15px] text-zinc-600 leading-relaxed font-normal">
                   {isId 
-                    ? "Indonesia menyuplai 90% kebutuhan minyak nilam dunia. Komoditas ini merupakan bahan pengikat aroma parfum mewah. Valam hadir untuk menghubungkan petani langsung ke pasar ekspor dengan standar mutu terjamin."
-                    : "Indonesia supplies 90% of global patchouli oil. This essential oil is the primary fixative for luxury perfumery. Valam connects local cooperatives directly with global buyers under fair pricing."}
+                    ? "VALAM memfasilitasi pemasok dan buyer minyak nilam. Ketersediaan, harga dan mutu perlu diperiksa per batch; statistik pasar dan ekspor terverifikasi belum tersedia."
+                    : "VALAM connects patchouli oil suppliers and buyers. Check availability, prices and quality per batch; verified market and export statistics are unavailable."}
                 </motion.p>
 
                 <motion.div variants={fadeInUp} className="grid grid-cols-3 gap-3 sm:gap-5 pt-5 border-t border-zinc-200/70">
                   <div>
-                    <div className="text-xl sm:text-2xl md:text-3xl font-bold text-emerald-700 tabular-nums tracking-tight">90%</div>
+                    <div className="text-xl sm:text-2xl md:text-3xl font-bold text-emerald-700 tabular-nums tracking-tight">—</div>
                     <div className="text-[11px] sm:text-xs text-zinc-500 mt-1 leading-snug">
-                      {isId ? "Pasokan Dunia dari Indonesia" : "World Supply from Indonesia"}
+                      {isId ? "Statistik pasar belum tersedia" : "Market statistics unavailable"}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xl sm:text-2xl md:text-3xl font-bold text-emerald-700 tabular-nums tracking-tight">28</div>
+                    <div className="text-xl sm:text-2xl md:text-3xl font-bold text-emerald-700 tabular-nums tracking-tight">—</div>
                     <div className="text-[11px] sm:text-xs text-zinc-500 mt-1 leading-snug">
-                      {isId ? "Negara Tujuan Ekspor" : "Export Destinations"}
+                      {isId ? "Data ekspor belum tersedia" : "Export data unavailable"}
                     </div>
                   </div>
                   <div>
@@ -294,7 +268,7 @@ export default function Home() {
                 </motion.div>
 
                 <motion.div variants={fadeInUp} className="pt-1">
-                  <Link href={`/${locale}/marketplace`} className="inline-flex items-center gap-2 text-emerald-700 font-semibold hover:text-emerald-800 transition-colors group text-sm">
+                  <Link href="/marketplace" className="inline-flex items-center gap-2 text-emerald-700 font-semibold hover:text-emerald-800 transition-colors group text-sm">
                     {content.vision.cta}
                     <IconArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </Link>
@@ -376,20 +350,20 @@ export default function Home() {
 
                 <motion.div variants={fadeInUp} className="bg-white/90 backdrop-blur-sm rounded-3xl overflow-hidden shadow-sm hover:shadow-md border border-zinc-200/80 hover:border-emerald-600/25 group transition-all duration-300">
                   <div className="relative h-44 sm:h-48 w-full overflow-hidden">
-                    <Image src="/images/lab_test.png" alt="Lab-Verified CoA" fill className="object-cover group-hover:scale-[1.02] transition-transform duration-300 ease-out" />
+                    <Image src="/images/lab_test.png" alt="Catatan Hasil Uji" fill className="object-cover group-hover:scale-[1.02] transition-transform duration-300 ease-out" />
                     <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/95 via-zinc-900/40 to-transparent" />
                     <div className="absolute bottom-5 left-5 flex items-center gap-3 text-white">
                        <div className="w-9 h-9 rounded-xl bg-emerald-500 flex items-center justify-center shadow-md border border-emerald-400/50">
                          <IconShield className="w-4.5 h-4.5 text-white" />
                        </div>
-                       <h3 className="text-lg sm:text-xl font-semibold tracking-tight">Lab-Verified CoA</h3>
+                       <h3 className="text-lg sm:text-xl font-semibold tracking-tight">Catatan Hasil Uji</h3>
                     </div>
                   </div>
                   <div className="p-5 sm:p-6">
                     <p className="text-zinc-600 leading-relaxed text-sm">
                       {isId 
-                        ? "Setiap batch minyak nilam diuji di laboratorium terakreditasi. Anda menerima hasil nyata, bukan sekadar janji."
-                        : "Every batch of patchouli oil is tested in an accredited laboratory. You receive real results, not just promises."}
+                        ? "Lihat laboratorium, nomor laporan, tanggal dan dokumen sumber jika tersedia. Mutu batch belum dievaluasi tanpa dasar aturan yang terdokumentasi."
+                        : "Check laboratory, report number, date and source documents when available. Quality remains unevaluated without documented rules."}
                     </p>
                   </div>
                 </motion.div>
@@ -404,11 +378,11 @@ export default function Home() {
                     <div className="w-11 h-11 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-700 border border-emerald-100">
                       <IconMap className="w-5 h-5" />
                     </div>
-                    <h3 className="text-base md:text-lg font-semibold text-zinc-900 tracking-tight">{isId ? "Keterlacakan 100%" : "100% Traceability"}</h3>
+                    <h3 className="text-base md:text-lg font-semibold text-zinc-900 tracking-tight">{isId ? "Catatan Keterlacakan" : "Traceability Records"}</h3>
                     <p className="text-zinc-600 text-sm leading-relaxed">
                       {isId
-                        ? "Lacak perjalanan minyak nilam secara transparan dari kebun petani hingga pelabuhan."
-                        : "Track your patchouli oil transparently from farmers' fields to the export port."}
+                        ? "Lihat peristiwa yang dicatat dan asal batch jika tersedia; bukan jaminan pelacakan GPS lengkap."
+                        : "View recorded events and available origin data; complete GPS tracking is not guaranteed."}
                     </p>
                   </div>
                 </motion.div>
@@ -435,11 +409,11 @@ export default function Home() {
                     <div className="w-11 h-11 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-700 border border-emerald-100">
                       <IconShield className="w-5 h-5" />
                     </div>
-                    <h3 className="text-base md:text-lg font-semibold text-zinc-900 tracking-tight">{isId ? "Escrow & Pembayaran Aman" : "Secure Escrow Payment"}</h3>
+                    <h3 className="text-base md:text-lg font-semibold text-zinc-900 tracking-tight">{isId ? "Pembayaran & Konfirmasi Penerimaan" : "Payment and Receipt Confirmation"}</h3>
                     <p className="text-zinc-600 text-sm leading-relaxed">
                       {isId
-                        ? "Dana transaksi disimpan aman dalam rekening bersama dan cair setelah produk lolos pengujian lab QC."
-                        : "Transaction funds are held securely in escrow and only released after goods pass QC verification."}
+                        ? "Pembayaran melalui gateway. Pencatatan saldo pemasok menunggu penerimaan buyer; pengembalian dana diproses dan dikonfirmasi terpisah."
+                        : "Payments use a gateway. Supplier credit requires buyer receipt; refunds are processed and confirmed separately."}
                     </p>
                   </div>
                 </motion.div>
@@ -513,6 +487,7 @@ export default function Home() {
         <FAQSection />
       </main>
 
+      <TestingPartners />
       <Footer />
     </div>
   );

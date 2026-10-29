@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { PUBLIC_USER_SELECT } from '../users/public-user.select';
 
 @Injectable()
 export class AdminService {
@@ -14,10 +15,10 @@ export class AdminService {
     });
 
     // get pending QC
-    const pendingQc = await this.prisma.product.count({
+    const pendingQc = await this.prisma.testingRequest.count({
       where: {
         status: {
-          in: ['DRAFT', 'IN_LAB'],
+          notIn: ['RESULTS_AVAILABLE', 'CANCELLED'],
         },
       },
     });
@@ -46,11 +47,9 @@ export class AdminService {
     const totalGmv = revenueResult._sum.total_amount || 0;
     const platformCommission = totalGmv * 0.015; // 1.5% Platform Service Fee Commission
     
-    // Lab QC Certificate Revenue: Rp 250.000 per certificate issued
-    const totalCertificates = await this.prisma.certificate.count();
-    const qcRevenue = totalCertificates * 250000;
-
-    const totalRevenue = platformCommission + qcRevenue;
+    // Testing fees/revenue have not been configured or reconciled.
+    const qcRevenue = null;
+    const totalRevenue = platformCommission;
 
     return {
       pendingSuppliers,
@@ -71,11 +70,7 @@ export class AdminService {
         },
       },
       include: {
-        supplier: {
-          include: {
-            profile: true,
-          },
-        },
+        supplier: { select: PUBLIC_USER_SELECT },
       },
       orderBy: {
         created_at: 'asc',
@@ -89,6 +84,7 @@ export class AdminService {
     return this.prisma.user.update({
       where: { id: userId },
       data: { status: newStatus },
+      select: { id: true, status: true },
     });
   }
 }

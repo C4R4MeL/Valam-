@@ -3,6 +3,7 @@ import { SupabaseService } from '../supabase/supabase.service';
 import { TipeDocument } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
+import { Readable } from 'stream';
 
 const BUCKET_NAME = 'supplier-documents';
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -34,6 +35,7 @@ export class SupplierStorageService {
     supplierId: string,
     tipeDocument: TipeDocument,
     file: Express.Multer.File,
+    requirePrivate = false,
   ): Promise<{ path: string; fileName: string; fileSize: number }> {
     // Validate file size
     if (file.size > MAX_FILE_SIZE) {
@@ -67,6 +69,19 @@ export class SupplierStorageService {
     if (isPlaceholder) {
       this.logger.warn('[Storage] Credentials are placeholders. Using local filesystem fallback.');
       return this.saveToLocalDisk(storagePath, file);
+    }
+
+    if (requirePrivate) {
+      // Do not write private quality/partnership files into an unverified public bucket.
+      try {
+        const { data, error } = await this.supabaseService.getClient().storage.getBucket(BUCKET_NAME);
+        if (error || !data || data.public) {
+          this.logger.warn('[Storage] Private bucket could not be confirmed; using protected local storage.');
+          return this.saveToLocalDisk(storagePath, file);
+        }
+      } catch {
+        return this.saveToLocalDisk(storagePath, file);
+      }
     }
 
     try {
@@ -126,6 +141,16 @@ export class SupplierStorageService {
     }
   }
 
+  /** Resolve a stored source only after its caller has checked access. */
+  async openDocument(storagePath: string): Promise<{ stream: Readable }> {
+    const filePath = path.resolve(this.uploadDir, storagePath);
+    if (!filePath.startsWith(path.resolve(this.uploadDir) + path.sep)) throw new BadRequestException('Invalid document path');
+    if (fs.existsSync(filePath)) return { stream: fs.createReadStream(filePath) };
+    const { data, error } = await this.supabaseService.getClient().storage.from(BUCKET_NAME).download(storagePath);
+    if (error || !data) throw new BadRequestException('Source file unavailable');
+    return { stream: Readable.from(Buffer.from(await data.arrayBuffer())) };
+  }
+
   /**
    * Delete a file from storage.
    */
@@ -181,7 +206,10 @@ export class SupplierStorageService {
    * Streaming download for locally stored files (used by preview route).
    */
   getLocalFileStream(storagePath: string): fs.ReadStream {
-    const filePath = path.join(this.uploadDir, storagePath);
+    const filePath = path.resolve(this.uploadDir, storagePath);
+    if (!filePath.startsWith(path.resolve(this.uploadDir) + path.sep)) {
+      throw new BadRequestException('Invalid document path.');
+    }
     if (!fs.existsSync(filePath)) {
       throw new BadRequestException('File tidak ditemukan.');
     }

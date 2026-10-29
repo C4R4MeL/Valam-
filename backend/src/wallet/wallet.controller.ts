@@ -21,7 +21,7 @@ export class WalletController {
 
   @Post('withdraw')
   @Roles('SUPPLIER')
-  async withdraw(@Request() req: any, @Body() body: { amount: number, bankDetails: string }) {
+  async withdraw(@Request() req: any, @Body() body: { amount: number, bankDetails: string, idempotency_key: string }) {
     // Check bank account is set
     const supplier = await this.prisma.supplierProfile.findUnique({
       where: { user_id: req.user.userId },
@@ -33,7 +33,7 @@ export class WalletController {
       );
     }
 
-    return this.walletService.requestWithdrawal(req.user.userId, body.amount, body.bankDetails);
+    return this.walletService.requestWithdrawal(req.user.userId, body.amount, body.bankDetails, body.idempotency_key);
   }
 }
 

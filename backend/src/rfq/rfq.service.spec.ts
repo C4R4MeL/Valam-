@@ -1,9 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { RfqService, SubmitRfqDto, RespondRfqDto } from './rfq.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { CommerceService } from '../commerce/commerce.service';
 import { NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 
 const mockPrismaService = {
+  $transaction: jest.fn(),
+  user: { findUnique: jest.fn() },
+  product: { findUnique: jest.fn() },
   rfqRequest: {
     create: jest.fn(),
     findMany: jest.fn(),
@@ -19,10 +23,14 @@ describe('RfqService', () => {
   let service: RfqService;
 
   beforeEach(async () => {
+    mockPrismaService.$transaction.mockImplementation(callback => callback(mockPrismaService));
+    mockPrismaService.user.findUnique.mockResolvedValue({ role: { name: 'supplier' }, status: 'active' });
+    mockPrismaService.product.findUnique.mockResolvedValue({ id: 'batch-1', supplier_id: 'supp-1', status: 'VERIFIED', available_volume_kg: 100, moq_kg: 10 });
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         RfqService,
         { provide: PrismaService, useValue: mockPrismaService },
+        { provide: CommerceService, useValue: { lock: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
 
@@ -109,9 +117,11 @@ describe('RfqService', () => {
       });
 
       mockPrismaService.rfqResponse.create.mockResolvedValue({ id: 'resp-1' });
-      mockPrismaService.rfqRequest.update.mockResolvedValue({ id: 'rfq-1', status: 'ACCEPTED' });
+      mockPrismaService.rfqRequest.update.mockResolvedValue({ id: 'rfq-1', status: 'OFFERED' });
 
       const dto: RespondRfqDto = {
+        product_id: 'batch-1',
+        expires_at: new Date(Date.now() + 86400000).toISOString(),
         proposed_price_per_kg: 850000,
         proposed_volume_kg: 50,
         action: 'ACCEPT'
@@ -122,7 +132,7 @@ describe('RfqService', () => {
       expect(mockPrismaService.rfqResponse.create).toHaveBeenCalled();
       expect(mockPrismaService.rfqRequest.update).toHaveBeenCalledWith({
         where: { id: 'rfq-1' },
-        data: { status: 'ACCEPTED' }
+        data: { status: 'OFFERED' }
       });
       expect(result).toHaveProperty('id', 'resp-1');
     });

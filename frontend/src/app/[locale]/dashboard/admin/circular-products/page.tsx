@@ -8,7 +8,6 @@ import { useLocale } from 'next-intl'
 import { useToast } from '@/hooks/use-toast'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { AdminSidebar } from '@/components/layout/AdminSidebar'
 import { TablePageSkeleton } from '@/components/skeletons'
 
 export default function AdminCircularProductsPage() {
@@ -196,13 +195,10 @@ export default function AdminCircularProductsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-emerald-950 flex flex-col lg:flex-row text-zinc-150">
-      
-      {/* Sidebar Layout component */}
-      <AdminSidebar />
+    <div className="min-w-0">
 
       {/* Main Content Area */}
-      <main className="flex-1 bg-zinc-50 text-zinc-800 p-8 overflow-y-auto h-screen animate-in fade-in duration-500">
+      <div className="bg-zinc-50 text-zinc-800 p-4 sm:p-6 lg:p-8">
         
         {/* Title */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-zinc-250 pb-6 mb-8">
@@ -385,7 +381,7 @@ export default function AdminCircularProductsPage() {
           )}
         </div>
 
-      </main>
+      </div>
 
       {/* Reject Modal dialog */}
       {showRejectModal && selectedProduct && (

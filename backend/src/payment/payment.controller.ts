@@ -28,7 +28,7 @@ export class PaymentController {
     @Param('orderId') orderId: string,
     @Request() req: any,
   ) {
-    const status = await this.paymentService.getPaymentStatus(orderId);
+    const status = await this.paymentService.getPaymentStatus(orderId, req.user.userId);
     if (!status) {
       return { error: 'Order not found' };
     }

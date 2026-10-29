@@ -1,11 +1,15 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { reviewedReportSelection, publicQuality } from '../quality/quality.public';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { PUBLIC_SUPPLIER_PROFILE_SELECT, PUBLIC_USER_SELECT } from '../users/public-user.select';
+import { randomUUID } from 'crypto';
+import { CreateBatchDto } from './create-batch.dto';
 
 @Injectable()
 export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(query: any) {
+  async findAll(query: any, ownerId?: string, includeUnpublished = false) {
     const where: any = {};
     
     if (query.status) {
@@ -17,11 +21,14 @@ export class ProductsService {
     if (supplierId) {
       where.supplier_id = supplierId;
     }
+    if (ownerId) where.supplier_id = ownerId;
+    else if (!includeUnpublished) where.status = 'VERIFIED';
 
     const products = await this.prisma.product.findMany({
       where,
       include: {
         qc_result: true,
+        lab_reports: reviewedReportSelection,
         supplier: {
           include: {
             profile: true,
@@ -44,22 +51,29 @@ export class ProductsService {
       return {
         id: p.id,
         batch_code: p.batch_code,
+        created_at: p.created_at,
         supplier_name: companyName,
+        supplier_contact: p.supplier.supplier_profile?.whatsapp || p.supplier.profile?.phone || null,
         status: p.status,
+        is_demo: p.is_demo, price_type: p.price_type,
+        moq_kg: p.moq_kg,
+        lab_verified: false, quality_status: 'UNEVALUATED',
+        supplier_identity_verified: p.supplier.supplier_profile?.status === 'TERVERIFIKASI',
         origin_village: p.origin_village || '',
         origin_district: p.origin_district || '',
-        pa_percentage: p.qc_result?.pa_percentage || 0,
-        moisture: p.qc_result?.moisture || 0,
-        specific_gravity: p.qc_result?.specific_gravity || null,
-        refractive_index: p.qc_result?.refractive_index || null,
-        optical_rotation: p.qc_result?.optical_rotation || null,
+        pa_percentage: p.qc_result?.pa_percentage ?? null,
+        moisture: p.qc_result?.moisture ?? null,
+        specific_gravity: p.qc_result?.specific_gravity ?? null,
+        refractive_index: p.qc_result?.refractive_index ?? null,
+        optical_rotation: p.qc_result?.optical_rotation ?? null,
         available_volume_kg: p.available_volume_kg,
         price_per_kg: p.price_per_kg,
         images: p.images && p.images.length > 0 ? p.images : ["/images/premium_oil_dark.png"],
         tested_at: p.qc_result?.tested_at || null,
         qc_result: p.qc_result,
         supplier_id: p.supplier_id,
-        is_featured: p.is_featured
+        is_featured: p.is_featured,
+        ...(!ownerId && !includeUnpublished ? publicQuality(p) : {}),
       };
     });
 
@@ -75,15 +89,16 @@ export class ProductsService {
       where: isUuid
         ? {
             OR: [
-              { id },
-              { batch_code: id }
+              { id, status: 'VERIFIED' },
+              { batch_code: id, status: 'VERIFIED' }
             ]
           }
         : {
-            batch_code: id
+            batch_code: id, status: 'VERIFIED'
           },
       include: {
         qc_result: true,
+        lab_reports: reviewedReportSelection,
         supplier: {
           include: {
             profile: true,
@@ -105,27 +120,25 @@ export class ProductsService {
       id: product.id,
       batch_code: product.batch_code,
       supplier_name: companyName,
+      supplier_contact: product.supplier.supplier_profile?.whatsapp || product.supplier.profile?.phone || null,
       status: product.status,
+      is_demo: product.is_demo, price_type: product.price_type,
+      moq_kg: product.moq_kg,
+      supplier_identity_verified: product.supplier.supplier_profile?.status === 'TERVERIFIKASI',
       origin_village: product.origin_village || '',
       origin_district: product.origin_district || '',
-      pa_percentage: product.qc_result?.pa_percentage || 0,
-      moisture: product.qc_result?.moisture || 0,
-      specific_gravity: product.qc_result?.specific_gravity || null,
-      refractive_index: product.qc_result?.refractive_index || null,
-      optical_rotation: product.qc_result?.optical_rotation || null,
       available_volume_kg: product.available_volume_kg,
       price_per_kg: product.price_per_kg,
       images: product.images && product.images.length > 0 ? product.images : ["/images/premium_oil_dark.png"],
-      tested_at: product.qc_result?.tested_at || null,
-      qc_result: product.qc_result,
       supplier_id: product.supplier_id,
-      is_featured: product.is_featured
+      is_featured: product.is_featured,
+      ...publicQuality(product),
     };
   }
 
-  async createBatch(supplierId: string, createBatchDto: any) {
+  async createBatch(supplierId: string, createBatchDto: CreateBatchDto) {
     // Generate a clean batch code if none is provided
-    const randomSuffix = Math.floor(100 + Math.random() * 900);
+    const randomSuffix = randomUUID();
     const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
     const batchCode = createBatchDto.batch_code || `VLM-${dateStr}-${randomSuffix}`;
 
@@ -136,10 +149,11 @@ export class ProductsService {
         status: "DRAFT",
         origin_village: createBatchDto.origin_village || "",
         origin_district: createBatchDto.origin_district || "",
-        origin_province: createBatchDto.origin_province || "Aceh",
-        total_volume_kg: parseFloat(createBatchDto.total_volume_kg) || 0,
-        available_volume_kg: parseFloat(createBatchDto.total_volume_kg) || 0,
-        price_per_kg: parseFloat(createBatchDto.price_per_kg) || 0,
+        origin_province: createBatchDto.origin_province || null,
+        production_date: createBatchDto.production_date ? new Date(createBatchDto.production_date) : null,
+        total_volume_kg: createBatchDto.total_volume_kg,
+        available_volume_kg: createBatchDto.total_volume_kg,
+        price_per_kg: createBatchDto.price_per_kg ?? 0,
         images: createBatchDto.images || ["/images/premium_oil_dark.png"],
       }
     });
@@ -156,13 +170,18 @@ export class ProductsService {
       throw new NotFoundException(`Batch tidak ditemukan.`);
     }
 
+    if (!Number.isFinite(price) || price <= 0) throw new BadRequestException('Harga penawaran harus positif');
+    if (!['AWAITING_PRICE', 'VERIFIED'].includes(product.status)) {
+      throw new BadRequestException('Catat informasi QC terlebih dahulu; pencatatan bukan bukti kelulusan mutu');
+    }
+
     // Match supplier profile to get supplierId
     const supplier = await this.prisma.supplierProfile.findUnique({
       where: { user_id: supplierId },
     });
 
     if (!supplier || product.supplier_id !== supplier.user_id) {
-      throw new Error(`Anda tidak memiliki akses untuk memperbarui batch ini.`);
+      throw new ForbiddenException('Anda tidak memiliki akses untuk memperbarui batch ini.');
     }
 
     const updated = await this.prisma.product.update({
@@ -189,43 +208,28 @@ export class ProductsService {
       throw new ForbiddenException(`Anda tidak memiliki akses untuk mengubah batch ini.`);
     }
 
-    const updated = await this.prisma.product.update({
-      where: { id },
-      data: {
-        origin_village: updateDto.origin_village !== undefined ? updateDto.origin_village : product.origin_village,
-        origin_district: updateDto.origin_district !== undefined ? updateDto.origin_district : product.origin_district,
-        total_volume_kg: updateDto.total_volume_kg !== undefined ? parseFloat(updateDto.total_volume_kg) : product.total_volume_kg,
-        available_volume_kg: updateDto.total_volume_kg !== undefined ? parseFloat(updateDto.total_volume_kg) : product.available_volume_kg,
-        images: updateDto.images !== undefined ? updateDto.images : product.images,
-      }
-    });
-
-    return updated;
+    const volume = updateDto.total_volume_kg === undefined ? product.total_volume_kg : Number(updateDto.total_volume_kg);
+    if (!Number.isFinite(volume) || volume < 0) throw new BadRequestException('Volume tidak valid');
+    const changed = await this.prisma.product.updateMany({ where: { id, supplier_id: supplierId, status: 'DRAFT', order_items: { none: {} }, testing_requests: { none: {} }, lab_reports: { none: {} } }, data: {
+      origin_village: updateDto.origin_village ?? product.origin_village,
+      origin_district: updateDto.origin_district ?? product.origin_district,
+      total_volume_kg: volume, available_volume_kg: volume,
+      images: updateDto.images ?? product.images,
+    } });
+    if (changed.count !== 1) throw new ConflictException('Batch yang diproses atau memiliki pesanan tidak dapat diubah; buat batch baru');
+    return this.prisma.product.findUnique({ where: { id } });
   }
 
   async deleteProduct(id: string, supplierId: string) {
-    const product = await this.prisma.product.findUnique({
-      where: { id },
+    return this.prisma.$transaction(async tx => {
+      const product = await tx.product.findUnique({ where: { id }, include: { _count: { select: { testing_requests: true, lab_reports: true, quality_files: true } } } });
+      if (!product) throw new NotFoundException('Batch tidak ditemukan');
+      if (product.supplier_id !== supplierId) throw new ForbiddenException('Not your batch');
+      if (product._count.testing_requests || product._count.lab_reports || product._count.quality_files) throw new ConflictException('Batch memiliki riwayat pengujian atau dokumen; riwayat tidak dapat dihapus');
+      if (await tx.orderItem.count({ where: { product_id: id } })) throw new ConflictException('Batch memiliki catatan pesanan dan tidak dapat dihapus');
+      await tx.product.delete({ where: { id } });
+      return { success: true };
     });
-
-    if (!product) {
-      throw new NotFoundException(`Batch tidak ditemukan.`);
-    }
-
-    if (product.supplier_id !== supplierId) {
-      throw new ForbiddenException(`Anda tidak memiliki akses untuk menghapus batch ini.`);
-    }
-
-    // Delete related records
-    await this.prisma.qcResult.deleteMany({ where: { product_id: id } });
-    await this.prisma.productParameter.deleteMany({ where: { product_id: id } });
-    await this.prisma.traceLog.deleteMany({ where: { product_id: id } });
-
-    await this.prisma.product.delete({
-      where: { id },
-    });
-
-    return { success: true, message: `Batch ${product.batch_code} berhasil dihapus.` };
   }
 
   async getPublicSupplierProfile(id: string) {
@@ -247,13 +251,14 @@ export class ProductsService {
       orderBy: {
         updated_at: 'desc'
       },
-      include: {
+      select: {
+        ...PUBLIC_SUPPLIER_PROFILE_SELECT,
         user: {
-          include: {
-            profile: true,
+          select: {
+            ...PUBLIC_USER_SELECT,
             products: {
               where: { status: 'VERIFIED' },
-              include: { qc_result: true }
+              include: { qc_result: true, lab_reports: reviewedReportSelection }
             },
             circular_products: {
               where: { status: 'APPROVED' }
@@ -267,11 +272,7 @@ export class ProductsService {
       throw new NotFoundException('Profil supplier tidak ditemukan.');
     }
 
-    return {
-      data: {
-        ...supplierProfile.user,
-        supplier_profile: supplierProfile
-      }
-    };
+    const { user, ...publicProfile } = supplierProfile;
+    return { data: { ...user, products: user.products.map(({ lab_reports, ...p }) => ({ ...p, ...publicQuality({ ...p, lab_reports }) })), supplier_profile: publicProfile } };
   }
 }

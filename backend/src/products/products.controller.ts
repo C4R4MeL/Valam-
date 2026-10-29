@@ -4,6 +4,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { SupplierVerifiedGuard } from '../supplier/guards/supplier-verified.guard';
+import { CreateBatchDto } from './create-batch.dto';
 
 @Controller('products')
 export class ProductsController {
@@ -14,6 +15,13 @@ export class ProductsController {
     return this.productsService.findAll(query);
   }
 
+  @Get('mine')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('supplier')
+  findMine(@Request() req: any, @Query() query: any) {
+    return this.productsService.findAll(query, req.user.userId);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.productsService.findOne(id);
@@ -22,7 +30,7 @@ export class ProductsController {
   @Post('batches')
   @UseGuards(JwtAuthGuard, RolesGuard, SupplierVerifiedGuard)
   @Roles('supplier')
-  createBatch(@Request() req: any, @Body() createBatchDto: any) {
+  createBatch(@Request() req: any, @Body() createBatchDto: CreateBatchDto) {
     return this.productsService.createBatch(req.user.userId, createBatchDto);
   }
 

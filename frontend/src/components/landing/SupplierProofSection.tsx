@@ -4,10 +4,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useLocale } from "next-intl";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { getSupplierDisplayName } from "@/lib/utils";
 
 interface SupplierProfile {
   id: string;
-  nama_koperasi: string;
+  nama_koperasi: string | null;
+  nama_pic?: string | null;
+  supplier_subtype?: "KOPERASI" | "PETANI" | "PENYULING";
   kabupaten: string;
   grade_nilam: string[];
   status: string;
@@ -24,6 +27,7 @@ export function SupplierProofSection() {
 
   const [suppliers, setSuppliers] = useState<SupplierProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     const fetchSuppliers = async () => {
@@ -34,9 +38,10 @@ export function SupplierProofSection() {
         });
         if (res.ok) {
           const data = await res.json();
-          setSuppliers(data || []);
-        }
+          setSuppliers(Array.isArray(data) ? data : data.data || []);
+        } else { throw new Error('Supplier API failed'); }
       } catch (error) {
+        setFailed(true);
         console.error("Failed to fetch verified suppliers:", error);
       } finally {
         setLoading(false);
@@ -48,20 +53,22 @@ export function SupplierProofSection() {
 
   const content = {
     label: isId ? "DIPERCAYA OLEH" : "TRUSTED BY",
-    title: isId ? "Koperasi Terverifikasi yang Sudah Bergabung" : "Verified Cooperatives Already Joined",
+    title: isId ? "Verifikasi Identitas Pemasok" : "Supplier Identity Verification",
     badgeVerified: isId ? "Terverifikasi" : "Verified",
     gradeLabel: isId ? "Grade Pasokan:" : "Supplied Grades:",
     fallbackText: isId ? "Jadilah koperasi pertama yang bergabung" : "Be the first cooperative to join",
     cta: isId ? "Lihat semua supplier" : "View all suppliers",
   };
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
+  const getInitials = (name: string | null | undefined) => {
+    return (name ?? "")
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
       .map((n) => n[0])
       .slice(0, 2)
       .join("")
-      .toUpperCase();
+      .toUpperCase() || "?";
   };
 
   const formatGrades = (grades: string[]) => {
@@ -102,53 +109,56 @@ export function SupplierProofSection() {
         ) : suppliers.length > 0 ? (
           /* Cooperative Cards Grid */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-            {suppliers.map((supplier) => (
-              <div
-                key={supplier.id}
-                className="bg-white rounded-3xl p-8 border border-zinc-100 shadow-md hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-start justify-between gap-4 mb-4">
-                    {supplier.user?.profile?.avatar_url ? (
-                      <img
-                        src={supplier.user.profile.avatar_url}
-                        alt={supplier.nama_koperasi}
-                        className="w-12 h-12 rounded-full object-cover border border-zinc-100"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 rounded-full bg-emerald-700 text-white flex items-center justify-center font-bold text-sm">
-                        {getInitials(supplier.nama_koperasi)}
-                      </div>
-                    )}
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      {content.badgeVerified}
-                    </span>
+            {suppliers.map((supplier) => {
+              const displayName = getSupplierDisplayName(supplier);
+              return (
+                <div
+                  key={supplier.id}
+                  className="bg-white rounded-3xl p-8 border border-zinc-100 shadow-md hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-4 mb-4">
+                      {supplier.user?.profile?.avatar_url ? (
+                        <img
+                          src={supplier.user.profile.avatar_url}
+                          alt={displayName}
+                          className="w-12 h-12 rounded-full object-cover border border-zinc-100"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-emerald-700 text-white flex items-center justify-center font-bold text-sm">
+                          {getInitials(displayName)}
+                        </div>
+                      )}
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        {content.badgeVerified}
+                      </span>
+                    </div>
+
+                    <h3 className="font-bold text-zinc-900 text-lg leading-snug mb-1">
+                      {displayName}
+                    </h3>
+                    <p className="text-sm text-zinc-500 mb-4">
+                      {supplier.kabupaten}, Aceh
+                    </p>
                   </div>
 
-                  <h3 className="font-bold text-zinc-900 text-lg leading-snug mb-1">
-                    {supplier.nama_koperasi}
-                  </h3>
-                  <p className="text-sm text-zinc-500 mb-4">
-                    {supplier.kabupaten}, Aceh
-                  </p>
+                  <div className="pt-4 border-t border-zinc-50 text-xs md:text-sm">
+                    <span className="text-zinc-400 block mb-0.5">{content.gradeLabel}</span>
+                    <span className="font-semibold text-emerald-800 font-mono">
+                      Grade {formatGrades(supplier.grade_nilam)}
+                    </span>
+                  </div>
                 </div>
-
-                <div className="pt-4 border-t border-zinc-50 text-xs md:text-sm">
-                  <span className="text-zinc-400 block mb-0.5">{content.gradeLabel}</span>
-                  <span className="font-semibold text-emerald-800 font-mono">
-                    Grade {formatGrades(supplier.grade_nilam)}
-                  </span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           /* Empty Placeholder */
           <div className="text-center py-12 max-w-md mx-auto">
             <div className="bg-white border border-dashed border-zinc-200 rounded-3xl p-8 shadow-sm">
               <p className="text-zinc-500 font-medium mb-4">
-                {content.fallbackText}
+                {failed ? (isId ? 'Data pemasok gagal dimuat dari API.' : 'Supplier data could not be loaded from the API.') : content.fallbackText}
               </p>
               <Link href={`/${locale}/register`}>
                 <button className="bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold rounded-full px-6 py-2.5 transition-colors">

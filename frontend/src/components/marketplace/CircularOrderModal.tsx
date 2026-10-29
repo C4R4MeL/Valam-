@@ -334,9 +334,7 @@ export function CircularOrderModal() {
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <span className="text-[11px] text-zinc-500 font-bold">{singleProduct.mitra_pengolah_nama}</span>
                       <div className="flex text-amber-400">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <span key={i} className={i < (singleProduct.sustainability_score || 5) ? 'text-[#C8922A]' : 'text-zinc-200'}>★</span>
-                        ))}
+                        <span className="text-xs text-zinc-500">{isId ? 'Dampak belum dinilai' : 'Impact not evaluated'}</span>
                       </div>
                     </div>
                   </div>

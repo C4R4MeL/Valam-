@@ -1,5 +1,7 @@
 'use client';
 
+import type { MatchingResult } from '@/lib/matching-result';
+
 import { useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Sparkles, Info, X, Lock } from 'lucide-react';
@@ -8,17 +10,7 @@ import { MatchResultCard } from './MatchResultCard';
 import { formatRupiah } from '@/lib/utils';
 import { useAuthContext } from '@/components/providers/AuthProvider';
 
-interface Product {
-  id: string;
-  batch_code: string;
-  supplier_name: string;
-  supplier_id: string;
-  available_volume_kg: number;
-  pa_percentage: number;
-  moisture: number;
-  price_per_kg: number;
-  match_score: number;
-}
+type Product = MatchingResult;
 
 interface ResultPanelProps {
   hasSearched: boolean;
@@ -206,14 +198,14 @@ export function ResultPanel({
                   {translations.title}
                 </h3>
                 <p className="text-[11px] text-zinc-400 font-medium uppercase tracking-[0.12em] mt-0.5">
-                  {translations.subtitle}
+                  Skor relatif MCDM — jarak Euclidean berbobot; bukan probabilitas kecocokan atau bukti kelulusan lab.
                 </p>
               </div>
             </div>
 
             {/* Supplier Rankings List with Vertical Scroll */}
             <div className="space-y-4 w-full max-h-[640px] md:max-h-[680px] overflow-y-auto pr-1.5 sm:pr-2 pb-8 custom-scrollbar">
-              {results.map((product, idx) => (
+              {[true, false].map(eligible => <section key={String(eligible)} className="space-y-4"><h4 className="font-bold">{eligible ? 'Memenuhi seluruh batas angka' : 'Alternatif — ada syarat belum terpenuhi'}</h4>{results.filter(product => product.is_eligible === eligible).map((product, idx) => (
                 <MatchResultCard
                   key={product.id || String(idx)}
                   product={product}
@@ -227,7 +219,7 @@ export function ResultPanel({
                   isAuthenticated={isAuthenticated}
                   role={role}
                 />
-              ))}
+              ))}</section>)}
             </div>
           </motion.div>
         )}
@@ -333,10 +325,10 @@ export function ResultPanel({
                         {isEn ? 'Price / Kg' : 'Harga / Kg'}
                       </td>
                       <td className="py-4 text-center font-semibold tabular-nums text-zinc-900">
-                        {formatRupiah(selectedProducts[0].price_per_kg)}
+                        {selectedProducts[0].price_per_kg == null ? "Belum tersedia" : formatRupiah(selectedProducts[0].price_per_kg!)}
                       </td>
                       <td className="py-4 text-center font-semibold tabular-nums text-zinc-900">
-                        {formatRupiah(selectedProducts[1].price_per_kg)}
+                        {selectedProducts[1].price_per_kg == null ? "Belum tersedia" : formatRupiah(selectedProducts[1].price_per_kg!)}
                       </td>
                     </tr>
 
@@ -344,10 +336,10 @@ export function ResultPanel({
                     <tr className="border-b border-zinc-100 hover:bg-zinc-50/50">
                       <td className="py-4 font-medium text-zinc-700 tracking-tight">Kadar PA%</td>
                       <td className="py-4 text-center font-semibold tabular-nums text-zinc-800">
-                        {selectedProducts[0].pa_percentage}%
+                        {selectedProducts[0].pa_percentage == null ? "Belum tersedia" : selectedProducts[0].pa_percentage + "%"}
                       </td>
                       <td className="py-4 text-center font-semibold tabular-nums text-zinc-800">
-                        {selectedProducts[1].pa_percentage}%
+                        {selectedProducts[1].pa_percentage == null ? "Belum tersedia" : selectedProducts[1].pa_percentage + "%"}
                       </td>
                     </tr>
 
@@ -355,10 +347,10 @@ export function ResultPanel({
                     <tr className="border-b border-zinc-100 hover:bg-zinc-50/50">
                       <td className="py-4 font-medium text-zinc-700 tracking-tight">Kadar Air%</td>
                       <td className="py-4 text-center font-semibold tabular-nums text-zinc-800">
-                        {selectedProducts[0].moisture}%
+                        {selectedProducts[0].moisture == null ? "Belum tersedia" : selectedProducts[0].moisture + "%"}
                       </td>
                       <td className="py-4 text-center font-semibold tabular-nums text-zinc-800">
-                        {selectedProducts[1].moisture}%
+                        {selectedProducts[1].moisture == null ? "Belum tersedia" : selectedProducts[1].moisture + "%"}
                       </td>
                     </tr>
 

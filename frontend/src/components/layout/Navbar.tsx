@@ -27,6 +27,16 @@ function IconLeaf({ className }: { className?: string }) {
   );
 }
 
+/** A visual page label, deliberately outside the interactive navigation flow. */
+function SupplierDashboardLabel({ compact = false }: { compact?: boolean }) {
+  const isId = useLocale() === 'id'
+  return <div className={`relative flex min-w-0 cursor-default items-center gap-1.5 overflow-hidden rounded-xl font-semibold text-[#1B5E3A] ${compact ? 'px-2.5 py-1.5 text-[11px] sm:text-xs' : 'px-4 py-2 text-[13px]'}`}>
+    <span aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-r from-valam-gold/90 to-valam-gold-300/90 shadow-[0_2px_12px_rgba(182,154,29,0.3)]" />
+    <Home aria-hidden="true" className="relative z-10 hidden h-4 w-4 shrink-0 sm:block" />
+    <span className="relative z-10 whitespace-nowrap">{isId ? 'Dashboard Supplier' : 'Supplier Dashboard'}</span>
+  </div>
+}
+
 /* ── Navigation Item Config ── */
 interface NavItem {
   label: string
@@ -61,11 +71,11 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isChatOpen, setIsChatOpen] = useState(false)
   const navRef = useRef<HTMLElement>(null)
-  const { onNavClick, onNavPointerDown } = useFastNav(NAV_PREFETCH_ROUTES)
+  const { role, email, logout, isAuthenticated } = useAuthContext()
+  const { onNavClick, onNavPointerDown } = useFastNav(role === 'supplier' ? ['/dashboard/supplier'] : NAV_PREFETCH_ROUTES)
 
   const scrolled = isScrolled
 
-  const { role, email, name, logout, isAuthenticated } = useAuthContext()
   const { totalItems } = useCart()
 
   // Chat state sync listener
@@ -137,30 +147,8 @@ export function Navbar() {
     return 'U'
   }
 
-  // Build nav items array
-  // Build nav items array
-  const navItems: NavItem[] = role === 'supplier' ? [
-    {
-      label: isId ? 'Dashboard Supplier' : 'Supplier Dashboard',
-      href: '/dashboard/supplier',
-      icon: <Home className="w-4 h-4" />,
-    },
-    {
-      label: t('Katalog') || (isId ? 'Katalog' : 'Catalog'),
-      href: '/marketplace',
-      icon: <ShoppingBag className="w-4 h-4" />,
-    },
-    {
-      label: t('Chatbot') || (isId ? 'Tanya Nila' : 'Ask Nila'),
-      href: '/chat',
-      icon: <MessageCircle className="w-4 h-4" />,
-    },
-    {
-      label: 'Insights',
-      href: '/insights',
-      icon: <BarChart3 className="w-4 h-4" />,
-    },
-  ] : [
+  // Supplier feature navigation stays in the sidebar; its navbar label is static.
+  const navItems: NavItem[] = role === 'supplier' ? [] : [
     {
       label: t('Beranda') || (isId ? 'Beranda' : 'Home'),
       href: '/',
@@ -252,7 +240,7 @@ export function Navbar() {
           </Link>
 
           {/* ── Navigation ── */}
-          <nav className={`hidden lg:flex items-center gap-0.5 rounded-2xl border border-white/[0.06] transition-all duration-500 ${scrolled ? 'bg-white/[0.03] px-1 py-0.5 rounded-xl' : 'bg-white/[0.04] px-1.5 py-1'}`}>
+          <nav aria-label={role === 'supplier' ? (isId ? 'Navigasi utama pemasok' : 'Supplier main navigation') : (isId ? 'Navigasi utama' : 'Main navigation')} className={`${role === 'supplier' ? 'flex' : 'hidden lg:flex'} items-center gap-0.5 rounded-2xl border border-white/[0.06] transition-all duration-500 ${scrolled ? 'bg-white/[0.03] px-1 py-0.5 rounded-xl' : 'bg-white/[0.04] px-1.5 py-1'}`}>
             {navItems.length > 0 ? navItems.map((item) => {
               const active = item.isActive !== undefined ? item.isActive : isNavActive(item.href, item.exact)
               return (
@@ -297,22 +285,7 @@ export function Navbar() {
                   </span>
                 </Link>
               )
-            }) : (
-              role === 'supplier' && (
-                <div className={`flex items-center gap-2 px-4 ${scrolled ? 'py-1.5 text-xs' : 'py-2 text-[13px]'} font-medium`}>
-                  <div className="flex items-center justify-center w-5 h-5 rounded-md bg-valam-gold/20 text-valam-gold-300 mr-1 border border-valam-gold/30">
-                    <User className="w-3 h-3" />
-                  </div>
-                  <span className="text-white/80">{locale === 'en' ? 'Supplier Dashboard' : 'Dashboard Supplier'}</span>
-                  {name && (
-                    <>
-                      <span className="text-white/20 mx-1">/</span>
-                      <span className="text-valam-gold-300 font-bold">{name}</span>
-                    </>
-                  )}
-                </div>
-              )
-            )}
+            }) : role === 'supplier' ? <SupplierDashboardLabel compact={scrolled} /> : null}
           </nav>
 
           {/* ── Right Section ── */}
@@ -342,7 +315,7 @@ export function Navbar() {
             {/* Language Switcher */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className={`relative rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] hover:border-white/[0.15] text-white/70 hover:text-white transition-all duration-200 flex items-center justify-center font-bold tracking-wide text-[11px] ${scrolled ? 'h-8 px-2.5 gap-1.5' : 'h-9 px-3 gap-1.5'}`}>
+                <button aria-label={isId ? 'Pilih bahasa' : 'Choose language'} className={`relative rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] hover:border-white/[0.15] text-white/70 hover:text-white transition-all duration-200 flex items-center justify-center font-bold tracking-wide text-[11px] ${scrolled ? 'h-8 px-2.5 gap-1.5' : 'h-9 px-3 gap-1.5'}`}>
                   <Globe className="w-3.5 h-3.5" />
                   {locale === 'en' ? 'EN' : 'ID'}
                 </button>
@@ -369,7 +342,7 @@ export function Navbar() {
             {role ? (
               <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className={`p-0 rounded-xl bg-gradient-to-br from-valam-gold to-valam-gold-300 hover:from-valam-gold-300 hover:to-valam-gold text-[#1B5E3A] font-bold text-sm shadow-[0_2px_12px_rgba(182,154,29,0.3)] ring-2 ring-white/10 hover:ring-white/20 transition-all duration-300 hover:scale-105 ${scrolled ? 'h-8 w-8' : 'h-9 w-9'}`}>
+                    <Button aria-label={role === 'supplier' ? (isId ? 'Menu akun pemasok' : 'Supplier account menu') : (isId ? 'Menu akun' : 'Account menu')} variant="ghost" className={`p-0 rounded-xl bg-gradient-to-br from-valam-gold to-valam-gold-300 hover:from-valam-gold-300 hover:to-valam-gold text-[#1B5E3A] font-bold text-sm shadow-[0_2px_12px_rgba(182,154,29,0.3)] ring-2 ring-white/10 hover:ring-white/20 transition-all duration-300 hover:scale-105 ${scrolled ? 'h-8 w-8' : 'h-9 w-9'}`}>
                       {getInitial()}
                     </Button>
                   </DropdownMenuTrigger>
@@ -426,6 +399,7 @@ export function Navbar() {
                       </div>
                     ) : (
                       <div className="p-1 space-y-0.5">
+                        {role !== 'supplier' && <>
                         {/* SUPPLIER & ADMIN LINKS */}
                         <DropdownMenuItem asChild>
                           <Link href={`/dashboard/${role}`} className="cursor-pointer flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[#1B5E3A]/5 outline-none transition-colors group">
@@ -433,7 +407,7 @@ export function Navbar() {
                               <User className="h-4 w-4" />
                             </div>
                             <span className="text-sm font-medium text-zinc-700 group-hover:text-[#1B5E3A] transition-colors">
-                              {role === 'supplier' ? t('SupplierDashboard') : t('AdminDashboard')}
+                              {t('AdminDashboard')}
                             </span>
                             <ChevronRight className="ml-auto h-3.5 w-3.5 text-zinc-400 group-hover:text-[#1B5E3A] transition-colors" />
                           </Link>
@@ -453,6 +427,7 @@ export function Navbar() {
 
                         <DropdownMenuSeparator className="my-1.5 bg-zinc-100" />
 
+                        </>}
                         <DropdownMenuItem onClick={handleLogout} className="cursor-pointer flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-rose-600 focus:text-rose-650 hover:bg-rose-50/50 focus:bg-rose-50/50 outline-none transition-colors group">
                           <div className="w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center text-rose-500 group-hover:bg-rose-100 transition-colors">
                             <LogOut className="h-4 w-4" />
@@ -506,6 +481,8 @@ export function Navbar() {
               VALAM<span className="text-valam-gold">.</span>
             </span>
           </Link>
+
+          {role === 'supplier' && <SupplierDashboardLabel compact />}
 
           {/* Mobile Right Actions */}
           <div className="flex items-center gap-1.5">
@@ -568,7 +545,7 @@ export function Navbar() {
         </div>
 
         {/* Drawer Nav Items */}
-        <nav className="flex flex-col gap-1 px-3 py-4">
+        {role !== 'supplier' && <nav className="flex flex-col gap-1 px-3 py-4">
           {navItems.map((item, idx) => {
             const active = item.isActive !== undefined ? item.isActive : isNavActive(item.href, item.exact)
             return (
@@ -605,7 +582,7 @@ export function Navbar() {
               </Link>
             )
           })}
-        </nav>
+        </nav>}
 
 
         {/* User Auth & Account Links in Drawer */}
@@ -652,7 +629,7 @@ export function Navbar() {
                     <ChevronRight className="ml-auto w-3.5 h-3.5 text-white/40" />
                   </Link>
                 </>
-              ) : (
+              ) : role !== 'supplier' ? (
                 <>
                   <Link
                     href={`/dashboard/${role}`}
@@ -663,7 +640,7 @@ export function Navbar() {
                     <span className="w-7 h-7 rounded-lg bg-white/[0.06] flex items-center justify-center text-valam-gold">
                       <Home className="w-3.5 h-3.5" />
                     </span>
-                    <span>{role === 'supplier' ? t('SupplierDashboard') : t('AdminDashboard')}</span>
+                    <span>{t('AdminDashboard')}</span>
                     <ChevronRight className="ml-auto w-3.5 h-3.5 text-white/40" />
                   </Link>
 
@@ -680,7 +657,7 @@ export function Navbar() {
                     <ChevronRight className="ml-auto w-3.5 h-3.5 text-white/40" />
                   </Link>
                 </>
-              )}
+              ) : null}
 
               {/* Sign out button */}
               <button

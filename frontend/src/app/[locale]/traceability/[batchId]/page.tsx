@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { Link } from '@/i18n/routing'
 import { Leaf, ArrowLeft, ShoppingCart, CheckCircle2 } from 'lucide-react'
-import { mockProducts, formatRupiah } from '@/lib/mock-data'
+import { BatchReports } from '@/components/qc/BatchReports'
 import { Button } from '@/components/ui/button'
 import { TimelineHistory } from '@/components/traceability/TimelineHistory'
 import { CoAViewer } from '@/components/qc/CoAViewer'
@@ -15,29 +15,29 @@ import { useLocale } from 'next-intl'
 const contentMap = {
   id: {
     back: "Kembali ke Katalog",
-    title: "Jejak Kualitas Terverifikasi",
-    desc: "Setiap tetes minyak nilam Valam memiliki cerita. Lacak perjalanan produk ini dari perkebunan hingga tersertifikasi di laboratorium kami.",
+    title: "Ketertelusuran & Informasi Batch",
+    desc: "Setiap tetes minyak nilam Valam memiliki cerita. Lihat catatan perjalanan batch dan dokumen sumber yang tersedia.",
     suppliedBy: "Disuplai oleh",
     quality: "Kualitas",
     volume: "Volume",
     btnBuy: "Beli Produk Ini",
     mapTitle: "Peta Asal Lahan",
     timelineTitle: "Timeline Perjalanan",
-    docTitle: "Dokumen Sertifikasi Fisik",
+    docTitle: "Dokumen Hasil Uji",
     footerRight: "Hak Cipta Dilindungi.",
     footerTagline: "Marketplace minyak nilam B2B terverifikasi."
   },
   en: {
     back: "Back to Catalog",
-    title: "Verified Quality Trail",
-    desc: "Every drop of Valam patchouli oil has a story. Trace this product's journey from the plantation to certification in our laboratory.",
+    title: "Traceability & Batch Information",
+    desc: "Every drop of Valam patchouli oil has a story. View recorded batch events and available source documents.",
     suppliedBy: "Supplied by",
     quality: "Quality",
     volume: "Volume",
     btnBuy: "Buy This Product",
     mapTitle: "Origin Map",
     timelineTitle: "Journey Timeline",
-    docTitle: "Physical Certification Documents",
+    docTitle: "Test Report Documents",
     footerRight: "All rights reserved.",
     footerTagline: "The verified B2B patchouli oil marketplace."
   }
@@ -54,8 +54,8 @@ export default function TraceabilityPage() {
 
   useEffect(() => {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
-    fetch(`${API_URL}/trace/code/${batchId}`)
-      .then(res => res.json())
+    fetch(`${API_URL}/trace/code/${encodeURIComponent(batchId)}`, { cache: 'no-store' })
+      .then(res => { if (!res.ok) throw new Error('Trace API failed'); return res.json(); })
       .then(data => {
         setProduct(data)
         setLoading(false)
@@ -122,7 +122,7 @@ export default function TraceabilityPage() {
                 <p className="text-xs text-zinc-400 font-medium uppercase tracking-wider mb-1">{t.quality}</p>
                 <div className="flex items-center gap-1.5 text-emerald-700 font-bold">
                   <CheckCircle2 className="w-5 h-5" />
-                  PA {product.qc_result?.pa_percentage || 0}%
+                  {locale === 'id' ? 'Lihat laporan batch' : 'View batch reports'}
                 </div>
               </div>
               <div>
@@ -155,16 +155,10 @@ export default function TraceabilityPage() {
               </h2>
               <div className="bg-white rounded-2xl border border-zinc-200 p-2 shadow-sm h-64 overflow-hidden relative group">
                 <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors z-10 pointer-events-none"></div>
-                <iframe 
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d127504.42340321477!2d96.06416182390234!3d4.142348574768311!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x303ec3a0d5c0b7d1%3A0x3344d56ab368a5c3!2sWoyla%20Barat%2C%20Kabupaten%20Aceh%20Barat%2C%20Aceh!5e0!3m2!1sid!2sid!4v1718000000000!5m2!1sid!2sid" 
-                  width="100%" 
-                  height="100%" 
-                  style={{ border: 0, borderRadius: '0.75rem' }} 
-                  allowFullScreen={false} 
-                  loading="lazy" 
-                  referrerPolicy="no-referrer-when-downgrade"
-                  className="grayscale contrast-125 opacity-90 group-hover:grayscale-0 transition-all duration-700"
-                ></iframe>
+                <div className="h-full grid place-content-center p-5 text-center text-sm text-zinc-600">
+                  <p>{[product.origin_village, product.origin_district, product.origin_province].filter(Boolean).join(', ') || (locale === 'id' ? 'Asal belum tersedia' : 'Origin unavailable')}</p>
+                  <p className="mt-2 text-xs">{locale === 'id' ? 'Koordinat lahan belum tersedia; peta lokasi belum dapat ditampilkan.' : 'Farm coordinates are unavailable; a location map cannot be shown yet.'}</p>
+                </div>
               </div>
             </section>
 
@@ -182,7 +176,7 @@ export default function TraceabilityPage() {
              <h2 className="text-xl font-bold text-emerald-950 mb-6 lg:text-right">
                 {t.docTitle}
               </h2>
-              <CoAViewer batch={product} />
+              <BatchReports productId={product.id} />
           </div>
 
         </div>

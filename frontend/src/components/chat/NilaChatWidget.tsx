@@ -31,7 +31,7 @@ const content = {
     typing: 'Nila sedang mengetik',
     greeting: 'Hai! Butuh bantuan seputar nilam? 👋',
     chips: [
-      'Harga nilam terkini',
+      'Cara membaca harga batch',
       'Grade minyak nilam',
       'Cara pesan',
       'Proses ekspor',
@@ -48,7 +48,7 @@ const content = {
     typing: 'Nila is typing',
     greeting: 'Hi! Need help with patchouli? 👋',
     chips: [
-      'Current patchouli prices',
+      'How to read batch prices',
       'Patchouli oil grades',
       'How to order',
       'Export process',
@@ -429,6 +429,7 @@ export function NilaChatWidget() {
             )}
 
             {/* ── Input Area ───────────────────────────────────────── */}
+            <p role="note" className="px-4 py-2 text-xs text-zinc-600 bg-amber-50 shrink-0">{locale === 'id' ? 'NILA memberi panduan umum. Belum membaca stok, harga batch, dokumen QC, pesanan, atau wallet Anda. Periksa data pada halaman batch dan dashboard.' : 'NILA provides general guidance. It cannot read live stock, batch prices, QC documents, orders, or your wallet. Check batch pages and your dashboard.'}</p>
             <form
               onSubmit={handleSubmit}
               className="flex items-center gap-2 px-4 py-3 border-t border-zinc-100 bg-white flex-shrink-0"

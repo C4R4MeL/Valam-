@@ -12,6 +12,7 @@ import { NotificationService } from './notification.service';
 import { RegisterSupplierDto } from './dto/register-supplier.dto';
 import { UpdateSupplierDto } from './dto/update-supplier.dto';
 import { ReviewAction } from './dto/review-document.dto';
+import { PUBLIC_SUPPLIER_PROFILE_SELECT } from '../users/public-user.select';
 import {
   SupplierStatus,
   SupplierSubtype,
@@ -349,42 +350,8 @@ export class SupplierService {
     // Validate completeness
     const errors: string[] = [];
 
-    // ── Determine required document types based on sub-type ───────
-    let requiredTypes: TipeDocument[] = [];
-
-    switch (supplier.supplier_subtype) {
-      case SupplierSubtype.KOPERASI:
-        requiredTypes = [
-          TipeDocument.AKTA_KOPERASI,
-          TipeDocument.COA,
-          TipeDocument.FOTO_FASILITAS,
-          TipeDocument.SURAT_PERNYATAAN,
-        ];
-        break;
-
-      case SupplierSubtype.PENYULING:
-        // Penyuling: COA + Foto Fasilitas (no Akta Koperasi)
-        requiredTypes = [
-          TipeDocument.COA,
-          TipeDocument.FOTO_FASILITAS,
-        ];
-        break;
-
-      case SupplierSubtype.PETANI:
-        // Petani with alat suling: COA + Foto Fasilitas
-        // Petani without alat suling: Foto Fasilitas only
-        if (supplier.punya_alat_suling) {
-          requiredTypes = [
-            TipeDocument.COA,
-            TipeDocument.FOTO_FASILITAS,
-          ];
-        } else {
-          requiredTypes = [
-            TipeDocument.FOTO_FASILITAS,
-          ];
-        }
-        break;
-    }
+    const requiredTypes = this.getDocumentCompleteness({ ...supplier, documents })
+      .map(requirement => requirement.tipe);
 
     // Check each required document type
     for (const tipe of requiredTypes) {
@@ -403,16 +370,10 @@ export class SupplierService {
       }
     }
 
-    // Check COA not expired (only if COA is required)
     if (requiredTypes.includes(TipeDocument.COA)) {
-      const coaDocs = documents.filter((d) => d.tipe_document === TipeDocument.COA);
-      for (const coa of coaDocs) {
-        if (coa.tanggal_coa) {
-          const diffDays = this.daysDiff(coa.tanggal_coa, new Date());
-          if (diffDays > 180) {
-            errors.push('COA sudah kadaluarsa. Harap upload COA terbaru dari laboratorium terakreditasi (maksimal 6 bulan terakhir).');
-          }
-        }
+      for (const coa of documents.filter(doc => doc.tipe_document === TipeDocument.COA)) {
+        const issue = this.coaDateIssue(coa.tanggal_coa);
+        if (issue) errors.push(issue);
       }
     }
 
@@ -516,7 +477,7 @@ export class SupplierService {
     );
     (supplier as any).documents = documentsWithUrls;
 
-    return { data: supplier };
+    return { data: { ...supplier, documentCompleteness: this.getDocumentCompleteness(supplier) } };
   }
 
   /**
@@ -625,73 +586,39 @@ export class SupplierService {
   }
 
   /**
-   * Admin finalizes verification — all documents must be APPROVED.
+   * Admin finalizes profile verification using approved requirements for its supplier type.
    */
   async finalizeVerification(supplierId: string, adminId: string) {
-    const supplier = await this.prisma.supplierProfile.findUnique({
-      where: { id: supplierId },
-      include: { documents: true },
-    });
-
-    if (!supplier) {
-      throw new NotFoundException('Supplier tidak ditemukan.');
-    }
-
-    if (supplier.status === SupplierStatus.TERVERIFIKASI) {
-      throw new BadRequestException('Supplier sudah terverifikasi.');
-    }
-
-    // Check all documents are approved
-    const requiredTypes: TipeDocument[] = [
-      TipeDocument.AKTA_KOPERASI,
-      TipeDocument.COA,
-      TipeDocument.FOTO_FASILITAS,
-      TipeDocument.SURAT_PERNYATAAN,
-    ];
-
-    const unapproved: string[] = [];
-    for (const tipe of requiredTypes) {
-      const docs = supplier.documents.filter(
-        (d) => d.tipe_document === tipe && d.status_dokumen === StatusDokumen.APPROVED,
-      );
-      if (docs.length === 0) {
-        unapproved.push(this.getDocumentTypeName(tipe));
-      }
-    }
-
-    if (unapproved.length > 0) {
-      throw new BadRequestException({
-        message: 'Tidak semua dokumen telah diapprove.',
-        unapprovedDocuments: unapproved,
+    const updated = await this.prisma.$transaction(async tx => {
+      // Repeated finalization must not create multiple approval audit entries.
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${'supplier-verify:' + supplierId}, 0))`;
+      const supplier = await tx.supplierProfile.findUnique({
+        where: { id: supplierId }, include: { documents: true },
       });
-    }
+      if (!supplier) throw new NotFoundException('Supplier tidak ditemukan.');
+      if (supplier.status === SupplierStatus.TERVERIFIKASI) throw new BadRequestException('Supplier sudah terverifikasi.');
+      if (supplier.status !== SupplierStatus.DALAM_VERIFIKASI) throw new BadRequestException('Supplier harus mengajukan dokumen untuk review terlebih dahulu.');
 
-    // Finalize
-    const updated = await this.prisma.supplierProfile.update({
-      where: { id: supplierId },
-      data: {
-        status: SupplierStatus.TERVERIFIKASI,
-        verified_at: new Date(),
-        is_legacy: false,
-        legacy_deadline: null,
-      },
-    });
+      const requirements = this.getDocumentCompleteness(supplier);
+      const unapproved = requirements.filter(requirement => !requirement.approvalComplete);
+      if (unapproved.length) throw new BadRequestException({
+        message: 'Persyaratan dokumen sesuai jenis supplier belum terpenuhi.',
+        unapprovedDocuments: unapproved.map(requirement => this.getDocumentTypeName(requirement.tipe)),
+        documentRequirements: requirements,
+      });
 
-    await this.prisma.verificationLog.create({
-      data: {
-        supplier_id: supplierId,
-        admin_id: adminId,
-        aksi: AksiVerifikasi.FINALIZE_VERIFIED,
-        catatan: 'Semua dokumen diverifikasi. Status: TERVERIFIKASI.',
-      },
-    });
-
+      const result = await tx.supplierProfile.update({
+        where: { id: supplierId },
+        data: { status: SupplierStatus.TERVERIFIKASI, verified_at: new Date(), is_legacy: false, legacy_deadline: null },
+      });
+      await tx.verificationLog.create({ data: {
+        supplier_id: supplierId, admin_id: adminId, aksi: AksiVerifikasi.FINALIZE_VERIFIED,
+        catatan: 'Persyaratan dokumen profil pemasok sesuai jenisnya telah disetujui. Bukan evaluasi mutu batch.',
+      } });
+      return result;
+    }, { timeout: 15000, maxWait: 10000 });
     await this.notificationService.sendVerificationApproved(updated);
-
-    return {
-      message: `Supplier ${updated.nama_koperasi || updated.nama_pic} berhasil diverifikasi!`,
-      data: updated,
-    };
+    return { message: 'Profil supplier berhasil diverifikasi. Mutu batch dinilai terpisah.', data: updated };
   }
 
   /**
@@ -800,17 +727,22 @@ export class SupplierService {
   }
 
   private validateCoaDate(tanggalCoa: string) {
-    const coaDate = new Date(tanggalCoa);
-    const diffDays = this.daysDiff(coaDate, new Date());
-    if (diffDays > 180) {
-      throw new BadRequestException(
-        'COA sudah kadaluarsa. Harap upload COA terbaru dari laboratorium terakreditasi (maksimal 6 bulan terakhir).',
-      );
-    }
+    const issue = this.coaDateIssue(new Date(tanggalCoa));
+    if (issue) throw new BadRequestException(issue);
+  }
+
+  private coaDateIssue(date: Date | null): string | null {
+    if (!date || !Number.isFinite(date.getTime())) return 'Tanggal COA belum tersedia atau tidak valid.';
+    const age = this.daysDiff(date, new Date());
+    if (age < 0) return 'Tanggal COA tidak boleh berada di masa depan.';
+    if (age > 180) return 'COA sudah melewati batas 180 hari. Unggah dokumen terbaru untuk ditinjau.';
+    return null;
   }
 
   private daysDiff(dateA: Date, dateB: Date): number {
-    return Math.floor(Math.abs(dateB.getTime() - dateA.getTime()) / (1000 * 60 * 60 * 24));
+    const calendar = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit' });
+    const day = (date: Date) => Date.parse(calendar.format(date) + 'T00:00:00Z');
+    return Math.round((day(dateB) - day(dateA)) / 86400000);
   }
 
   private getDocumentCompleteness(supplier: any) {
@@ -837,10 +769,19 @@ export class SupplierService {
     return types.map((tipe) => {
       const docs = documents.filter((d: any) => d.tipe_document === tipe);
       const minRequired = tipe === TipeDocument.FOTO_FASILITAS ? 3 : 1;
+      const approvedDocs = docs.filter((doc: { status_dokumen: StatusDokumen }) => doc.status_dokumen === StatusDokumen.APPROVED);
+      const approvalIssues: string[] = tipe === TipeDocument.COA
+        ? approvedDocs.map((doc: { tanggal_coa: Date | null }) => this.coaDateIssue(doc.tanggal_coa)).filter((issue: string | null): issue is string => issue !== null)
+        : [];
+      const validApproved = tipe === TipeDocument.COA
+        ? approvedDocs.filter((doc: { tanggal_coa: Date | null }) => !this.coaDateIssue(doc.tanggal_coa)).length
+        : approvedDocs.length;
       return {
         tipe,
         uploaded: docs.length,
         required: minRequired,
+        approved: approvedDocs.length, validApproved, approvalIssues,
+        approvalComplete: validApproved >= minRequired,
         complete: docs.length >= minRequired,
         statuses: docs.map((d: any) => d.status_dokumen),
       };
@@ -859,7 +800,7 @@ export class SupplierService {
 
   async getPublicSuppliers(status?: string, limit = 4) {
     const where: any = {};
-    if (status) {
+    if (status && ['TERVERIFIKASI', 'LEGACY_VERIFIED'].includes(status)) {
       where.status = status as SupplierStatus;
     } else {
       where.status = { in: [SupplierStatus.TERVERIFIKASI, SupplierStatus.LEGACY_VERIFIED] };
@@ -867,7 +808,8 @@ export class SupplierService {
 
     return this.prisma.supplierProfile.findMany({
       where,
-      include: {
+      select: {
+        ...PUBLIC_SUPPLIER_PROFILE_SELECT,
         user: {
           select: {
             profile: {
@@ -879,7 +821,7 @@ export class SupplierService {
         },
       },
       orderBy: { verified_at: 'desc' },
-      take: limit,
+      take: Math.max(1, Math.min(Number.isFinite(limit) ? limit : 4, 50)),
     });
   }
 

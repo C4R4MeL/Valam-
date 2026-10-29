@@ -7,12 +7,14 @@ import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { json, urlencoded } from 'express';
+import { assertDatabaseSchemaCompatible, DatabaseSchemaMismatchError } from './prisma/schema-readiness';
 
 /**
  * Validate that all required environment variables are present at startup.
  * Logs clear warnings so deploy issues are caught immediately, not when a user hits the feature.
  */
 function validateEnvironment() {
+  const isolatedDemo = process.env.NODE_ENV === 'test' && process.env.PERTAMUDA_TEST_MODE === 'true';
   const required: { key: string; label: string }[] = [
     { key: 'DATABASE_URL', label: 'Database (Supabase)' },
     { key: 'JWT_SECRET', label: 'JWT Authentication' },
@@ -21,7 +23,9 @@ function validateEnvironment() {
     { key: 'BITESHIP_API_KEY', label: 'Shipping API (Biteship)' },
   ];
 
-  const missing = required.filter((v) => !process.env[v.key]?.trim());
+  const disabledForDemo = new Set(['GROK_API_KEY', 'MIDTRANS_SERVER_KEY', 'BITESHIP_API_KEY']);
+  const missing = required.filter((v) => !(isolatedDemo && disabledForDemo.has(v.key)) && !process.env[v.key]?.trim());
+  if (isolatedDemo) console.info('[DEMO] NILA, pembayaran, dan pengiriman eksternal sengaja dinonaktifkan pada schema pengujian.');
 
   if (missing.length > 0) {
     console.warn('\n' + '='.repeat(60));
@@ -40,6 +44,8 @@ function validateEnvironment() {
 
 async function bootstrap() {
   validateEnvironment();
+  // Refuse incompatible databases before providers, scheduled jobs or HTTP routes start.
+  await assertDatabaseSchemaCompatible();
 
   const app = await NestFactory.create(AppModule);
 
@@ -52,7 +58,8 @@ async function bootstrap() {
   }));
 
   // Serve uploads publicly
-  app.use('/uploads', require('express').static(require('path').join(process.cwd(), 'uploads')));
+  app.use('/uploads/batches', require('express').static(require('path').join(process.cwd(), 'uploads', 'batches')));
+  app.use('/uploads/circular', require('express').static(require('path').join(process.cwd(), 'uploads', 'circular')));
 
   app.setGlobalPrefix('api');
   
@@ -80,4 +87,8 @@ async function bootstrap() {
 
   await app.listen(process.env.PORT ?? 3001);
 }
-bootstrap();
+bootstrap().catch((error: unknown) => {
+  if (error instanceof DatabaseSchemaMismatchError) console.error(error.message);
+  else console.error('Backend startup failed:', error);
+  process.exitCode = 1;
+});

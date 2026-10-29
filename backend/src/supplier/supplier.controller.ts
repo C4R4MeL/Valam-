@@ -12,6 +12,8 @@ import {
   Request,
   Query,
   Res,
+  ForbiddenException,
+  NotFoundException,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -24,6 +26,7 @@ import { SupplierStorageService } from './supplier-storage.service';
 import { RegisterSupplierDto } from './dto/register-supplier.dto';
 import { UpdateSupplierDto } from './dto/update-supplier.dto';
 import { UploadDocumentDto } from './dto/upload-document.dto';
+import { PrismaService } from '../prisma/prisma.service';
 
 @ApiTags('Supplier')
 @ApiBearerAuth()
@@ -32,6 +35,7 @@ export class SupplierController {
   constructor(
     private readonly supplierService: SupplierService,
     private readonly storageService: SupplierStorageService,
+    private readonly prisma: PrismaService,
   ) {}
 
   @Get()
@@ -116,11 +120,16 @@ export class SupplierController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('supplier', 'admin')
   @ApiOperation({ summary: 'Preview a locally uploaded document (Supplier/Admin)' })
-  async previewDocument(@Query('path') storagePath: string, @Res() res: any) {
-    // Basic path sanitization to prevent directory traversal
-    const cleanPath = storagePath.replace(/\.\./g, '');
-    const mimeType = this.storageService.getLocalFileMime(cleanPath);
-    const fileStream = this.storageService.getLocalFileStream(cleanPath);
+  async previewDocument(@Query('path') storagePath: string, @Res() res: any, @Request() req: any) {
+    const document = await this.prisma.supplierDocument.findFirst({
+      where: { file_url: storagePath }, include: { supplier: { select: { user_id: true } } },
+    });
+    if (!document) throw new NotFoundException('Document not found');
+    if (req.user.role !== 'admin' && document.supplier.user_id !== req.user.userId) {
+      throw new ForbiddenException('Not your document');
+    }
+    const mimeType = this.storageService.getLocalFileMime(storagePath);
+    const fileStream = this.storageService.getLocalFileStream(storagePath);
     
     res.setHeader('Content-Type', mimeType);
     fileStream.pipe(res);

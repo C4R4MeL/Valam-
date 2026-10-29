@@ -17,7 +17,7 @@ import { getSupplierDisplayName } from '@/lib/utils'
 const contentMap = {
   id: {
     heroBadge: "Katalog B2B Terverifikasi",
-    title: "Katalog Minyak Nilam Terverifikasi Lab",
+    title: "Katalog Batch Minyak Nilam",
     subtitle: "Eksplorasi batch minyak nilam terbaik dari koperasi petani Aceh.",
     searchPlaceholder: "Cari berdasarkan Koperasi, Batch, Asal...",
     filterBtn: "Filter",
@@ -30,12 +30,12 @@ const contentMap = {
     empty: "Belum ada produk yang sesuai dengan filter Anda.",
     reset: "Reset Filter",
     coopStats: "Koperasi Aktif",
-    verifiedStats: "Batch Terverifikasi",
+    verifiedStats: "Batch Ditawarkan",
     priceLabel: "Harga Live Pasar",
   },
   en: {
     heroBadge: "Verified B2B Catalog",
-    title: "Lab-Verified Patchouli Oil Catalog",
+    title: "Patchouli Oil Batch Catalog",
     subtitle: "Explore the finest patchouli oil batches from Aceh cooperatives.",
     searchPlaceholder: "Search by Cooperative, Batch, Origin...",
     filterBtn: "Filters",
@@ -48,7 +48,7 @@ const contentMap = {
     empty: "No products match your filters.",
     reset: "Reset Filters",
     coopStats: "Active Cooperatives",
-    verifiedStats: "Verified Batches",
+    verifiedStats: "Offered Batches",
     priceLabel: "Live Market Price",
   }
 }
@@ -123,6 +123,7 @@ function MarketplaceContent({ isFilterOpen, setIsFilterOpen }: { isFilterOpen: b
   
   const [products, setProducts] = useState<any[]>([])
   const [catalogLoading, setCatalogLoading] = useState(true)
+  const [catalogError, setCatalogError] = useState(false)
   const [, setMarketPrices] = useState<any[]>([])
 
   useEffect(() => {
@@ -143,6 +144,7 @@ function MarketplaceContent({ isFilterOpen, setIsFilterOpen }: { isFilterOpen: b
   useEffect(() => {
     const fetchCatalog = async () => {
       setCatalogLoading(true)
+      setCatalogError(false)
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api'
       if (activeTab === 'oil') {
         try {
@@ -164,10 +166,10 @@ function MarketplaceContent({ isFilterOpen, setIsFilterOpen }: { isFilterOpen: b
             setProducts(list)
             return
           }
-          setProducts([])
+          setProducts([]); setCatalogError(true)
         } catch (err) {
           console.error("Error fetching oil products:", err)
-          setProducts([])
+          setProducts([]); setCatalogError(true)
         } finally {
           setCatalogLoading(false)
         }
@@ -196,7 +198,6 @@ function MarketplaceContent({ isFilterOpen, setIsFilterOpen }: { isFilterOpen: b
                   price_per_kg: cp.price,
                   harga_per_unit: cp.price,
                   min_order: cp.supplier?.supplier_profile?.minimum_order || 5,
-                  sustainability_score: 5,
                   images: cp.image ? [cp.image] : [],
                   is_circular: true,
                   category: cp.category,
@@ -209,11 +210,11 @@ function MarketplaceContent({ isFilterOpen, setIsFilterOpen }: { isFilterOpen: b
 
             setProducts(mapped)
           } else {
-            setProducts([])
+            setProducts([]); setCatalogError(true)
           }
         } catch (err) {
           console.error("Error fetching circular products:", err)
-          setProducts([])
+          setProducts([]); setCatalogError(true)
         } finally {
           setCatalogLoading(false)
         }
@@ -330,26 +331,23 @@ function MarketplaceContent({ isFilterOpen, setIsFilterOpen }: { isFilterOpen: b
 
     // GC-MS Verified Filter
     if (filters.gcmsVerified) {
-      activeProducts = activeProducts.filter(p => p.status === 'VERIFIED')
+      activeProducts = activeProducts.filter(p => p.lab_verified === true)
     }
 
     // CoA Available Filter
     if (filters.coaOnly) {
-      activeProducts = activeProducts.filter(p => p.qc_result !== null || p.tested_at !== null)
+      activeProducts = activeProducts.filter(p => Boolean(p.qc_result?.source_document_url))
     }
 
     // QR Traceability Filter
     if (filters.qrTraceable) {
-      activeProducts = activeProducts.filter(p => p.batch_code.startsWith('VAL-') || p.batch_code.startsWith('VLM-2606-001') || p.batch_code.startsWith('VLM-2606-003'))
+      activeProducts = activeProducts.filter(p => p.qr_traceability_verified === true)
     }
 
     // Distillation Method Filter
     if (filters.distillationMethods && filters.distillationMethods.length > 0) {
       activeProducts = activeProducts.filter(p => {
-        const method = p.distillation_method || (
-          parseInt(p.id.substring(0, 8), 16) % 3 === 0 ? 'Uap & Air' :
-          parseInt(p.id.substring(0, 8), 16) % 3 === 1 ? 'Uap Langsung' : 'Air / Hydro'
-        )
+        const method = p.distillation_method
         return filters.distillationMethods.includes(method)
       })
     }
@@ -357,7 +355,7 @@ function MarketplaceContent({ isFilterOpen, setIsFilterOpen }: { isFilterOpen: b
     // EUDR Ready Filter
     if (filters.eudrReady) {
       activeProducts = activeProducts.filter(p => {
-        const isEudr = p.eudr_ready !== undefined ? p.eudr_ready : (parseInt(p.id.substring(0, 8), 16) % 4 !== 0)
+        const isEudr = p.eudr_ready === true
         return isEudr === true
       })
     }
@@ -561,6 +559,7 @@ function MarketplaceContent({ isFilterOpen, setIsFilterOpen }: { isFilterOpen: b
         </div>
 
         {/* Product Grid with Vertical Scroll */}
+        {catalogError && <p role="alert" className="p-4 mb-4 rounded-lg bg-amber-50 text-amber-900">Katalog gagal dimuat dari API. Silakan coba lagi; tidak ada data contoh yang ditampilkan.</p>}
         {catalogLoading ? (
           <ProductGridSkeleton count={6} />
         ) : (

@@ -1,3 +1,6 @@
+import { Prisma } from '@prisma/client';
+import { CommerceService } from '../commerce/commerce.service';
+import { PUBLIC_USER_SELECT } from '../users/public-user.select';
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BiteshipService } from './biteship.service';
@@ -24,6 +27,7 @@ export class ShipmentService {
     private prisma: PrismaService,
     private biteshipService: BiteshipService,
     private documentHelper: DocumentHelper,
+    private readonly commerce: CommerceService,
     private supabaseService: SupabaseService
   ) {}
 
@@ -36,6 +40,7 @@ export class ShipmentService {
     destinationAddress: string;
     destinationPostalCode?: string | null;
     destinationAreaId?: string | null;
+    orderValueSnapshot?: number;
     items: Array<{
       productId?: string | null;
       circularProductId?: string | null;
@@ -105,6 +110,10 @@ export class ShipmentService {
       }
     }
 
+    if (params.orderValueSnapshot !== undefined) {
+      if (!Number.isFinite(params.orderValueSnapshot) || params.orderValueSnapshot <= 0) throw new BadRequestException('Nilai pesanan tidak valid');
+      itemValue = params.orderValueSnapshot;
+    }
     if (totalWeight <= 0) {
       throw new BadRequestException('Berat pengiriman tidak valid');
     }
@@ -238,10 +247,10 @@ export class ShipmentService {
       phone?: string | null;
     };
     weightKg: number;
-  }) {
+  }, client: Prisma.TransactionClient = this.prisma) {
     const { orderId, supplierId, rate, destination, weightKg } = params;
 
-    const supplier = await this.prisma.user.findUnique({
+    const supplier = await client.user.findUnique({
       where: { id: supplierId },
       include: { supplier_profile: true, profile: true },
     });
@@ -319,8 +328,8 @@ export class ShipmentService {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
       include: {
-        buyer: { include: { profile: true } },
-        supplier: { include: { profile: true, supplier_profile: true } },
+        buyer: { select: { ...PUBLIC_USER_SELECT, email: true } },
+        supplier: { select: { ...PUBLIC_USER_SELECT, email: true } },
         items: { include: { product: true, circular_product: true } },
       },
     });
@@ -339,6 +348,7 @@ export class ShipmentService {
 
     const quoted = await this.quoteRatesForItems({
       supplierId: order.supplier_id,
+      orderValueSnapshot: order.total_amount,
       destinationAddress,
       destinationPostalCode,
       destinationAreaId,
@@ -391,14 +401,16 @@ export class ShipmentService {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
       include: {
-        buyer: { include: { profile: true } },
-        supplier: { include: { profile: true, supplier_profile: true } },
+        buyer: { select: { ...PUBLIC_USER_SELECT, email: true } },
+        supplier: { select: { ...PUBLIC_USER_SELECT, email: true } },
         items: { include: { product: true } }
       }
     });
 
     if (!order) throw new NotFoundException('Order tidak ditemukan');
     if (order.buyer_id !== userId) throw new ForbiddenException('Bukan pesanan Anda');
+    const preparedPayment = await this.prisma.payment.findUnique({ where: { order_id: orderId } });
+    if (preparedPayment?.gateway_order_id) throw new BadRequestException('Biaya dan alamat pembayaran sudah dikunci');
     
     // Allow confirm for unpaid orders (legacy UNPAID status or pending payment)
     if (order.payment_status === 'paid' || order.payment_status === 'PAID') {
@@ -425,50 +437,29 @@ export class ShipmentService {
       phone: addr?.phone || order.buyer.profile?.phone || null,
     };
 
-    const shipment = await this.createShipmentForCheckout({
-      orderId,
-      supplierId: order.supplier_id,
-      rate,
-      destination,
-      weightKg: totalWeight,
+    return this.commerce.withOrder(orderId, async (tx, current) => {
+      if (current.payment_status !== 'pending' || current.stock_state !== 'RESERVED' || current.payment?.gateway_order_id || !current.reservation_expires_at || current.reservation_expires_at <= new Date()) throw new BadRequestException('Pesanan tidak dapat mengganti biaya pengiriman');
+      const shipment = await this.createShipmentForCheckout({ orderId, supplierId: order.supplier_id, rate, destination, weightKg: totalWeight }, tx);
+      await tx.order.update({ where: { id: orderId }, data: { shipping_cost: rate.totalOngkir, shipping_address: { ...(typeof current.shipping_address === 'object' && current.shipping_address ? current.shipping_address : {}), ...destination } } });
+      await tx.payment.updateMany({ where: { order_id: orderId }, data: { amount: Math.round(current.total_amount + rate.totalOngkir) } });
+      return shipment;
     });
-
-    // Update order with shipping cost
-    await this.prisma.order.update({
-      where: { id: orderId },
-      data: {
-        shipping_cost: rate.totalOngkir,
-        shipping_address: {
-          ...(typeof order.shipping_address === 'object' && order.shipping_address
-            ? order.shipping_address
-            : {}),
-          ...destination,
-        },
-      },
-    });
-
-    await this.createSystemNotification(
-      order.buyer_id,
-      'SHIPMENT_CONFIRMED',
-      'Pengiriman Domestik Dikonfirmasi',
-      `Opsi pengiriman via ${rate.kurirNama} (${rate.serviceNama}) berhasil dikunci untuk order ${order.order_number}.`
-    );
-
-    return shipment;
   }
 
   async submitEksporShipping(orderId: string, data: any, userId: string) {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
       include: {
-        buyer: { include: { profile: true } },
-        supplier: { include: { profile: true, supplier_profile: true } },
+        buyer: { select: { ...PUBLIC_USER_SELECT, email: true } },
+        supplier: { select: { ...PUBLIC_USER_SELECT, email: true } },
         items: { include: { product: true } }
       }
     });
 
     if (!order) throw new NotFoundException('Order tidak ditemukan');
     if (order.buyer_id !== userId) throw new ForbiddenException('Bukan pesanan Anda');
+    const preparedPayment = await this.prisma.payment.findUnique({ where: { order_id: orderId } });
+    if (preparedPayment?.gateway_order_id) throw new BadRequestException('Biaya dan alamat pembayaran sudah dikunci');
     if (order.status !== 'UNPAID') throw new BadRequestException('Status pesanan harus UNPAID');
 
     const originAddr = {
@@ -551,8 +542,8 @@ export class ShipmentService {
       include: {
         order: {
           include: {
-            buyer: true,
-            supplier: { include: { supplier_profile: true } }
+            buyer: { select: { ...PUBLIC_USER_SELECT, email: true } },
+            supplier: { select: { ...PUBLIC_USER_SELECT, email: true } }
           }
         }
       }
@@ -561,6 +552,10 @@ export class ShipmentService {
     if (!shipment) throw new NotFoundException('Shipment tidak ditemukan');
     if (shipment.order.supplier_id !== supplierId) {
       throw new ForbiddenException('Bukan hak akses Anda untuk konfirmasi pickup');
+    }
+    if (['DIKIRIM', 'DALAM_PERJALANAN', 'TIBA_DI_TUJUAN', 'SELESAI'].includes(shipment.status)) return shipment;
+    if (shipment.order.status !== 'PACKED' || shipment.order.payment_status !== 'paid' || shipment.order.stock_state !== 'CONSUMED') {
+      throw new BadRequestException('Pickup hanya untuk pesanan dibayar dan sudah dikemas');
     }
 
     if (shipment.shipment_type === 'DOMESTIK') {
@@ -617,11 +612,7 @@ export class ShipmentService {
       });
     }
 
-    // Update order status
-    await this.prisma.order.update({
-      where: { id: shipment.order_id },
-      data: { status: 'SHIPPED' }
-    });
+    await this.commerce.supplierTransition(supplierId, shipment.order_id, 'SHIPPED');
 
     // Create tracking log for SHIPPED status with base64 photo
     await this.prisma.shipmentTrackingLog.create({
@@ -671,43 +662,9 @@ export class ShipmentService {
   }
 
   async confirmReceived(shipmentId: string, buyerId: string) {
-    const shipment = await this.prisma.shipment.findUnique({
-      where: { id: shipmentId },
-      include: { order: true }
-    });
-
+    const shipment = await this.prisma.shipment.findUnique({ where: { id: shipmentId } });
     if (!shipment) throw new NotFoundException('Shipment tidak ditemukan');
-    if (shipment.order.buyer_id !== buyerId) {
-      throw new ForbiddenException('Bukan pesanan Anda');
-    }
-
-    // Confirm received
-    const now = new Date();
-    await this.prisma.shipment.update({
-      where: { id: shipmentId },
-      data: {
-        status: 'SELESAI',
-        completed_at: now,
-        delivered_at: now
-      }
-    });
-
-    await this.prisma.order.update({
-      where: { id: shipment.order_id },
-      data: { status: 'COMPLETED' }
-    });
-
-    // Credit escrow to supplier wallet
-    await this.addFundsToWallet(shipment.order.supplier_id, shipment.order.total_amount, shipment.order.id);
-
-    await this.createSystemNotification(
-      shipment.order.supplier_id,
-      'ESCROW_RELEASED',
-      'Pencairan Dana Escrow Berhasil',
-      `Pembeli mengkonfirmasi penerimaan minyak nilam. Dana sebesar Rp ${shipment.order.total_amount.toLocaleString('id-ID')} masuk ke wallet Anda.`
-    );
-
-    return { success: true };
+    return this.commerce.complete(buyerId, shipment.order_id);
   }
 
   async reportMasalah(shipmentId: string, notes: string, userId: string) {
@@ -779,7 +736,7 @@ export class ShipmentService {
 
     return this.prisma.shipment.findMany({
       where: whereClause,
-      include: { order: { include: { buyer: true, supplier: true } } },
+      include: { order: { include: { buyer: { select: { ...PUBLIC_USER_SELECT, email: true } }, supplier: { select: { ...PUBLIC_USER_SELECT, email: true } } } } },
       orderBy: { created_at: 'desc' }
     });
   }
@@ -788,7 +745,7 @@ export class ShipmentService {
     return this.prisma.shipment.findUnique({
       where: { id: shipmentId },
       include: {
-        order: { include: { buyer: true, supplier: true } },
+        order: { include: { buyer: { select: { ...PUBLIC_USER_SELECT, email: true } }, supplier: { select: { ...PUBLIC_USER_SELECT, email: true } } } },
         tracking_logs: { orderBy: { created_at: 'desc' } }
       }
     });
@@ -817,7 +774,7 @@ export class ShipmentService {
       });
       await this.prisma.order.update({
         where: { id: shipment.order_id },
-        data: { status: 'CANCELLED' }
+        data: { status: 'REFUND_REQUESTED' }
       });
     }
 
@@ -834,33 +791,21 @@ export class ShipmentService {
 
     if (!shipment) return { success: false };
 
-    const trackingStatus = body.status;
-    let newStatus: any = shipment.status;
-
-    if (trackingStatus === 'picking_up') newStatus = 'DIKIRIM';
-    else if (trackingStatus === 'in_transit') newStatus = 'DALAM_PERJALANAN';
-    else if (trackingStatus === 'delivered') newStatus = 'TIBA_DI_TUJUAN';
-    else if (trackingStatus === 'failed') newStatus = 'BERMASALAH';
-
-    await this.prisma.shipment.update({
-      where: { id: shipment.id },
-      data: {
-        status: newStatus,
-        last_tracking_data: body
-      }
+    return this.commerce.withOrder(shipment.order_id, async (tx, order) => {
+      const current = await tx.shipment.findUniqueOrThrow({ where: { id: shipment.id } });
+      if (['SELESAI', 'DIBATALKAN', 'BERMASALAH'].includes(current.status)) return { success: true };
+      if (order.payment_status !== 'paid' || order.status !== 'SHIPPED') return { success: false };
+      const states: Record<string, 'DIKIRIM' | 'DALAM_PERJALANAN' | 'TIBA_DI_TUJUAN' | 'BERMASALAH'> = {
+        picking_up: 'DIKIRIM', in_transit: 'DALAM_PERJALANAN', delivered: 'TIBA_DI_TUJUAN', failed: 'BERMASALAH',
+      };
+      const next = states[body.status];
+      const ranks: Record<string, number> = { MENUNGGU_KONFIRMASI: 0, TERKONFIRMASI: 1, DIPROSES: 2, DIKIRIM: 3, DALAM_PERJALANAN: 4, TIBA_DI_TUJUAN: 5 };
+      if (!next || next === current.status || next !== 'BERMASALAH' && ranks[next] < ranks[current.status]) return { success: true };
+      await tx.shipment.update({ where: { id: current.id }, data: { status: next, last_tracking_data: body } });
+      await tx.shipmentTrackingLog.create({ data: { shipment_id: current.id, status: next,
+        description: body.note || 'Pembaruan pengiriman dari provider', location: body.current_position || null, raw_data: body } });
+      return { success: true };
     });
-
-    await this.prisma.shipmentTrackingLog.create({
-      data: {
-        shipment_id: shipment.id,
-        status: trackingStatus,
-        description: body.note || 'Pembaruan lokasi kargo',
-        location: body.current_position || 'Logistics Depot',
-        raw_data: body
-      }
-    });
-
-    return { success: true };
   }
 
   async downloadDocument(shipmentId: string, type: string, res: any) {
@@ -874,8 +819,8 @@ export class ShipmentService {
       include: {
         order: {
           include: {
-            buyer: { include: { profile: true } },
-            supplier: { include: { profile: true } },
+            buyer: { select: { ...PUBLIC_USER_SELECT, email: true } },
+            supplier: { select: { ...PUBLIC_USER_SELECT, email: true } },
             items: { include: { product: true } }
           }
         }
@@ -914,29 +859,4 @@ export class ShipmentService {
     });
   }
 
-  private async addFundsToWallet(supplierId: string, amount: number, orderId: string) {
-    let wallet = await this.prisma.wallet.findUnique({
-      where: { user_id: supplierId }
-    });
-
-    if (!wallet) {
-      wallet = await this.prisma.wallet.create({
-        data: { user_id: supplierId, balance: 0 }
-      });
-    }
-
-    await this.prisma.walletTransaction.create({
-      data: {
-        wallet_id: wallet.id,
-        type: 'CREDIT',
-        amount: amount,
-        description: `Pencairan Escrow Order #${orderId.substring(0, 8)}`
-      }
-    });
-
-    await this.prisma.wallet.update({
-      where: { id: wallet.id },
-      data: { balance: { increment: amount } }
-    });
-  }
 }

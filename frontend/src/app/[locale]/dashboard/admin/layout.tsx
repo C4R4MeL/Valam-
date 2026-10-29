@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { AdminSidebar } from '@/components/layout/AdminSidebar'
 import { RouteGuard } from '@/components/auth/RouteGuard'
 import { Menu, Leaf } from 'lucide-react'
 import { useAuthContext } from '@/components/providers/AuthProvider'
+import { useLocale } from 'next-intl'
 
 export default function AdminDashboardLayout({
   children,
@@ -12,6 +13,8 @@ export default function AdminDashboardLayout({
   children: React.ReactNode
 }) {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false)
+  const closeMobileDrawer = useCallback(() => setMobileDrawerOpen(false), [])
+  const locale = useLocale()
   const { email } = useAuthContext()
 
   const getInitial = () => {
@@ -21,15 +24,19 @@ export default function AdminDashboardLayout({
 
   return (
     <RouteGuard requiredRole="admin">
-      <div className="min-h-screen bg-zinc-50 flex flex-col lg:flex-row">
+      <div className="min-h-dvh bg-zinc-50 flex flex-col lg:flex-row">
         
         {/* ── Mobile Admin Header (visible < lg) ── */}
         <header className="sticky top-0 z-40 lg:hidden bg-emerald-950 text-white shadow-lg">
           <div className="flex items-center justify-between h-14 px-4">
             {/* Hamburger */}
             <button
+              type="button"
+              aria-label={locale === 'id' ? 'Buka menu admin' : 'Open admin menu'}
+              aria-controls="admin-sidebar"
+              aria-expanded={mobileDrawerOpen}
               onClick={() => setMobileDrawerOpen(true)}
-              className="h-9 w-9 rounded-lg bg-white/[0.08] hover:bg-white/[0.15] border border-white/[0.08] text-white/70 flex items-center justify-center transition-all"
+              className="h-11 w-11 rounded-lg bg-white/[0.08] hover:bg-white/[0.15] border border-white/[0.08] text-white/80 flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-400"
             >
               <Menu className="w-5 h-5" />
             </button>
@@ -54,9 +61,9 @@ export default function AdminDashboardLayout({
 
         <AdminSidebar 
           isOpen={mobileDrawerOpen} 
-          onClose={() => setMobileDrawerOpen(false)} 
+          onClose={closeMobileDrawer}
         />
-        <main className="flex-1 w-full overflow-y-auto">
+        <main className="min-w-0 flex-1">
           {children}
         </main>
       </div>

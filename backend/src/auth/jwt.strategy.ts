@@ -2,6 +2,8 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PrismaService } from '../prisma/prisma.service';
+import { jwtSecret } from './jwt-config';
+import { isUUID } from 'class-validator';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -17,18 +19,26 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         },
       ]),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET || 'VALAM_SECRET_KEY',
+      secretOrKey: jwtSecret(),
+      algorithms: ['HS256'],
     });
   }
 
   async validate(payload: any) {
+    if (typeof payload.sub !== 'string' || typeof payload.jti !== 'string' || !isUUID(payload.sub) || !isUUID(payload.jti)) {
+      throw new UnauthorizedException('Invalid session');
+    }
+    const session = await this.prisma.authSession.findUnique({ where: { id: payload.jti } });
+    if (!session || session.user_id !== payload.sub || session.revoked_at || session.expires_at <= new Date()) {
+      throw new UnauthorizedException('Invalid or expired session');
+    }
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
       include: { role: true },
     });
-    if (!user) {
+    if (!user || !['active', 'pending'].includes(user.status)) {
       throw new UnauthorizedException();
     }
-    return { userId: payload.sub, email: payload.email, role: user.role.name };
+    return { userId: user.id, email: user.email, role: user.role.name, sessionId: session.id };
   }
 }

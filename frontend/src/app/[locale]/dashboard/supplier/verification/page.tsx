@@ -653,7 +653,7 @@ export default function SupplierVerificationPage() {
                 desc: '1 file PDF asli'
               }] : []),
               ...(requiresCoa ? [{
-                name: 'COA Lab Terakreditasi',
+                name: 'Laporan hasil uji laboratorium',
                 done: profile.documents?.some((d: any) => d.tipe_document === 'COA' && d.status_dokumen !== 'REJECTED'),
                 desc: 'Berusia kurang dari 180 hari (6 bulan)'
               }] : []),

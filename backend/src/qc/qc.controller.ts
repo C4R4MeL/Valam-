@@ -1,22 +1,29 @@
-import { Controller, Get, Post, Patch, Body, Param, Res } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Res, UseGuards, Request } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
 import { QcService } from './qc.service';
 import type { Response } from 'express';
+import { RecordQcDto } from './qc.dto';
 
 @Controller()
 export class QcController {
   constructor(private readonly qcService: QcService) {}
 
   @Post('admin/qc/:batchId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   createQc(
     @Param('batchId') batchId: string,
-    @Body() data: any,
+    @Body() data: RecordQcDto,
+    @Request() req: any,
   ) {
-    // In a real app we would get adminId from JWT user payload
-    const adminId = data.adminId || '00000000-0000-0000-0000-000000000000'; // mock
-    return this.qcService.createQcResult(batchId, adminId, data);
+    return this.qcService.createQcResult(batchId, req.user.userId, data);
   }
 
   @Patch('admin/qc/:batchId/receive')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   receiveSample(@Param('batchId') batchId: string) {
     return this.qcService.receiveSample(batchId);
   }

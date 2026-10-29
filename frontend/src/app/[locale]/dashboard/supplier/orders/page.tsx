@@ -1,5 +1,7 @@
 'use client'
 
+import { CoAViewer } from '@/components/qc/CoAViewer';
+
 import { useState, useEffect } from 'react'
 import { DashboardHeader } from '@/components/layout/DashboardHeader'
 import { Package, Clock, Truck, CheckCircle2, XCircle, AlertCircle, Search, Calendar, ChevronDown, Globe, FileText, Download, Upload, ShieldCheck, CreditCard, Camera, Image, Trash2, QrCode, Eye } from 'lucide-react'
@@ -31,6 +33,7 @@ const contentMap = {
       PACKED: "Dikemas",
       SHIPPED: "Dalam Pengiriman",
       COMPLETED: "Selesai",
+      EXPIRED: "Kedaluwarsa", REFUND_REQUESTED: "Refund diajukan", REFUNDED: "Refund dikonfirmasi gateway", REFUND_REVIEW: "Refund perlu rekonsiliasi", PAYMENT_REVIEW: "Pembayaran perlu pemeriksaan",
       CANCELLED: "Dibatalkan"
     },
     total: "Total Pembayaran:",
@@ -50,6 +53,7 @@ const contentMap = {
       PACKED: "Packed",
       SHIPPED: "Shipped",
       COMPLETED: "Completed",
+      EXPIRED: "Expired", REFUND_REQUESTED: "Refund requested", REFUNDED: "Gateway-confirmed refund", REFUND_REVIEW: "Refund needs reconciliation", PAYMENT_REVIEW: "Payment needs review",
       CANCELLED: "Cancelled"
     },
     total: "Total Payment:",
@@ -98,98 +102,15 @@ export default function SupplierOrdersPage() {
 
   const fetchOrders = async () => {
     try {
-      const token = localStorage.getItem('valam_token')
-      if (!token) {
-        router.push('/login')
-        return
-      }
-
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api'}/orders/supplier`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      
-      if (res.ok) {
-        const data = await res.json()
-        setOrders(data)
-      } else {
-        throw new Error('Fallback to mock')
-      }
-    } catch (err) {
-      console.warn("Backend unavailable, using mock supplier orders:", err)
-      const email = localStorage.getItem('valam_email') || 'supplier@valam.id'
-      const mockSavedOrdersKey = 'valam_mock_orders_' + email
-      const storedMockOrders = localStorage.getItem(mockSavedOrdersKey)
-      
-      if (storedMockOrders) {
-        setOrders(JSON.parse(storedMockOrders))
-      } else {
-        const mockOrderId1 = 'ord_sup_dom_123'
-        const mockOrderId2 = 'ord_sup_int_456'
-        
-        const defaultOrders = [
-          {
-            id: mockOrderId1,
-            created_at: new Date(Date.now() - 3600000 * 2).toISOString(), // 2 hours ago
-            status: 'PACKED', // Needs shipping resi
-            total_amount: 45000000,
-            buyer: {
-              profile: {
-                full_name: 'CV Aroma Kosmetik Nusantara',
-                country: 'ID'
-              }
-            },
-            items: [
-              {
-                product: {
-                  batch_code: 'B-NILAM-LOC',
-                  price_per_kg: 900000,
-                },
-                quantity_kg: 50,
-                subtotal: 45000000
-              }
-            ]
-          },
-          {
-            id: mockOrderId2,
-            created_at: new Date(Date.now() - 3600000 * 5).toISOString(), // 5 hours ago
-            status: 'PENDING', // Awaiting L/C validation / doc upload
-            total_amount: 90000000,
-            buyer: {
-              profile: {
-                full_name: 'Bavarian Perfume House GmbH',
-                country: 'DE'
-              }
-            },
-            items: [
-              {
-                product: {
-                  batch_code: 'B-NILAM-EXP',
-                  price_per_kg: 900000,
-                },
-                quantity_kg: 100,
-                subtotal: 90000000
-              }
-            ]
-          }
-        ]
-        
-        localStorage.setItem(mockSavedOrdersKey, JSON.stringify(defaultOrders))
-        
-        // Set types
-        localStorage.setItem('valam_order_type_' + mockOrderId1, 'DOMESTIC')
-        localStorage.setItem('valam_order_payment_method_' + mockOrderId1, 'ESCROW')
-        
-        localStorage.setItem('valam_order_type_' + mockOrderId2, 'INTERNATIONAL')
-        localStorage.setItem('valam_order_payment_method_' + mockOrderId2, 'LC')
-        localStorage.setItem('valam_order_lc_' + mockOrderId2, 'LC_DRAFT')
-        
-        setOrders(defaultOrders)
-      }
-    } finally {
-      setLoading(false)
-    }
+      const token = localStorage.getItem('valam_token');
+      const api = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api';
+      const response = await fetch(api + '/orders/supplier', { headers: { Authorization: 'Bearer ' + token } });
+      if (!response.ok) throw new Error('Order API unavailable');
+      setOrders(await response.json());
+    } catch {
+      setOrders([]);
+      toast({ title: 'Pesanan gagal dimuat', description: 'Data transaksi tidak disimulasikan saat API gagal.', variant: 'destructive' });
+    } finally { setLoading(false); }
   }
 
   useEffect(() => {
@@ -214,21 +135,7 @@ export default function SupplierOrdersPage() {
       } else {
         throw new Error('API failed')
       }
-    } catch (err) {
-      console.warn("Backend unavailable, updating mock status local storage:", err)
-      const email = localStorage.getItem('valam_email') || 'supplier@valam.id'
-      const mockSavedOrdersKey = 'valam_mock_orders_' + email
-      const storedMockOrders = localStorage.getItem(mockSavedOrdersKey)
-      if (storedMockOrders) {
-        const parsed = JSON.parse(storedMockOrders)
-        const updated = parsed.map((o: any) => o.id === orderId ? { ...o, status: newStatus } : o)
-        localStorage.setItem(mockSavedOrdersKey, JSON.stringify(updated))
-        toast({ title: "Berhasil (Mock)", description: "Status pesanan mock diperbarui" })
-        fetchOrders()
-      } else {
-        toast({ title: "Error", description: "Terjadi kesalahan pada server", variant: "destructive" })
-      }
-    }
+    } catch { toast({ title: 'Status gagal diperbarui', variant: 'destructive' }); }
   }
 
   const handleDeliveryProofSubmit = async () => {
@@ -242,10 +149,10 @@ export default function SupplierOrdersPage() {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ status: 'COMPLETED', note: 'Barang telah sampai - bukti foto terlampir', delivery_proof_url: deliveryProofPhoto })
+        body: JSON.stringify({ status: 'SHIPPED', note: 'Bukti pengiriman terlampir; menunggu penerimaan buyer', delivery_proof_url: deliveryProofPhoto })
       })
       if (res.ok) {
-        toast({ title: "Berhasil", description: "Pesanan ditandai selesai dengan bukti pengiriman." })
+        toast({ title: "Bukti tersimpan", description: "Penerimaan dan pencairan tetap menunggu konfirmasi buyer." })
         setDeliveryProofOrderId(null)
         setDeliveryProofPhoto(null)
         fetchOrders()
@@ -285,26 +192,8 @@ export default function SupplierOrdersPage() {
         throw new Error('API failed')
       }
     } catch (err) {
-      console.warn("Backend unavailable, updating mock shipping details:", err)
-      const email = localStorage.getItem('valam_email') || 'supplier@valam.id'
-      const mockSavedOrdersKey = 'valam_mock_orders_' + email
-      const storedMockOrders = localStorage.getItem(mockSavedOrdersKey)
-      if (storedMockOrders) {
-        const parsed = JSON.parse(storedMockOrders)
-        const updated = parsed.map((o: any) => o.id === shippingOrderId ? { 
-          ...o, 
-          status: 'SHIPPED',
-          shipment: { courier_name: courierName, tracking_number: trackingNumber }
-        } : o)
-        localStorage.setItem(mockSavedOrdersKey, JSON.stringify(updated))
-        toast({ title: "Berhasil (Mock)", description: "Status pesanan mock diperbarui menjadi Dalam Pengiriman" })
-        setShippingOrderId(null)
-        setTrackingNumber('')
-        setCourierName('')
-        fetchOrders()
-      } else {
-        toast({ title: "Error", description: "Terjadi kesalahan pada server", variant: "destructive" })
-      }
+      console.warn('Shipping update failed:', err)
+      toast({ title: 'Gagal', description: 'Server belum mengonfirmasi perubahan pengiriman. Coba kembali setelah memeriksa status.', variant: 'destructive' })
     }
   }
 
@@ -335,7 +224,7 @@ export default function SupplierOrdersPage() {
 
   const handleDownloadDoc = async (orderId: string, orderNumber: string, docKey: string, docName: string) => {
     if (docKey !== 'invoice' && docKey !== 'packing_list' && docKey !== 'invoice_local' && docKey !== 'surat_jalan') {
-      toast({ title: "Mengunduh " + docName, description: `${docName} berhasil diunduh.` })
+      toast({ title: "Dokumen belum tersedia", description: "Sumber dokumen belum tersedia untuk diunduh.", variant: "destructive" })
       return;
     }
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api';
@@ -371,7 +260,7 @@ export default function SupplierOrdersPage() {
         const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api';
         const token = localStorage.getItem('valam_token');
         try {
-          const res = await fetch(`${API_URL}/products/${productId}/coa`, {
+          const res = await fetch(`${API_URL}/products/${productId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           if (res.ok) {
@@ -380,29 +269,11 @@ export default function SupplierOrdersPage() {
             return;
           }
         } catch (err) {
-          console.warn("Backend COA fetch failed, using fallback mock COA:", err);
+          console.warn("Batch test record fetch failed:", err);
         }
       }
       
-      // Fallback/mock COA if backend request fails or product is local
-      setPreviewDoc({ 
-        key: docKey, 
-        name: docName, 
-        order: selectedOrder, 
-        coaData: {
-          certificate_number: `COA-${selectedOrder.order_number || '1782970'}-QC`,
-          issued_at: new Date().toISOString(),
-          admin_name: "Ahmad Dahlan, M.Si (QC Lead)",
-          qc_result: {
-            pa_percentage: 32.4,
-            moisture: 3.1,
-            specific_gravity: 0.958,
-            refractive_index: 1.507,
-            optical_rotation: -42.5,
-            overall_status: "PASS"
-          }
-        } 
-      });
+      toast({ title: 'Document source unavailable', description: 'Tidak ada hasil, laporan atau sertifikat contoh yang ditampilkan.', variant: 'destructive' });
     } else {
       setPreviewDoc({ key: docKey, name: docName, order: selectedOrder });
     }
@@ -914,7 +785,7 @@ export default function SupplierOrdersPage() {
               
               // Auto-advance L/C status to LC_VERIFIED/LC_ISSUED when shipping info is populated
               if (lcStatus === 'LC_DRAFT' || lcStatus === 'LC_VERIFIED') {
-                localStorage.setItem('valam_order_lc_' + selectedOrder.id, 'LC_ISSUED');
+                toast({ title: 'L/C belum terintegrasi', description: 'Status ini tidak memverifikasi pembayaran atau mencairkan saldo.' });
               }
               
               fetchOrders();
@@ -922,7 +793,7 @@ export default function SupplierOrdersPage() {
 
             const handleSimulateUpload = (docKey: string, docName: string) => {
               localStorage.setItem(`valam_doc_${docKey}_${selectedOrder.id}`, 'UPLOADED');
-              toast({ title: "Dokumen Diunggah", description: `${docName} berhasil diunggah.` });
+              toast({ title: "SIMULASI dokumen", description: "Status lokal ini bukan unggahan atau verifikasi dokumen server." });
               
               // Check if all essential export docs are uploaded to advance L/C status to presented
               const invoiceUp = localStorage.getItem(`valam_doc_invoice_${selectedOrder.id}`) === 'UPLOADED';
@@ -930,14 +801,14 @@ export default function SupplierOrdersPage() {
               const blUp = localStorage.getItem(`valam_doc_bl_${selectedOrder.id}`) === 'UPLOADED';
               
               if (invoiceUp && packingUp && blUp && lcStatus === 'LC_ISSUED') {
-                localStorage.setItem('valam_order_lc_' + selectedOrder.id, 'LC_PRESENTED');
+                toast({ title: 'L/C belum terintegrasi', description: 'Status ini tidak memverifikasi pembayaran atau mencairkan saldo.' });
               }
               
               fetchOrders();
             };
 
             const handleAdvanceLcStatus = (nextStatus: string) => {
-              localStorage.setItem('valam_order_lc_' + selectedOrder.id, nextStatus);
+              toast({ title: 'L/C belum terintegrasi', description: 'Status ini tidak memverifikasi pembayaran atau mencairkan saldo.' });
               toast({ title: "Status L/C Diperbarui", description: `Tahapan L/C diubah ke status berikutnya.` });
               fetchOrders();
             };
@@ -1146,7 +1017,7 @@ export default function SupplierOrdersPage() {
                             { key: 'LC_VERIFIED', label: '2. Bank Verifying' },
                             { key: 'LC_ISSUED', label: '3. L/C Issued' },
                             { key: 'LC_PRESENTED', label: '4. Doc Presented' },
-                            { key: 'LC_RELEASED', label: '5. Escrow Released' }
+                            { key: 'LC_RELEASED', label: '5. Konfirmasi gateway diperlukan' }
                           ].map((step, idx, arr) => {
                             const statuses = arr.map(s => s.key);
                             const currentIdx = statuses.indexOf(lcStatus);
@@ -1562,158 +1433,20 @@ export default function SupplierOrdersPage() {
               );
             }
 
-            if (docKey === 'coa') {
-              const coa = previewDoc.coaData;
-              const qc = coa?.qc_result;
-              const batchCode = order.items?.[0]?.product?.batch_code || '-';
-
-              return (
-                <div className="bg-white border-2 border-emerald-800 rounded-xl p-6 shadow-sm space-y-6 font-sans text-xs text-zinc-800 relative overflow-hidden">
-                  {/* Decorative Border Line */}
-                  <div className="absolute top-0 left-0 right-0 h-1.5 bg-emerald-800" />
-
-                  {/* COA Header */}
-                  <div className="flex justify-between items-start border-b border-zinc-200 pb-4">
-                    <div>
-                      <h2 className="text-base font-bold text-emerald-800 font-serif tracking-wide">KOPERASI PRODUSEN NILAM ACEH</h2>
-                      <p className="text-[9px] text-zinc-500 uppercase tracking-widest font-semibold font-sans">Central QC & GC-MS Testing Laboratory</p>
-                      <p className="text-[9px] text-zinc-400 mt-1">Banda Aceh, Indonesia | support@valam.id</p>
-                    </div>
-                    <div className="text-right">
-                      <span className="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                        {qc?.overall_status === 'PASS' || qc?.overall_status === 'pass' ? 'LULUS QC (PASS)' : 'DRAFT'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <h3 className="text-center text-sm font-bold text-zinc-900 tracking-wide underline uppercase">
-                    CERTIFICATE OF ANALYSIS (CoA)
-                  </h3>
-
-                  {/* Metadata Table */}
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-[11px] bg-zinc-50 p-3 rounded-lg border border-zinc-150">
-                    <div>
-                      <span className="text-zinc-450 font-normal">{locale === 'id' ? 'No. Sertifikat:' : 'Certificate No:'}</span>
-                      <p className="font-mono font-bold text-zinc-950">{coa?.certificate_number}</p>
-                    </div>
-                    <div>
-                      <span className="text-zinc-450 font-normal">{locale === 'id' ? 'Kode Batch Produk:' : 'Product Batch Code:'}</span>
-                      <p className="font-mono font-bold text-zinc-950">{batchCode}</p>
-                    </div>
-                    <div>
-                      <span className="text-zinc-450 font-normal">{locale === 'id' ? 'Tanggal Pengujian:' : 'Test Date:'}</span>
-                      <p className="font-bold text-zinc-950">{coa?.issued_at ? new Date(coa.issued_at).toLocaleDateString('id-ID') : '-'}</p>
-                    </div>
-                    <div>
-                      <span className="text-zinc-450 font-normal">{locale === 'id' ? 'Analis Lab / Penandatangan:' : 'Lead Analyst:'}</span>
-                      <p className="font-bold text-zinc-950">{coa?.admin_name}</p>
-                    </div>
-                  </div>
-
-                  {/* QC Parameter Results Table */}
-                  <div className="border border-zinc-200 rounded-xl overflow-x-auto">
-                    <table className="w-full min-w-[480px] text-left border-collapse text-[11px]">
-                      <thead>
-                        <tr className="bg-zinc-50 border-b border-zinc-200 text-zinc-650 text-[10px] font-bold uppercase tracking-wider">
-                          <th className="py-2.5 px-4">{locale === 'id' ? 'Parameter Pengujian' : 'Test Parameter'}</th>
-                          <th className="py-2.5 px-4 text-center">{locale === 'id' ? 'Standar SNI' : 'SNI Standard'}</th>
-                          <th className="py-2.5 px-4 text-right">{locale === 'id' ? 'Hasil Analisis' : 'Analysis Result'}</th>
-                          <th className="py-2.5 px-4 text-center">{locale === 'id' ? 'Status' : 'Status'}</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-zinc-100 font-medium text-zinc-900">
-                        {/* 1. Patchouli Alcohol */}
-                        <tr>
-                          <td className="py-3 px-4">
-                            <p className="font-bold text-zinc-950">Patchouli Alcohol (PA)</p>
-                            <p className="text-[9px] text-zinc-400">Kandungan senyawa aktif utama</p>
-                          </td>
-                          <td className="py-3 px-4 text-center">Min. 30.0%</td>
-                          <td className="py-3 px-4 text-right font-bold text-emerald-800">{qc?.pa_percentage?.toFixed(1) || '32.4'}%</td>
-                          <td className="py-3 px-4 text-center">
-                            <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-[9px] font-bold">LULUS</span>
-                          </td>
-                        </tr>
-                        {/* 2. Kadar Air */}
-                        <tr>
-                          <td className="py-3 px-4">
-                            <p className="font-bold text-zinc-950">Kadar Air (Moisture Content)</p>
-                            <p className="text-[9px] text-zinc-400">Persentase kelembaban kargo</p>
-                          </td>
-                          <td className="py-3 px-4 text-center">Max. 5.0%</td>
-                          <td className="py-3 px-4 text-right font-bold text-emerald-800">{qc?.moisture?.toFixed(1) || '3.1'}%</td>
-                          <td className="py-3 px-4 text-center">
-                            <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-[9px] font-bold">LULUS</span>
-                          </td>
-                        </tr>
-                        {/* 3. Bobot Jenis */}
-                        <tr>
-                          <td className="py-3 px-4">
-                            <p className="font-bold text-zinc-950">Bobot Jenis (Specific Gravity)</p>
-                            <p className="text-[9px] text-zinc-400">Densitas pada suhu 20°C</p>
-                          </td>
-                          <td className="py-3 px-4 text-center">0.950 - 0.975</td>
-                          <td className="py-3 px-4 text-right font-bold">{qc?.specific_gravity?.toFixed(3) || '0.958'}</td>
-                          <td className="py-3 px-4 text-center">
-                            <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-[9px] font-bold">LULUS</span>
-                          </td>
-                        </tr>
-                        {/* 4. Indeks Bias */}
-                        <tr>
-                          <td className="py-3 px-4">
-                            <p className="font-bold text-zinc-950">Indeks Bias (Refractive Index)</p>
-                            <p className="text-[9px] text-zinc-400">Pembiasan cahaya pada suhu 20°C</p>
-                          </td>
-                          <td className="py-3 px-4 text-center">1.500 - 1.515</td>
-                          <td className="py-3 px-4 text-right font-bold">{qc?.refractive_index?.toFixed(3) || '1.507'}</td>
-                          <td className="py-3 px-4 text-center">
-                            <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-[9px] font-bold">LULUS</span>
-                          </td>
-                        </tr>
-                        {/* 5. Putaran Optik */}
-                        <tr>
-                          <td className="py-3 px-4">
-                            <p className="font-bold text-zinc-950">Putaran Optik (Optical Rotation)</p>
-                            <p className="text-[9px] text-zinc-400">Polarisasi cahaya</p>
-                          </td>
-                          <td className="py-3 px-4 text-center">-40° s/d -50°</td>
-                          <td className="py-3 px-4 text-right font-bold">{qc?.optical_rotation?.toFixed(1) || '-42.5'}°</td>
-                          <td className="py-3 px-4 text-center">
-                            <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-[9px] font-bold">LULUS</span>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Lab Sign-off & Verification */}
-                  <div className="flex justify-between items-end border-t border-zinc-100 pt-6">
-                    <div className="text-[10px] text-zinc-450 space-y-1">
-                      <p>• {locale === 'id' ? 'Metode Analisis: SNI 06-2385-2006' : 'Analysis Method: SNI 06-2385-2006'}</p>
-                      <p>• {locale === 'id' ? 'Sertifikasi Terenkripsi Rantai Pasok' : 'Encrypted Supply Chain Certification'}</p>
-                    </div>
-                    <div className="text-center text-[10px] font-semibold text-zinc-700 w-44">
-                      <p className="text-[9px] text-zinc-400 mb-10">{locale === 'id' ? 'Disetujui Secara Digital oleh' : 'Digitally Approved by'}</p>
-                      <p className="font-bold text-emerald-950 underline">{coa?.admin_name}</p>
-                      <p className="text-[9px] text-zinc-400 font-normal">QC Laboratory Lead</p>
-                    </div>
-                  </div>
-                </div>
-              );
-            }
+            if (docKey === 'coa') return <CoAViewer batch={previewDoc.coaData || {}} />;
 
             // Fallback for custom uploaded documents preview page
             return (
               <div className="bg-white border border-zinc-200 rounded-xl p-8 shadow-sm text-center space-y-4">
                 <div className="text-4xl">📄</div>
                 <div className="inline-block bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
-                  {locale === 'id' ? 'Terverifikasi Sistem' : 'System Verified'}
+                  {locale === 'id' ? 'Sumber belum tersedia' : 'Source unavailable'}
                 </div>
                 <h4 className="font-bold text-zinc-900 text-sm">{previewDoc.name}</h4>
                 <p className="text-zinc-500 text-xs leading-relaxed max-w-sm mx-auto">
                   {locale === 'id' 
-                    ? 'Arsip dokumen digital terverifikasi dalam rantai pasok minyak nilam berkelanjutan. Dokumen ini sah dan disimpan secara terenkripsi dalam sistem B2B Valam.' 
-                    : 'Verified digital document archive in the sustainable patchouli oil supply chain. This document is valid and stored securely encrypted in the Valam B2B system.'}
+                    ? 'Dokumen sumber belum tersedia. Keaslian, validitas dan enkripsi dokumen tidak diklaim tanpa bukti.'
+                    : 'Source document unavailable. Authenticity, validity and encryption have not been established.'}
                 </p>
               </div>
             );

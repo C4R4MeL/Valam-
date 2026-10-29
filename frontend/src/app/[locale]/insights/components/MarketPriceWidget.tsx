@@ -49,14 +49,15 @@ export function MarketPriceWidget({ locale }: MarketPriceWidgetProps) {
         <div className="flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-emerald-300" />
           <h3 className="font-semibold text-sm text-white">
-            {isEn ? 'Patchouli Oil Prices' : 'Harga Nilam Terkini'}
+            {isEn ? 'Indicative Prices' : 'Harga Indikatif'}
           </h3>
         </div>
         <p className="text-xs text-emerald-300 mt-1">
-          {isEn ? 'Updated price per kg' : 'Harga per kg terbaru'}
+          {isEn ? 'Source prices per kg; availability may vary' : 'Harga sumber per kg; dapat belum tersedia'}
         </p>
       </div>
 
+      {prices.length === 0 && <p className="p-4 text-sm">Data harga belum tersedia atau gagal dimuat.</p>}
       {/* Prices */}
       <div className="p-4 space-y-2">
         {prices.map((price) => {
@@ -81,7 +82,7 @@ export function MarketPriceWidget({ locale }: MarketPriceWidgetProps) {
       </div>
 
       {/* Last updated */}
-      {prices.length > 0 && (
+      {prices.length > 0 && prices[0].updated_at && (
         <div className="px-5 py-3 border-t border-zinc-100 bg-zinc-50">
           <p className="text-xs text-zinc-400 text-center">
             {isEn ? 'Last updated' : 'Terakhir diperbarui'}:{' '}

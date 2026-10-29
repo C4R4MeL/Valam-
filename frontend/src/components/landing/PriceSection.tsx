@@ -15,26 +15,20 @@ export function PriceSection() {
 
   const isId = locale === "id";
 
-  const today = new Date().toLocaleDateString(isId ? "id-ID" : "en-US", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-
   const content = {
     label: isId ? "HARGA PASAR" : "MARKET PRICE",
-    title: isId ? "Harga Minyak Nilam Aceh Hari Ini" : "Aceh Patchouli Oil Price Today",
+    title: isId ? "Harga Indikatif Minyak Nilam" : "Indicative Patchouli Oil Prices",
     subtitle: isId
-      ? `Diperbarui oleh tim Valam · ${today}`
-      : `Updated by Valam team · ${today}`,
+      ? "Harga indikatif sesuai sumber yang tersedia; bukan harga penawaran batch."
+      : "Indicative prices from available sources; not batch offers.",
     thGrade: isId ? "Grade" : "Grade",
     thPa: isId ? "Kadar PA" : "PA Content",
     thPrice: isId ? "Harga / Kg" : "Price / Kg",
     thMarket: isId ? "Pasar Utama" : "Primary Market",
     mostPopular: isId ? "Paling Diminati" : "Most Popular",
     disclaimer: isId
-      ? "Harga bersifat estimasi berdasarkan data pasar terkini. Harga aktual ditentukan melalui negosiasi RFQ."
-      : "Prices are estimates based on current market data. Actual prices are determined through RFQ negotiation.",
+      ? "Harga indikatif sesuai data sumber yang tersedia. Harga penawaran aktual tercantum pada batch atau kesepakatan RFQ."
+      : "Indicative prices from available sources. Actual offers are recorded on batches or RFQ agreements.",
     cta: isId ? "Lihat histori harga" : "View price history",
   };
 
@@ -45,7 +39,7 @@ export function PriceSection() {
         const mergedPrices = mergeMarketPrices(prices);
         
         // Format prices dengan spesifikasi grade yang konsisten
-        const formattedPrices = mergedPrices.map((item: any) => {
+        const formattedPrices = mergedPrices.map((item) => {
           const specs = GRADE_SPECS[item.grade];
           return {
             grade: `Grade ${item.grade}${item.grade === "A" ? " ⭐" : ""}`,
@@ -59,22 +53,7 @@ export function PriceSection() {
         setPriceData(formattedPrices);
       } catch (error) {
         console.error("Failed to load market prices:", error);
-        // Fallback: use GRADE_SPECS dengan fallback prices
-        const fallbackPrices = [
-          { grade: "A", price: 850000 },
-          { grade: "B", price: 780000 },
-          { grade: "C", price: 680000 },
-        ].map((item) => {
-          const specs = GRADE_SPECS[item.grade as 'A' | 'B' | 'C'];
-          return {
-            grade: `Grade ${item.grade}${item.grade === "A" ? " ⭐" : ""}`,
-            pa: isId ? specs.pa : specs.pa.replace(/%/, "%"),
-            price: formatPrice(item.price, "IDR"),
-            market: isId ? specs.marketId : specs.marketEn,
-            highlight: specs.highlight,
-          };
-        });
-        setPriceData(fallbackPrices);
+        setPriceData([]);
       } finally {
         setLoading(false);
       }
@@ -94,7 +73,7 @@ export function PriceSection() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
-              Live
+              Indikatif
             </span>
           </h2>
           <p className="text-xs sm:text-sm md:text-base text-zinc-500 font-normal">
@@ -112,7 +91,7 @@ export function PriceSection() {
                 </div>
               </div>
             ) : (
-              <table className="w-full text-left border-collapse min-w-[540px]">
+              <><p className="px-6 py-3 text-sm text-zinc-500">{priceData.length === 0 ? (isId ? "Data harga tidak tersedia atau gagal dimuat." : "Price data unavailable or failed to load.") : (isId ? "Harga indikatif, bukan jaminan harga transaksi." : "Indicative prices, not guaranteed transaction prices.")}</p><table className="w-full text-left border-collapse min-w-[540px]">
                 <thead>
                   <tr className="bg-emerald-950 text-white text-xs md:text-sm font-semibold uppercase tracking-wider">
                     <th className="px-4 sm:px-6 py-3.5 md:py-5">{content.thGrade}</th>
@@ -150,7 +129,7 @@ export function PriceSection() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></>
             )}
           </div>
           <div className="px-6 py-4 bg-zinc-50/80 border-t border-zinc-100 flex flex-col md:flex-row justify-between items-center gap-4 text-xs md:text-sm">
