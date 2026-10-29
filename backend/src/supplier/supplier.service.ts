@@ -206,6 +206,11 @@ export class SupplierService {
     if (dto.ktpPic !== undefined) updateData.ktp_pic = dto.ktpPic;
     if (dto.whatsapp !== undefined) updateData.whatsapp = dto.whatsapp;
     if (dto.alamatLengkap !== undefined) updateData.alamat_lengkap = dto.alamatLengkap;
+    if (dto.postalCode !== undefined) {
+      updateData.postal_code = dto.postalCode;
+      // A previously resolved area must not override a newly entered postcode.
+      if (dto.postalCode !== supplier.postal_code) updateData.area_id = null;
+    }
     if (dto.kabupaten !== undefined) updateData.kabupaten = dto.kabupaten;
     if (dto.kecamatan !== undefined) updateData.kecamatan = dto.kecamatan;
     if (dto.desa !== undefined) updateData.desa = dto.desa;

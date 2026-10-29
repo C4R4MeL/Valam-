@@ -37,6 +37,7 @@ export default function CheckoutPage() {
   const [searchingArea, setSearchingArea] = useState(false)
 
   const [quoting, setQuoting] = useState(false)
+  const quoteRequestId = useRef(0)
   const [quoteError, setQuoteError] = useState('')
   const [quoteGroups, setQuoteGroups] = useState<Record<string, any>>({})
   const [selectedRates, setSelectedRates] = useState<Record<string, string>>({})
@@ -244,12 +245,18 @@ export default function CheckoutPage() {
 
   // Fetch Biteship Area ID when District changes
   useEffect(() => {
+    let active = true
+    // Invalidate quotes immediately when the destination changes.
+    quoteRequestId.current += 1
+    setBiteshipAreaId(null)
+    setPostalCode('')
+    setQuoteGroups({})
+    setSelectedRates({})
+    setSelectedRateDetails({})
+    setQuoteError('')
+    setQuoting(false)
     if (!selectedDistrict || !selectedCity) {
-      setBiteshipAreaId(null)
-      setPostalCode('')
-      setQuoteGroups({})
-      setSelectedRates({})
-      setSelectedRateDetails({})
+      setSearchingArea(false)
       return
     }
     
@@ -263,6 +270,7 @@ export default function CheckoutPage() {
     })
       .then(res => res.json())
       .then(data => {
+        if (!active) return
         const areas = Array.isArray(data) ? data : data?.areas || []
         if (areas.length > 0) {
           setBiteshipAreaId(areas[0].id)
@@ -272,13 +280,15 @@ export default function CheckoutPage() {
         }
       })
       .catch(console.error)
-      .finally(() => setSearchingArea(false))
+      .finally(() => { if (active) setSearchingArea(false) })
+    return () => { active = false }
   }, [selectedDistrict, selectedCity])
 
   const fetchQuotes = useCallback(async () => {
     const supplierIds = Object.keys(groupedItems)
     if (!supplierIds.length || !biteshipAreaId) return
 
+    const requestId = ++quoteRequestId.current
     setQuoting(true)
     setQuoteError('')
     setQuoteGroups({})
@@ -335,6 +345,10 @@ export default function CheckoutPage() {
       }
 
       const data = await res.json()
+      if (requestId !== quoteRequestId.current) return
+      if (!Array.isArray(data.groups) || supplierIds.some(id => !data.groups.some((g: any) => g.supplierId === id && Array.isArray(g.rates)))) {
+        throw new Error(isId ? 'Respons tarif pengiriman tidak lengkap. Silakan coba lagi.' : 'Incomplete shipping quote response. Please try again.')
+      }
       const nextGroups: Record<string, any> = {}
       const nextRates: Record<string, string> = {}
       const nextDetails: Record<string, any> = {}
@@ -351,11 +365,22 @@ export default function CheckoutPage() {
       setSelectedRates(nextRates)
       setSelectedRateDetails(nextDetails)
     } catch (err: any) {
-      setQuoteError(err.message || (isId ? 'Gagal memuat ongkir.' : 'Failed to load shipping rates.'))
+      if (requestId === quoteRequestId.current) setQuoteError(err.message || (isId ? 'Gagal memuat ongkir.' : 'Failed to load shipping rates.'))
     } finally {
-      setQuoting(false)
+      if (requestId === quoteRequestId.current) setQuoting(false)
     }
-  }, [groupedItems, address, isCircular, isId, toast, router])
+  }, [groupedItems, address, biteshipAreaId, postalCode, selectedDistrict, selectedCity, selectedProvince, isCircular, isId, toast, router])
+
+  // Resolve rates once the destination is known, and refresh when quote inputs
+  // change. Debounce address typing and ignore responses from older destinations.
+  useEffect(() => {
+    if (!biteshipAreaId || searchingArea) return
+    const timer = setTimeout(() => { void fetchQuotes() }, 250)
+    return () => {
+      clearTimeout(timer)
+      quoteRequestId.current += 1
+    }
+  }, [biteshipAreaId, searchingArea, fetchQuotes])
 
 
   const handleSelectRate = (supplierId: string, rate: any) => {
@@ -958,11 +983,15 @@ export default function CheckoutPage() {
                           )
                         })}
                       </div>
-                    ) : biteshipAreaId && !quoting && !quoteError ? (
+                    ) : quote ? (
                       <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded-lg p-2">
                         {isId ? 'Tidak ada layanan kurir untuk rute ini.' : 'No courier services for this route.'}
                       </p>
-                    ) : null}
+                    ) : (
+                      <p className="text-[11px] text-zinc-500">
+                        {isId ? 'Tarif pengiriman belum dimuat.' : 'Shipping rates have not loaded yet.'}
+                      </p>
+                    )}
                   </div>
                 )
               })}

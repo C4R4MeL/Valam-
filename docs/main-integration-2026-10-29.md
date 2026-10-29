@@ -90,3 +90,28 @@ stok, dan aturan akses tetap mengikuti data/API. Tidak ada perubahan database
 atau persetujuan laporan otomatis. Tiga regresi halaman katalog dan typecheck
 frontend lulus. Build frontend juga lulus memakai direktori output baru melalui
 `VALAM_FRONTEND_DIST`, karena cache build lama terkena EINVAL/readlink OneDrive.
+
+## Tindak lanjut pilihan kurir checkout
+
+Halaman checkout sebelumnya mencari area tujuan, tetapi tidak pernah memanggil
+permintaan quote awal. State quote yang belum tersedia langsung ditampilkan
+sebagai rute tanpa layanan. Quote sekarang dimuat otomatis setelah area tersedia,
+perubahan alamat dijeda singkat sebelum menghitung ulang, dan respons area/quote lama diabaikan setelah
+tujuan berubah. Status belum dimuat, API gagal, respons tidak lengkap, dan
+respons sukses dengan rates kosong dibedakan. Retry API tetap tersedia.
+
+Inspeksi read-only pada pemasok bernama PT. Global Utama juga menemukan lokasi
+asal belum memiliki postal_code/area_id. Form Pengaturan Profil supplier kini
+memuat dan menyimpan **Kode Pos Asal Pengiriman** melalui endpoint pemilik yang
+sudah ada. API menerima kode pos lima digit atau pengosongan eksplisit. Saat
+kode pos berubah, area_id lama dikosongkan agar tidak menimpa kode pos baru
+dalam permintaan Biteship. Mengubah field lain atau menyimpan kode pos yang
+sama mempertahankan lokasi yang sudah ada.
+
+Kolom database tersebut sudah tersedia; tidak ada migrasi maupun pengisian
+alamat pemasok otomatis. Kode pos lokasi penjemputan yang sebenarnya harus
+diisi pemilik supplier. Tidak ada panggilan quote provider nyata, pembuatan
+pengiriman, atau pembayaran dalam pemeriksaan ini. **10 tes terarah** lulus:
+5 quote checkout, 1 form pengaturan, dan 4 validasi/penyimpanan asal supplier.
+Pemeriksaan tipe frontend serta build backend dan frontend lulus. Tidak ada
+perubahan schema database yang diperlukan untuk perbaikan ini.

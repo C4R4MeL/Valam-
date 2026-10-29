@@ -26,6 +26,7 @@ export default function SupplierSettingsPage() {
     ktpPic: '',
     whatsapp: '',
     alamatLengkap: '',
+    postalCode: '',
     kabupaten: '',
     kecamatan: '',
     desa: '',
@@ -62,6 +63,7 @@ export default function SupplierSettingsPage() {
             ktpPic: data.ktp_pic || '',
             whatsapp: data.whatsapp || '',
             alamatLengkap: data.alamat_lengkap || '',
+            postalCode: data.postal_code || '',
             kabupaten: data.kabupaten || '',
             kecamatan: data.kecamatan || '',
             desa: data.desa || '',
@@ -98,7 +100,7 @@ export default function SupplierSettingsPage() {
       const res = await fetch(`${apiUrl}/suppliers/me/profile`, {
         method: 'PATCH',
         headers: getHeaders(),
-        body: JSON.stringify(profile)
+        body: JSON.stringify({ ...profile, postalCode: profile.postalCode || null })
       })
 
       if (res.ok) {
@@ -337,6 +339,18 @@ export default function SupplierSettingsPage() {
                 />
                 <MapPin className="absolute left-3.5 top-3.5 w-4.5 h-4.5 text-zinc-400" />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="postalCode" className="text-zinc-700 text-xs font-bold">
+                {locale === 'id' ? 'Kode Pos Asal Pengiriman' : 'Shipping Origin Postal Code'}
+              </Label>
+              <Input id="postalCode" value={profile.postalCode} inputMode="numeric" pattern="[0-9]{5}" maxLength={5}
+                onChange={e => setProfile({ ...profile, postalCode: e.target.value })}
+                className="h-11 text-sm border-zinc-200 rounded-xl" />
+              <p className="text-xs text-zinc-500">
+                {locale === 'id' ? 'Isi kode pos 5 digit lokasi penjemputan barang agar ongkir dapat dihitung.' : 'Enter the 5-digit postcode of the pickup location so shipping rates can be calculated.'}
+              </p>
             </div>
 
             {/* Bank Info */}
