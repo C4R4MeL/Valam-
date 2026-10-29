@@ -3,7 +3,8 @@ const midtransClient = require('midtrans-client');
 
 @Injectable()
 export class MidtransGateway {
-  private readonly production = process.env.MIDTRANS_IS_PRODUCTION === 'true';
+  private readonly mode = process.env.MIDTRANS_IS_PRODUCTION || 'false';
+  private readonly production = this.mode === 'true';
   private readonly serverKey = process.env.MIDTRANS_SERVER_KEY || '';
   private readonly snap = new midtransClient.Snap({
     isProduction: this.production,
@@ -12,21 +13,16 @@ export class MidtransGateway {
   });
 
   assertConfigured() {
+    if (!['true', 'false'].includes(this.mode)) {
+      throw new ServiceUnavailableException('MIDTRANS_IS_PRODUCTION harus bernilai true atau false.');
+    }
     if (!this.serverKey.trim()) {
       throw new ServiceUnavailableException(
         'MIDTRANS_SERVER_KEY belum diisi. Konfigurasikan key Midtrans sesuai mode pembayaran sebelum checkout.',
       );
     }
-    if (!this.production && !this.serverKey.startsWith('SB-Mid-server-')) {
-      throw new ServiceUnavailableException(
-        'Mode pembayaran sandbox membutuhkan MIDTRANS_SERVER_KEY Sandbox (SB-Mid-server-...). Ambil key dari dashboard Sandbox Midtrans, lalu restart backend.',
-      );
-    }
-    if (this.production && !this.serverKey.startsWith('Mid-server-')) {
-      throw new ServiceUnavailableException(
-        'Mode pembayaran production membutuhkan Server Key Production Midtrans. Pastikan mode frontend dan backend sesuai.',
-      );
-    }
+    // Key prefixes are not an environment contract. The SDK selects endpoints
+    // from isProduction; Midtrans itself validates credentials for that endpoint.
     if (this.production && process.env.NODE_ENV === 'test') {
       throw new ServiceUnavailableException('Pembayaran production tidak diizinkan dalam lingkungan pengujian.');
     }

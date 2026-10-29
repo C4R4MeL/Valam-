@@ -118,10 +118,12 @@ perubahan schema database yang diperlukan untuk perbaikan ini.
 
 ## Tindak lanjut pembayaran localhost (sandbox)
 
-Pengguna memilih sandbox. Pemeriksaan konfigurasi lokal mengonfirmasi kedua
-mode bernilai false, tetapi server/client key yang tersedia berformat production.
-Ini direproduksi melalui MidtransGateway hasil build tanpa mengirim permintaan
-gateway. Kunci rahasia pada .env tidak diubah, ditampilkan, atau dipush.
+Pengguna memilih sandbox. Kedua mode lokal bernilai false. Diagnosis awal
+yang menyimpulkan environment key hanya dari awalan ternyata keliru: key lokal
+tanpa awalan SB diterima API Sandbox. GET status untuk referensi acak mendapat
+respons provider 404 Transaction doesn't exist, sedangkan kontrol dengan key
+acak yang sengaja tidak valid ditolak HTTP 401. Kunci rahasia pada .env tidak
+diubah, ditampilkan oleh pemeriksaan, atau dipush.
 Order lama pada log telah EXPIRED dan stock_state RELEASED; pemeriksaan hanya
 read-only, tanpa pembatalan, perubahan saldo, atau pembayaran nyata.
 
@@ -130,7 +132,10 @@ Perbaikan kode:
 - Checkout memeriksa konfigurasi gateway sebelum membaca keranjang, membuat
   order/pengiriman/payment, atau mereservasi stok. Retry RFQ juga diperiksa
   sebelum mengubah referensi gateway.
-- Mode/key yang berbeda menghasilkan HTTP 503 dengan petunjuk spesifik.
+- Key kosong atau nilai flag environment yang tidak valid menghasilkan HTTP 503.
+  Endpoint SDK dipilih melalui MIDTRANS_IS_PRODUCTION, bukan awalan key;
+  autentikasi key diserahkan kepada Midtrans pada endpoint yang dipilih.
+  Mode production tetap ditolak dalam lingkungan tes otomatis.
   Penolakan kredensial provider dilaporkan tanpa isi respons sensitif;
   kegagalan transport/token menjadi HTTP 502, bukan exception HTTP 500 generik.
 - Callback Snap onSuccess tidak langsung menyatakan pembayaran sukses.
@@ -138,26 +143,33 @@ Perbaikan kode:
   kebutuhan rekonsiliasi. Polling juga berhenti pada expired.
 - Retry menampilkan error backend dan keluar dari status processing jika
   Snap tidak tersedia. Redirect yang diberikan backend dapat dipakai sebagai
-  fallback. Template backend/.env.example kini konsisten memakai sandbox.
+  fallback. Template backend/.env.example memakai mode sandbox dengan key kosong
+  yang harus diisi dari dashboard yang sesuai, tanpa mengasumsikan awalan wajib.
 
 Validasi: **56 unit backend** dan **9 tes halaman checkout** lulus, termasuk
-preflight tanpa efek tulis, penolakan mode yang salah, error HTTP, token kosong,
+preflight tanpa efek tulis, penolakan flag yang salah, error HTTP, token kosong,
 konfirmasi backend, pembayaran yang perlu ditinjau, dan kegagalan Snap/retry.
-Pemeriksaan tipe frontend serta build backend dan frontend lulus. Uji provider sandbox
-belum dilakukan karena key Sandbox yang benar belum tersedia.
+Pemeriksaan tipe frontend serta build backend dan frontend lulus. Sesudah
+koreksi validator prefix, 12 tes terarah dijalankan ulang dan build backend
+lulus. Gateway hasil build juga berhasil membuat token Snap melalui provider
+Sandbox asli, dengan redirect host app.sandbox.midtrans.com. Referensi khusus
+pengujian digunakan tanpa informasi pelanggan, tanpa order Supabase, dan tanpa
+menyelesaikan pembayaran. Token/secret tidak dicetak; bukti lokal hanya memuat
+status keberhasilan pada artifacts/payment-sandbox-token-check.json.
 
-Untuk mengaktifkan pengujian, ambil pasangan key dari dashboard Midtrans dengan
-environment **Sandbox → Settings → Access Keys**. Isi pada mesin lokal:
+Gunakan pasangan key dari dashboard Midtrans dengan environment
+**Sandbox → Settings → Access Keys**. Key lokal saat pemeriksaan diterima
+Sandbox; format awalan tidak digunakan sebagai bukti environment. Konfigurasi:
 
 ```dotenv
 # backend/.env
 MIDTRANS_IS_PRODUCTION=false
-MIDTRANS_SERVER_KEY=SB-Mid-server-<key-sandbox-anda>
-MIDTRANS_CLIENT_KEY=SB-Mid-client-<key-sandbox-anda>
+MIDTRANS_SERVER_KEY=<server-key-dari-dashboard-sandbox>
+MIDTRANS_CLIENT_KEY=<client-key-dari-dashboard-sandbox>
 
 # frontend/.env
 NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION=false
-NEXT_PUBLIC_MIDTRANS_CLIENT_KEY=SB-Mid-client-<client-key-sandbox-yang-sama>
+NEXT_PUBLIC_MIDTRANS_CLIENT_KEY=<client-key-sandbox-yang-sama>
 ```
 
 Restart backend dengan npm run start:dev dan frontend dengan npm run dev.

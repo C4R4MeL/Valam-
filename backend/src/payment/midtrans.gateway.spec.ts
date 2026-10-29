@@ -20,16 +20,16 @@ describe('Midtrans environment configuration before any gateway call', () => {
     expect(() => new MidtransGateway().createTransaction({})).toThrow(ServiceUnavailableException);
     expect(mockCreate).not.toHaveBeenCalled();
   });
-  it('explains the sandbox/production mismatch without exposing the key', () => {
-    process.env.MIDTRANS_SERVER_KEY = 'Mid-server-private-unit-fixture';
+  it('allows a non-SB key in sandbox and selects the sandbox SDK endpoint', async () => {
+    process.env.MIDTRANS_SERVER_KEY = 'Mid-server-unit-fixture';
     const gateway = new MidtransGateway();
-    expect(() => gateway.createTransaction({})).toThrow(/SB-Mid-server-/);
-    expect(() => gateway.status('unit-order')).toThrow(ServiceUnavailableException);
-    expect(mockCreate).not.toHaveBeenCalled();
-    expect(mockStatus).not.toHaveBeenCalled();
+    await expect(gateway.createTransaction({})).resolves.toEqual({ token: 'unit-token' });
+    expect(require('midtrans-client').Snap).toHaveBeenCalledWith(expect.objectContaining({ isProduction: false }));
+    await gateway.status('unit-order');
+    expect(mockStatus).toHaveBeenCalledWith('unit-order');
   });
-  it('rejects a sandbox key in production mode', () => {
-    process.env.MIDTRANS_IS_PRODUCTION = 'true';
+  it('rejects an invalid environment flag before sending a transaction', () => {
+    process.env.MIDTRANS_IS_PRODUCTION = 'invalid';
     expect(() => new MidtransGateway().assertConfigured()).toThrow(ServiceUnavailableException);
     expect(mockCreate).not.toHaveBeenCalled();
   });
