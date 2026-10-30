@@ -10,7 +10,6 @@ import { Footer } from '@/components/layout/Footer'
 
 import { useLocale } from 'next-intl'
 import { useSearchParams } from 'next/navigation'
-import { getLatestMarketPrices } from '@/lib/valam-insights/insights-api'
 import { MarketplaceSkeleton, ProductGridSkeleton } from '@/components/skeletons'
 import { getSupplierDisplayName } from '@/lib/utils'
 
@@ -124,23 +123,6 @@ function MarketplaceContent({ isFilterOpen, setIsFilterOpen }: { isFilterOpen: b
   const [products, setProducts] = useState<any[]>([])
   const [catalogLoading, setCatalogLoading] = useState(true)
   const [catalogError, setCatalogError] = useState(false)
-  const [, setMarketPrices] = useState<any[]>([])
-
-  useEffect(() => {
-    // Fetch live market prices ticker
-    getLatestMarketPrices()
-      .then(res => {
-        setMarketPrices(res)
-      })
-      .catch(err => {
-        setMarketPrices([
-          { grade: 'GRADE_A', price_per_kg: 850000, currency: 'IDR' },
-          { grade: 'GRADE_B', price_per_kg: 780000, currency: 'IDR' },
-          { grade: 'GRADE_C', price_per_kg: 680000, currency: 'IDR' }
-        ])
-      })
-  }, [])
-
   useEffect(() => {
     const fetchCatalog = async () => {
       setCatalogLoading(true)

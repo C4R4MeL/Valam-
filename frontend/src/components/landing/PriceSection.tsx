@@ -3,15 +3,13 @@
 import Link from "next/link";
 import { useLocale } from "next-intl";
 import { ArrowRight } from "lucide-react";
-import { useEffect, useState } from "react";
-import { getLatestMarketPrices } from "@/lib/valam-insights/insights-api";
-import { GRADE_SPECS, mergeMarketPrices } from "@/lib/market-grades";
+import { useMarketPrices } from "@/hooks/useMarketPrices";
+import { GRADE_SPECS } from "@/lib/market-grades";
 import { formatPrice } from "@/lib/valam-insights/utils";
 
 export function PriceSection() {
   const locale = useLocale();
-  const [priceData, setPriceData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { prices, loading } = useMarketPrices();
 
   const isId = locale === "id";
 
@@ -32,35 +30,16 @@ export function PriceSection() {
     cta: isId ? "Lihat histori harga" : "View price history",
   };
 
-  useEffect(() => {
-    async function loadPrices() {
-      try {
-        const prices = await getLatestMarketPrices();
-        const mergedPrices = mergeMarketPrices(prices);
-        
-        // Format prices dengan spesifikasi grade yang konsisten
-        const formattedPrices = mergedPrices.map((item) => {
-          const specs = GRADE_SPECS[item.grade];
-          return {
-            grade: `Grade ${item.grade}${item.grade === "A" ? " ⭐" : ""}`,
-            pa: isId ? specs.pa : specs.pa.replace(/%/, "%"),
-            price: formatPrice(Number(item.price_per_kg), item.currency),
-            market: isId ? specs.marketId : specs.marketEn,
-            highlight: specs.highlight,
-          };
-        });
-
-        setPriceData(formattedPrices);
-      } catch (error) {
-        console.error("Failed to load market prices:", error);
-        setPriceData([]);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadPrices();
-  }, [isId]);
+  const priceData = prices.map(item => {
+    const specs = GRADE_SPECS[item.grade];
+    return {
+      grade: `Grade ${item.grade}${item.grade === 'A' ? ' ⭐' : ''}`,
+      pa: specs.pa,
+      price: formatPrice(item.price_per_kg, item.currency),
+      market: isId ? specs.marketId : specs.marketEn,
+      highlight: specs.highlight,
+    };
+  });
 
   return (
     <section className="py-14 sm:py-20 md:py-24 border-t border-zinc-200/60 relative">

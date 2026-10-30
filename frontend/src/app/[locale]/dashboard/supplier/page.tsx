@@ -1,6 +1,8 @@
 'use client'
 
 import { DashboardSkeleton } from '@/components/skeletons'
+import { useMarketPrices } from '@/hooks/useMarketPrices'
+import { GRADE_SPECS } from '@/lib/market-grades'
 
 import { useState, useEffect } from 'react'
 import { 
@@ -75,6 +77,7 @@ const contentMap = {
 }
 
 export default function SupplierDashboardPage() {
+  const { prices: marketPrices } = useMarketPrices();
   const locale = useLocale() as 'id' | 'en'
   const t = contentMap[locale] || contentMap.id
   const router = useRouter()
@@ -792,7 +795,11 @@ export default function SupplierDashboardPage() {
                   <span className="font-semibold text-emerald-900">{selectedBatch.pa_percentage}%</span>
                 </div>
                 <div className="text-[10px] text-emerald-700/80 pt-1 border-t border-emerald-150 mt-1.5">
-                  * Berdasarkan data historis pasar, minyak nilam dengan kadar PA {selectedBatch.pa_percentage}% bernilai sekitar Rp 900.000 - Rp 1.150.000 / Kg.
+                  {(() => {
+                    const pa = Number(selectedBatch.pa_percentage);
+                    const reference = Number.isFinite(pa) ? marketPrices.find(price => price.grade === (pa >= GRADE_SPECS.A.paMin ? 'A' : pa >= GRADE_SPECS.B.paMin ? 'B' : 'C')) : null;
+                    return reference ? `Harga pasar indikatif Grade ${reference.grade}: ${formatRupiah(reference.price_per_kg)} / Kg. Harga jual ditentukan oleh supplier.` : 'Harga pasar indikatif belum tersedia.';
+                  })()}
                 </div>
               </div>
 

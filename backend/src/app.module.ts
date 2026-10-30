@@ -23,6 +23,7 @@ import { SupplierModule } from './supplier/supplier.module';
 import { CircularProductsModule } from './circular-products/circular-products.module';
 import { CommerceModule } from './commerce/commerce.module';
 import { QualityModule } from './quality/quality.module';
+import { MarketPricesModule } from './market-prices/market-prices.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { QualityModule } from './quality/quality.module';
       limit: 60,
     }]),
     PrismaModule, 
+    MarketPricesModule,
     QualityModule,
     CommerceModule,
     AuthModule, 

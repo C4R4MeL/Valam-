@@ -3,9 +3,9 @@
 # ============================================================
 # Supabase Market Prices Update Script
 # ============================================================
-# Script ini memastikan prices di Supabase sudah correct
+# Script baca saja untuk memeriksa harga tersimpan.
 
-echo "🔄 Updating Supabase market prices..."
+echo "🔄 Reading Supabase market prices..."
 echo ""
 
 # Pastikan environment variables tersedia
@@ -26,5 +26,4 @@ curl -s \
   | jq .
 
 echo ""
-echo "✅ Run complete. If prices show old values, run the migration:"
-echo "   supabase migration up 011_update_market_prices.sql"
+echo "✅ Pembacaan selesai. Perbarui harga melalui halaman Admin > Insights > Harga Pasar."

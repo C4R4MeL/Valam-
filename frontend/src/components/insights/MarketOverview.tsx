@@ -1,28 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { useMarketPrices } from '@/hooks/useMarketPrices';
 import { ArrowRight, ArrowUpRight, ArrowDownRight, Minus, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { getLatestMarketPrices, getMarketPriceHistory } from '@/lib/valam-insights/insights-api';
+import { getMarketPriceHistory } from '@/lib/valam-insights/insights-api';
 import { formatPrice } from '@/lib/valam-insights/utils';
-import type { InsightMarketPrice } from '@/lib/valam-insights/types';
 
 interface MarketOverviewProps {
   locale: string;
   /** Compact variant for hero strip */
   variant?: 'hero' | 'section';
 }
-
-interface PriceSnapshot {
-  price: InsightMarketPrice | null;
-  weeklyChangePct: number | null;
-  isPlaceholder: boolean;
-  updatedAt: string | null;
-}
-
-const PLACEHOLDER: PriceSnapshot = { price: null, weeklyChangePct: null, isPlaceholder: true, updatedAt: null };
 
 function formatChange(pct: number | null, isEn: boolean) {
   if (pct === null) return isEn ? '—' : '—';
@@ -32,62 +22,25 @@ function formatChange(pct: number | null, isEn: boolean) {
 
 export function MarketOverview({ locale, variant = 'section' }: MarketOverviewProps) {
   const isEn = locale === 'en';
-  const [snapshot, setSnapshot] = useState<PriceSnapshot | null>(null);
-  const [allPrices, setAllPrices] = useState<InsightMarketPrice[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [weeklyChangePct, setWeeklyChangePct] = useState<number | null>(null);
+  const { prices: allPrices, loading } = useMarketPrices();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
+  const gradeA = allPrices.find(price => price.grade === 'A') || null;
   useEffect(() => {
     let cancelled = false;
-
-    async function load() {
-      try {
-        const prices = await getLatestMarketPrices();
-        if (!cancelled) setAllPrices(prices);
-        const gradeA = prices.find((p) => p.grade === 'A') || prices[0] || null;
-
-        let weeklyChangePct: number | null = null;
-        if (gradeA) {
-          try {
-            const history = await getMarketPriceHistory(gradeA.grade, 14);
-            if (history.length >= 2) {
-              const latest = history[0].price_per_kg;
-              const weekAgo = history[Math.min(6, history.length - 1)].price_per_kg;
-              if (weekAgo > 0) {
-                weeklyChangePct = ((latest - weekAgo) / weekAgo) * 100;
-              }
-            }
-          } catch {
-            // History optional — keep null
-          }
-        }
-
-        if (!cancelled) {
-          if (gradeA) {
-            setSnapshot({
-              price: gradeA,
-              weeklyChangePct,
-              isPlaceholder: false,
-              updatedAt: gradeA.updated_at,
-            });
-          } else {
-            setSnapshot(PLACEHOLDER);
-          }
-        }
-      } catch {
-        if (!cancelled) setSnapshot(PLACEHOLDER);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+    setWeeklyChangePct(null);
+    if (gradeA) {
+      getMarketPriceHistory(gradeA.grade, 14).then(history => {
+        if (cancelled || history.length < 2) return;
+        const previous = history[Math.min(6, history.length - 1)].price_per_kg;
+        if (previous > 0) setWeeklyChangePct(((gradeA.price_per_kg - previous) / previous) * 100);
+      }).catch(() => { /* History is optional; keep the current price visible. */ });
     }
+    return () => { cancelled = true; };
+  }, [gradeA]);
 
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const data = snapshot || PLACEHOLDER;
+  const data = { price: gradeA, weeklyChangePct, isPlaceholder: !gradeA, updatedAt: gradeA?.updated_at };
   const change = data.weeklyChangePct;
   const isUp = change !== null && change > 0;
   const isDown = change !== null && change < 0;
@@ -114,7 +67,7 @@ export function MarketOverview({ locale, variant = 'section' }: MarketOverviewPr
             label: isEn ? 'Aceh patchouli oil' : 'Harga minyak nilam',
             value: loading
               ? '…'
-              : formatPrice(data.price!.price_per_kg, data.price!.currency),
+              : (data.price ? formatPrice(data.price.price_per_kg, data.price.currency) : (isEn ? 'Unavailable' : 'Belum tersedia')),
             sub: isEn ? 'Grade A / kg' : 'Grade A / Kg',
           },
           {
@@ -187,7 +140,7 @@ export function MarketOverview({ locale, variant = 'section' }: MarketOverviewPr
               <p className="text-3xl sm:text-4xl font-bold text-emerald-800 tracking-tight tabular-nums">
                 {loading
                   ? '…'
-                  : formatPrice(data.price!.price_per_kg, data.price!.currency)}
+                  : (data.price ? formatPrice(data.price.price_per_kg, data.price.currency) : (isEn ? 'Unavailable' : 'Belum tersedia'))}
               </p>
               <p className="text-sm text-zinc-500 mt-1">
                 {isEn ? 'per kg · Grade A' : '/ Kg · Grade A'}

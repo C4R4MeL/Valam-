@@ -1,9 +1,31 @@
 /**
  * Update Market Prices in Supabase
- * Run: node scripts/update-market-prices.js
+ * Run: node scripts/update-market-prices.js <prices.json>
+ * Prices must be supplied explicitly; this script has no default market prices.
  */
 
 const { createClient } = require('@supabase/supabase-js');
+const { readFileSync } = require('node:fs');
+
+const inputFile = process.argv[2];
+if (!inputFile) {
+  console.error('Usage: node scripts/update-market-prices.js <prices.json>');
+  process.exit(1);
+}
+let prices;
+try {
+  prices = JSON.parse(readFileSync(inputFile, 'utf8'));
+  if (!Array.isArray(prices) || prices.length === 0 || prices.some(price =>
+    !['A', 'B', 'C'].includes(price.grade) ||
+    !Number.isFinite(price.price_per_kg) || price.price_per_kg <= 0 ||
+    price.currency !== 'IDR'
+  ) || new Set(prices.map(price => price.grade)).size !== prices.length) {
+    throw new Error('Supply unique grades A/B/C, positive numeric price_per_kg and currency IDR');
+  }
+} catch (error) {
+  console.error(`Invalid price input: ${error.message}`);
+  process.exit(1);
+}
 
 // Get env from .env or .env.local
 require('dotenv').config({ path: '.env.local' });
@@ -23,15 +45,9 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 async function updateMarketPrices() {
   console.log('🔄 Updating market prices in Supabase...\n');
 
-  const prices = [
-    { grade: 'A', price_per_kg: 850000, currency: 'IDR', description: 'Premium (≥32% PA)' },
-    { grade: 'B', price_per_kg: 780000, currency: 'IDR', description: 'Standard (28-31% PA)' },
-    { grade: 'C', price_per_kg: 680000, currency: 'IDR', description: 'Basic (<28% PA)' },
-  ];
-
   try {
     for (const price of prices) {
-      console.log(`📝 Upserting Grade ${price.grade} → Rp ${price.price_per_kg.toLocaleString('id-ID')} (${price.description})`);
+      console.log(`📝 Upserting Grade ${price.grade} → Rp ${price.price_per_kg.toLocaleString('id-ID')}`);
 
       const { data, error } = await supabase
         .from('insights_market_prices')

@@ -3,6 +3,7 @@
 // ============================================================
 
 import { createClient } from '@/lib/supabase/client';
+import { notifyMarketPricesUpdated } from '@/lib/market-price-events';
 import type {
   GetContentParams,
   SearchContentParams,
@@ -159,15 +160,7 @@ export async function searchContent({
  * Fetch the latest market prices for all grades.
  */
 export async function getLatestMarketPrices() {
-  const supabase = getSupabase();
-
-  const { data, error } = await supabase
-    .from('insights_market_prices')
-    .select('*')
-    .order('grade');
-
-  if (error) throw error;
-  return (data || []) as InsightMarketPrice[];
+  return marketPriceRequest<InsightMarketPrice[]>('/market-prices');
 }
 
 /**
@@ -177,17 +170,20 @@ export async function getMarketPriceHistory(
   grade: string,
   limit: number = 30
 ) {
-  const supabase = getSupabase();
+  return marketPriceRequest<InsightMarketPriceHistory[]>(
+    `/market-prices/${encodeURIComponent(grade)}/history?limit=${limit}`
+  );
+}
 
-  const { data, error } = await supabase
-    .from('insights_market_price_history')
-    .select('*')
-    .eq('grade', grade)
-    .order('recorded_at', { ascending: false })
-    .limit(limit);
-
-  if (error) throw error;
-  return (data || []) as InsightMarketPriceHistory[];
+async function marketPriceRequest<T>(path: string, options?: RequestInit): Promise<T> {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api';
+  const response = await fetch(`${apiUrl}${path}`, { ...options, cache: 'no-store' });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    const message = body?.message;
+    throw new Error(Array.isArray(message) ? message.join(', ') : message || 'Gagal memuat atau menyimpan harga pasar');
+  }
+  return response.json();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -488,24 +484,18 @@ export async function deleteContent(id: string) {
  */
 export async function updateMarketPrice(
   id: string,
-  price_per_kg: number,
-  authorId?: string
+  price_per_kg: number
 ) {
-  const supabase = getSupabase();
-
-  const { data, error } = await supabase
-    .from('insights_market_prices')
-    .update({
-      price_per_kg,
-      updated_by: authorId || null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', id)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data as InsightMarketPrice;
+  if (!Number.isFinite(price_per_kg) || price_per_kg <= 0) throw new Error('Harga harus berupa angka positif');
+  const token = localStorage.getItem('valam_token');
+  if (!token) throw new Error('Sesi berakhir. Silakan masuk kembali sebagai Admin.');
+  const data = await marketPriceRequest<InsightMarketPrice>(`/market-prices/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ price_per_kg }),
+  });
+  notifyMarketPricesUpdated();
+  return data;
 }
 
 /**

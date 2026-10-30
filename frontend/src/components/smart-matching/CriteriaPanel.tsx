@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useMarketPrices } from '@/hooks/useMarketPrices';
 import { SlidersHorizontal, Search, RotateCcw, HelpCircle, Sparkles } from 'lucide-react';
 import { CustomSlider } from './CustomSlider';
 import { formatRupiah } from '@/lib/utils';
@@ -41,6 +42,8 @@ export function CriteriaPanel({
   translations,
 }: CriteriaPanelProps) {
   const isEn = locale === 'en';
+  const { prices } = useMarketPrices();
+  const amounts = prices.map(price => price.price_per_kg);
 
   const updateField = (key: keyof Criteria, value: number) => {
     onCriteriaChange({
@@ -133,7 +136,7 @@ export function CriteriaPanel({
             </span>
           </div>
           <p className="text-[11px] text-zinc-400 font-normal leading-snug">
-            {isEn ? 'Market range approx. Rp 750k - Rp 950k/Kg' : 'Kisaran pasar saat ini Rp 750rb - Rp 950rb/Kg'}
+            {amounts.length ? `${isEn ? 'Indicative market range' : 'Kisaran pasar indikatif'} ${formatRupiah(Math.min(...amounts))} – ${formatRupiah(Math.max(...amounts))}/kg` : (isEn ? 'Market prices unavailable' : 'Harga pasar belum tersedia')}
           </p>
 
           {/* Quick budget buttons */}

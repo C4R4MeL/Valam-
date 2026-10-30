@@ -19,8 +19,7 @@ import { SmartMatchingWidget } from "@/components/landing/SmartMatchingWidget";
 import { CircularProductSection } from "@/components/landing/CircularProductSection";
 import { InsightsTeaser } from "@/components/landing/InsightsTeaser";
 import { FAQSection } from "@/components/landing/FAQSection";
-import { getLatestMarketPrices } from "@/lib/valam-insights/insights-api";
-import { mergeMarketPrices } from "@/lib/market-grades";
+import { useMarketPrices } from "@/hooks/useMarketPrices";
 import { formatPrice } from "@/lib/valam-insights/utils";
 
 /* ── Icons ── */
@@ -49,26 +48,9 @@ export default function Home() {
   const router = useRouter();
   const { isAuthenticated, role, isLoading } = useAuthContext();
   
-  // State untuk Grade A price
-  const [gradeAPrice, setGradeAPrice] = useState<string>(isId ? "Belum tersedia" : "Unavailable");
-
-  // Fetch Grade A price saat mount
-  useEffect(() => {
-    async function loadGradeAPrice() {
-      try {
-        const prices = await getLatestMarketPrices();
-        const merged = mergeMarketPrices(prices);
-        const gradeAData = merged.find((p: any) => p.grade === "A");
-        if (gradeAData) {
-          setGradeAPrice(formatPrice(Number(gradeAData.price_per_kg), gradeAData.currency));
-        }
-      } catch (error) {
-        console.error("Failed to load Grade A price:", error);
-        // Keep default fallback price
-      }
-    }
-    loadGradeAPrice();
-  }, [isId]);
+  const { prices } = useMarketPrices();
+  const gradeA = prices.find(price => price.grade === 'A');
+  const gradeAPrice = gradeA ? formatPrice(gradeA.price_per_kg, gradeA.currency) : (isId ? 'Belum tersedia' : 'Unavailable');
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {

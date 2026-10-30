@@ -1,11 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMarketPrices } from '@/hooks/useMarketPrices';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { getLatestMarketPrices } from '@/lib/valam-insights/insights-api';
 import { formatPrice } from '@/lib/valam-insights/utils';
-import { mergeMarketPrices } from '@/lib/market-grades';
-import type { InsightMarketPrice } from '@/lib/valam-insights/types';
 
 interface MarketPriceWidgetProps {
   locale: string;
@@ -18,16 +15,9 @@ const gradeColors: Record<string, { bg: string; text: string; border: string; do
 };
 
 export function MarketPriceWidget({ locale }: MarketPriceWidgetProps) {
-  const [prices, setPrices] = useState<InsightMarketPrice[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { prices, loading } = useMarketPrices();
   const isEn = locale === 'en';
-
-  useEffect(() => {
-    getLatestMarketPrices()
-      .then((live) => setPrices(mergeMarketPrices(live)))
-      .catch(() => setPrices(mergeMarketPrices([])))
-      .finally(() => setLoading(false));
-  }, []);
+  const updatedAt = prices.reduce((latest, price) => price.updated_at > latest ? price.updated_at : latest, '');
 
   if (loading) {
     return (
@@ -82,11 +72,11 @@ export function MarketPriceWidget({ locale }: MarketPriceWidgetProps) {
       </div>
 
       {/* Last updated */}
-      {prices.length > 0 && prices[0].updated_at && (
+      {updatedAt && (
         <div className="px-5 py-3 border-t border-zinc-100 bg-zinc-50">
           <p className="text-xs text-zinc-400 text-center">
             {isEn ? 'Last updated' : 'Terakhir diperbarui'}:{' '}
-            {new Date(prices[0].updated_at).toLocaleDateString(
+            {new Date(updatedAt).toLocaleDateString(
               locale === 'id' ? 'id-ID' : 'en-US',
               { day: 'numeric', month: 'short', year: 'numeric' }
             )}

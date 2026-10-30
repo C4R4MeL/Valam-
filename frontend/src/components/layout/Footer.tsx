@@ -18,15 +18,15 @@ import {
   Sparkles
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { GRADE_SPECS, mergeMarketPrices, normalizeGrade } from '@/lib/market-grades';
+import { useMarketPrices } from '@/hooks/useMarketPrices';
+import { GRADE_SPECS, normalizeGrade } from '@/lib/market-grades';
 
 interface FooterProps {
-  marketPrices?: Array<{ grade: string; price_per_kg: number }>;
   supplierCount?: number;
   kabupatenCount?: number;
 }
 
-export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterProps) {
+export function Footer({ supplierCount, kabupatenCount }: FooterProps) {
   const locale = useLocale() as 'id' | 'en';
   const isId = locale === 'id';
   const pathname = usePathname();
@@ -34,7 +34,7 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
   const [isPending, startTransition] = useTransition();
 
   // Local state for dynamic database stats
-  const [prices, setPrices] = useState<any[]>(marketPrices || []);
+  const { prices } = useMarketPrices();
   const [activeKoperasiCount, setActiveKoperasiCount] = useState<number | null>(supplierCount ?? null);
   const [activeKabupatenCount, setActiveKabupatenCount] = useState<number | null>(kabupatenCount ?? null);
 
@@ -62,16 +62,6 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
     const fetchStats = async () => {
       try {
         const supabase = createClient();
-
-        // 1. Fetch market prices
-        const { data: priceData, error: priceErr } = await supabase
-          .from('insights_market_prices')
-          .select('id, grade, price_per_kg, currency, updated_at')
-          .order('grade', { ascending: true });
-
-        if (priceData && priceData.length > 0 && !priceErr) {
-          setPrices(mergeMarketPrices(priceData as any));
-        }
 
         // 2. Fetch unique kabupaten and supplier count
         const { data: stats, error: statsErr } = await supabase
@@ -450,6 +440,7 @@ export function Footer({ marketPrices, supplierCount, kabupatenCount }: FooterPr
           </div>
 
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            {prices.length === 0 && <span className="text-xs text-zinc-400">{isId ? 'Harga belum tersedia' : 'Prices unavailable'}</span>}
             {prices.map((p, idx) => (
               <div key={idx} className="flex items-center gap-2 bg-black/30 border border-emerald-900/30 px-3 py-1.5 rounded-lg text-xs">
                 <span className="text-zinc-400 text-[11px] font-medium">

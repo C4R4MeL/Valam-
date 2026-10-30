@@ -35,13 +35,6 @@ export const GRADE_SPECS: Record<
   },
 };
 
-/** Fallback when insights_market_prices is empty — same as marketplace/footer. */
-export const FALLBACK_PRICES: Record<MarketGrade, number> = {
-  A: 850_000,
-  B: 780_000,
-  C: 680_000,
-};
-
 export function normalizeGrade(raw: string | null | undefined): MarketGrade | null {
   if (!raw) return null;
   const code = raw.replace(/^GRADE_/i, '').trim().toUpperCase();

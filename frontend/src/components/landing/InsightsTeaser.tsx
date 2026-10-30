@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useLocale } from 'next-intl';
+import { useMarketPrices } from '@/hooks/useMarketPrices';
+import { formatPrice } from '@/lib/valam-insights/utils';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Calendar, Clock, TrendingUp } from 'lucide-react';
@@ -10,6 +12,7 @@ import { ArrowRight, Calendar, Clock, TrendingUp } from 'lucide-react';
 export function InsightsTeaser() {
   const locale = useLocale();
   const isId = locale === 'id';
+  const { prices } = useMarketPrices();
 
   // Fallback data for the teaser
   const featuredArticle = {
@@ -166,36 +169,28 @@ export function InsightsTeaser() {
                   </div>
                   <div>
                     <h5 className="text-xs font-bold text-white uppercase tracking-wider">
-                      {isId ? 'Contoh Harga Demonstrasi' : 'Example Demo Prices'}
+                      {isId ? 'Harga Pasar Nilam' : 'Patchouli Market Prices'}
                     </h5>
                     <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-widest mt-0.5">
-                      {isId ? 'Data contoh, bukan harga pasar' : 'Example data, not market prices'}
+                      {isId ? 'Harga indikatif per kg' : 'Indicative prices per kg'}
                     </p>
                   </div>
                 </div>
                 <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[9px] text-emerald-400 font-bold uppercase tracking-wider">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                  <span>DEMO</span>
+                  <span>{isId ? 'Indikatif' : 'Indicative'}</span>
                 </div>
               </div>
 
               {/* Price list */}
               <div className="grid grid-cols-3 gap-3 text-center">
-                <div className="bg-white/[0.03] border border-white/[0.05] p-3 rounded-2xl">
-                  <div className="text-[10px] text-zinc-400 font-semibold mb-1">Grade A</div>
-                  <div className="text-sm font-bold text-amber-400">Rp 850k</div>
-                  <div className="text-[8px] text-emerald-400 font-bold mt-0.5">DEMO</div>
-                </div>
-                <div className="bg-white/[0.03] border border-white/[0.05] p-3 rounded-2xl">
-                  <div className="text-[10px] text-zinc-400 font-semibold mb-1">Grade B</div>
-                  <div className="text-sm font-bold text-zinc-100">Rp 780k</div>
-                  <div className="text-[8px] text-emerald-400 font-bold mt-0.5">DEMO</div>
-                </div>
-                <div className="bg-white/[0.03] border border-white/[0.05] p-3 rounded-2xl">
-                  <div className="text-[10px] text-zinc-400 font-semibold mb-1">Grade C</div>
-                  <div className="text-sm font-bold text-zinc-400">Rp 680k</div>
-                  <div className="text-[8px] text-zinc-400 font-semibold mt-0.5">DEMO</div>
-                </div>
+                {prices.map(price => (
+                  <div key={price.id} className="bg-white/[0.03] border border-white/[0.05] p-3 rounded-2xl">
+                    <div className="text-[10px] text-zinc-400 font-semibold mb-1">Grade {price.grade}</div>
+                    <div className="text-sm font-bold text-amber-400">{formatPrice(price.price_per_kg, price.currency)}</div>
+                  </div>
+                ))}
+                {prices.length === 0 && <p className="col-span-3 text-xs text-zinc-400">{isId ? 'Harga belum tersedia' : 'Prices unavailable'}</p>}
               </div>
             </motion.div>
 

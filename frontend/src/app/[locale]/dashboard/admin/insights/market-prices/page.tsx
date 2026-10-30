@@ -24,6 +24,8 @@ export default function MarketPricesPage() {
   const [editValues, setEditValues] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -41,12 +43,12 @@ export default function MarketPricesPage() {
         // Fetch history for each grade
         const histMap: Record<string, InsightMarketPriceHistory[]> = {};
         for (const p of priceData) {
-          const hist = await getMarketPriceHistory(p.grade, 10);
+          const hist = await getMarketPriceHistory(p.grade, 10).catch(() => []);
           histMap[p.grade] = hist;
         }
         setHistory(histMap);
       } catch (err) {
-        console.error('Failed to load prices:', err);
+        setError(err instanceof Error ? err.message : 'Gagal memuat harga pasar');
       } finally {
         setLoading(false);
       }
@@ -55,9 +57,11 @@ export default function MarketPricesPage() {
   }, []);
 
   const handleSave = async (price: InsightMarketPrice) => {
-    const newPrice = parseFloat(editValues[price.id] || '0');
-    if (isNaN(newPrice) || newPrice <= 0) {
-      alert('Harga harus berupa angka positif');
+    const newPrice = Number(editValues[price.id]);
+    setError(null);
+    setNotice(null);
+    if (!Number.isFinite(newPrice) || newPrice <= 0) {
+      setError('Harga harus berupa angka positif');
       return;
     }
 
@@ -67,12 +71,18 @@ export default function MarketPricesPage() {
       setPrices((prev) =>
         prev.map((p) => (p.id === updated.id ? updated : p))
       );
-      // Refresh history
-      const hist = await getMarketPriceHistory(price.grade, 10);
-      setHistory((prev) => ({ ...prev, [price.grade]: hist }));
+      setEditValues(prev => ({ ...prev, [updated.id]: String(updated.price_per_kg) }));
+      setNotice(`Harga Grade ${updated.grade} berhasil diperbarui.`);
+      // A history read failure must not turn a successful save into a save error.
+      try {
+        const hist = await getMarketPriceHistory(price.grade, 10);
+        setHistory(prev => ({ ...prev, [price.grade]: hist }));
+      } catch {
+        setNotice(`Harga Grade ${updated.grade} berhasil diperbarui. Riwayat belum dapat dimuat ulang.`);
+      }
     } catch (err) {
       console.error('Failed to update price:', err);
-      alert('Gagal memperbarui harga');
+      setError(err instanceof Error ? err.message : 'Gagal memperbarui harga');
     } finally {
       setSaving(null);
     }
@@ -103,6 +113,9 @@ export default function MarketPricesPage() {
         </div>
       </div>
 
+      {error && <p role="alert" className="mb-4 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</p>}
+      {notice && <p role="status" className="mb-4 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">{notice}</p>}
+      {!error && prices.length === 0 && <p className="text-sm text-zinc-500">Data harga pasar belum tersedia.</p>}
       {/* Price Cards */}
       <div className="space-y-6">
         {prices.map((price) => {
@@ -120,7 +133,7 @@ export default function MarketPricesPage() {
                   </div>
                   <div className="text-right">
                     <p className="text-2xl font-bold text-zinc-900">
-                      {formatPrice(price.price_per_kg)}
+                      {formatPrice(price.price_per_kg, price.currency)}
                     </p>
                     <p className="text-xs text-zinc-400">per kg</p>
                   </div>
@@ -129,7 +142,7 @@ export default function MarketPricesPage() {
 
               {/* Edit Form */}
               <div className="px-6 py-5">
-                <label className="block text-sm font-medium text-zinc-700 mb-2">
+                <label htmlFor={`price-${price.id}`} className="block text-sm font-medium text-zinc-700 mb-2">
                   Harga baru (IDR per kg)
                 </label>
                 <div className="flex items-center gap-3">
@@ -138,7 +151,10 @@ export default function MarketPricesPage() {
                       Rp
                     </span>
                     <input
+                      id={`price-${price.id}`}
                       type="number"
+                      min="0.01"
+                      step="0.01"
                       value={editValues[price.id] || ''}
                       onChange={(e) =>
                         setEditValues((prev) => ({ ...prev, [price.id]: e.target.value }))
@@ -148,7 +164,7 @@ export default function MarketPricesPage() {
                   </div>
                   <button
                     onClick={() => handleSave(price)}
-                    disabled={saving === price.id}
+                    disabled={saving !== null}
                     className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-emerald-800 text-white text-sm font-medium hover:bg-emerald-700 disabled:opacity-50 transition-all"
                   >
                     <Save className="w-4 h-4" />
@@ -179,7 +195,7 @@ export default function MarketPricesPage() {
                           {formatDate(h.recorded_at)}
                         </span>
                         <span className="font-medium text-zinc-700 font-mono">
-                          {formatPrice(h.price_per_kg)}
+                          {formatPrice(h.price_per_kg, h.currency)}
                         </span>
                       </div>
                     ))}

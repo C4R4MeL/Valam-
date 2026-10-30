@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useMarketPrices } from '@/hooks/useMarketPrices';
 import { ArrowRight, ArrowUpRight, ArrowDownRight, Minus, Info } from 'lucide-react';
-import { getLatestMarketPrices, getMarketPriceHistory } from '@/lib/valam-insights/insights-api';
+import { getMarketPriceHistory } from '@/lib/valam-insights/insights-api';
 import { formatPrice } from '@/lib/valam-insights/utils';
-import type { InsightContentWithAuthor, InsightMarketPrice } from '@/lib/valam-insights/types';
+import type { InsightContentWithAuthor } from '@/lib/valam-insights/types';
 
 interface InsightsSidebarProps {
   locale: string;
@@ -14,75 +15,23 @@ interface InsightsSidebarProps {
 
 export function InsightsSidebar({ locale, popularArticles }: InsightsSidebarProps) {
   const isEn = locale === 'en';
-  const [price, setPrice] = useState<InsightMarketPrice | null>(null);
+  const { prices, loading } = useMarketPrices();
+  const price = prices.find(item => item.grade === 'A') || null;
+  const isPlaceholder = !loading && !price;
   const [weeklyChange, setWeeklyChange] = useState<number | null>(null);
-  const [isPlaceholder, setIsPlaceholder] = useState(false);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
-
-    async function load() {
-      try {
-        const prices = await getLatestMarketPrices();
-        const gradeA = prices.find((p) => p.grade === 'A') || prices[0] || null;
-
-        if (!gradeA) {
-          if (!cancelled) {
-            setPrice({
-              id: 'placeholder',
-              grade: 'A',
-              price_per_kg: 450000,
-              currency: 'IDR',
-              updated_by: null,
-              updated_at: new Date().toISOString(),
-            });
-            setWeeklyChange(2.4);
-            setIsPlaceholder(true);
-          }
-          return;
-        }
-
-        let change: number | null = null;
-        try {
-          const history = await getMarketPriceHistory(gradeA.grade, 14);
-          if (history.length >= 2) {
-            const latest = history[0].price_per_kg;
-            const weekAgo = history[Math.min(6, history.length - 1)].price_per_kg;
-            if (weekAgo > 0) change = ((latest - weekAgo) / weekAgo) * 100;
-          }
-        } catch {
-          // optional
-        }
-
-        if (!cancelled) {
-          setPrice(gradeA);
-          setWeeklyChange(change);
-          setIsPlaceholder(false);
-        }
-      } catch {
-        if (!cancelled) {
-          setPrice({
-            id: 'placeholder',
-            grade: 'A',
-            price_per_kg: 450000,
-            currency: 'IDR',
-            updated_by: null,
-            updated_at: new Date().toISOString(),
-          });
-          setWeeklyChange(2.4);
-          setIsPlaceholder(true);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+    setWeeklyChange(null);
+    if (price) {
+      getMarketPriceHistory(price.grade, 14).then(history => {
+        if (cancelled || history.length < 2) return;
+        const previous = history[Math.min(6, history.length - 1)].price_per_kg;
+        if (previous > 0) setWeeklyChange(((price.price_per_kg - previous) / previous) * 100);
+      }).catch(() => { /* History is optional. */ });
     }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    return () => { cancelled = true; };
+  }, [price]);
 
   const isUp = weeklyChange !== null && weeklyChange > 0;
   const isDown = weeklyChange !== null && weeklyChange < 0;
@@ -131,7 +80,7 @@ export function InsightsSidebar({ locale, popularArticles }: InsightsSidebarProp
           {isPlaceholder && (
             <p className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-800 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-md">
               <Info className="w-3 h-3" />
-              {isEn ? 'Sample data' : 'Data contoh'}
+              {isEn ? 'Price data unavailable' : 'Data harga belum tersedia'}
             </p>
           )}
 
@@ -140,9 +89,7 @@ export function InsightsSidebar({ locale, popularArticles }: InsightsSidebarProp
               {isEn ? 'Patchouli oil price' : 'Harga Minyak Nilam'}
             </p>
             <p className="text-xl font-bold text-zinc-900 tabular-nums tracking-tight">
-              {loading || !price
-                ? '…'
-                : formatPrice(price.price_per_kg, price.currency)}
+              {loading ? '…' : price ? formatPrice(price.price_per_kg, price.currency) : (isEn ? 'Unavailable' : 'Belum tersedia')}
               <span className="text-sm font-medium text-zinc-500 ml-1">/ Kg</span>
             </p>
           </div>
